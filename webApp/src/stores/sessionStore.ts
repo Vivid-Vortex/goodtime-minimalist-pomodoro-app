@@ -5,6 +5,8 @@ import { Session, TimerType } from '../types';
 interface SessionStore {
   sessions: Session[];
   addSession: (session: Omit<Session, 'id'>) => void;
+  updateSession: (id: string, updates: Partial<Omit<Session, 'id'>>) => void;
+  deleteSession: (id: string) => void;
   clearSessions: () => void;
   exportSessions: () => string;
   getSessionStats: () => {
@@ -30,6 +32,20 @@ export const useSessionStore = create<SessionStore>()(
         
         set((state) => ({
           sessions: [...state.sessions, newSession]
+        }));
+      },
+
+      updateSession: (id, updates) => {
+        set((state) => ({
+          sessions: state.sessions.map(session =>
+            session.id === id ? { ...session, ...updates } : session
+          )
+        }));
+      },
+
+      deleteSession: (id) => {
+        set((state) => ({
+          sessions: state.sessions.filter(session => session.id !== id)
         }));
       },
 

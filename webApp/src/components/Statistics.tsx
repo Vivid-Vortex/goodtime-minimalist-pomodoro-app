@@ -1,8 +1,9 @@
-import React from 'react';
-import { Download, BarChart3, Clock, Target, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, BarChart3, Clock, Target, X, Edit3 } from 'lucide-react';
 import { useSessionStore } from '../stores/sessionStore';
 import { exportSessionsAsJson, formatDurationForExport } from '../utils/export';
 import { TimerType } from '../types';
+import { SessionEditor } from './SessionEditor';
 
 interface StatisticsProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface StatisticsProps {
 
 export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
   const { sessions, getSessionStats, clearSessions } = useSessionStore();
+  const [isSessionEditorOpen, setIsSessionEditorOpen] = useState(false);
   const stats = getSessionStats();
 
   const handleExportJson = () => {
@@ -144,6 +146,14 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
           </button>
           
           <button
+            onClick={() => setIsSessionEditorOpen(true)}
+            className="flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+          >
+            <Edit3 size={16} className="mr-2" />
+            Edit Sessions
+          </button>
+          
+          <button
             onClick={handleClearData}
             disabled={sessions.length === 0}
             className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
@@ -157,6 +167,11 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
             {sessions.length} session{sessions.length !== 1 ? 's' : ''} recorded
           </p>
         )}
+        
+        <SessionEditor 
+          isOpen={isSessionEditorOpen}
+          onClose={() => setIsSessionEditorOpen(false)}
+        />
       </div>
     </div>
   );
