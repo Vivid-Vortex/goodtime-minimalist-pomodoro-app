@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, X, Tag } from 'lucide-react';
+import { Settings as SettingsIcon, X, Tag, Clock } from 'lucide-react';
 import { useTimerStore } from '../stores/timerStore';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenLabels?: () => void;
+  onOpenProfiles?: () => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels }) => {
+export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels, onOpenProfiles }) => {
   const { profile, updateProfile } = useTimerStore();
   const [tempProfile, setTempProfile] = useState(profile);
 
@@ -38,21 +39,34 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
         </div>
 
         <div className="space-y-6">
-          {/* Labels Button */}
-          {onOpenLabels && (
-            <div>
+          {/* Quick Access Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            {onOpenLabels && (
               <button
                 onClick={() => {
                   onOpenLabels();
                   onClose();
                 }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-2 border-dashed border-blue-300 transition-colors"
+                className="flex flex-col items-center gap-2 px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-2 border-dashed border-blue-300 transition-colors"
               >
                 <Tag size={20} />
-                Manage Labels
+                <span className="text-sm font-medium">Labels</span>
               </button>
-            </div>
-          )}
+            )}
+            
+            {onOpenProfiles && (
+              <button
+                onClick={() => {
+                  onOpenProfiles();
+                  onClose();
+                }}
+                className="flex flex-col items-center gap-2 px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border-2 border-dashed border-purple-300 transition-colors"
+              >
+                <Clock size={20} />
+                <span className="text-sm font-medium">Profiles</span>
+              </button>
+            )}
+          </div>
 
           {/* Timer Type */}
           <div>

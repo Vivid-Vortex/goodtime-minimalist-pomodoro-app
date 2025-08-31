@@ -15,6 +15,7 @@ import {
   getTimerTypeLabel 
 } from '../utils/timer';
 import { useSessionStore } from './sessionStore';
+import { useProfileStore } from './profileStore';
 
 interface TimerStore {
   // Timer state
@@ -67,16 +68,20 @@ export const useTimerStore = create<TimerStore>()(
       currentLabel: 'Work',
 
       start: () => {
-        const { state, profile, currentType } = get();
+        const { state, currentType } = get();
+        
+        // Use active profile from profile store
+        const activeProfile = useProfileStore.getState().activeProfile;
         
         if (state === TimerState.STOPPED) {
-          const duration = getDurationForTimerType(profile, currentType);
+          const duration = getDurationForTimerType(activeProfile, currentType);
           set({
             state: TimerState.RUNNING,
             timeRemaining: duration * 60,
             totalTime: duration * 60,
             isRunning: true,
-            currentSessionStartTime: Date.now()
+            currentSessionStartTime: Date.now(),
+            profile: activeProfile // Update profile in timer store
           });
         } else {
           set({
@@ -223,15 +228,16 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       switchToNextTimer: () => {
-        const { currentType, profile, completedSessions } = get();
+        const { currentType, completedSessions } = get();
+        const activeProfile = useProfileStore.getState().activeProfile;
         let newCompletedSessions = completedSessions;
         
         if (currentType === TimerType.FOCUS) {
           newCompletedSessions++;
         }
         
-        const nextType = getNextTimerType(currentType, profile, newCompletedSessions);
-        const duration = getDurationForTimerType(profile, nextType);
+        const nextType = getNextTimerType(currentType, activeProfile, newCompletedSessions);
+        const duration = getDurationForTimerType(activeProfile, nextType);
         
         set({
           state: TimerState.STOPPED,
@@ -240,7 +246,8 @@ export const useTimerStore = create<TimerStore>()(
           totalTime: duration * 60,
           isRunning: false,
           completedSessions: newCompletedSessions,
-          currentSessionStartTime: 0
+          currentSessionStartTime: 0,
+          profile: activeProfile
         });
       }
     }),
