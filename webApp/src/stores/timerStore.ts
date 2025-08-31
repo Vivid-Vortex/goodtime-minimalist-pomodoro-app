@@ -39,6 +39,7 @@ interface TimerStore {
   stop: () => void;
   skip: () => void;
   reset: () => void;
+  addTime: (seconds: number) => void;
   updateProfile: (profile: Partial<TimerProfile>) => void;
   setLabel: (label: string) => void;
   
@@ -149,6 +150,17 @@ export const useTimerStore = create<TimerStore>()(
           isRunning: false,
           completedSessions: 0,
           currentSessionStartTime: 0
+        });
+      },
+
+      addTime: (seconds) => {
+        const { timeRemaining, totalTime } = get();
+        const newTimeRemaining = timeRemaining + seconds;
+        const newTotalTime = Math.max(totalTime, newTimeRemaining);
+        
+        set({
+          timeRemaining: Math.max(0, newTimeRemaining),
+          totalTime: newTotalTime
         });
       },
 

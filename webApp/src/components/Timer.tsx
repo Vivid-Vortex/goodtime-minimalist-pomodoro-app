@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Play, Pause, Square, SkipForward, RotateCcw, BarChart3 } from 'lucide-react';
+import { Play, Pause, Square, SkipForward, RotateCcw, BarChart3, Plus } from 'lucide-react';
 import { useTimerStore } from '../stores/timerStore';
 import { formatTime, getTimerTypeLabel, requestNotificationPermission } from '../utils/timer';
 import { TimerState, TimerType } from '../types';
@@ -24,6 +24,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     stop,
     skip,
     reset,
+    addTime,
     setLabel
   } = useTimerStore();
 
@@ -133,7 +134,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
         </div>
 
         {/* Controls */}
-        <div className="flex justify-center space-x-4 mb-6">
+        <div className="flex justify-center space-x-3 mb-6">
           <button
             onClick={handlePlayPause}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-colors ${
@@ -151,6 +152,18 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
             className="w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white flex items-center justify-center transition-colors"
           >
             <Square size={24} />
+          </button>
+          
+          <button
+            onClick={() => addTime(60)}
+            disabled={isStopped}
+            className="w-16 h-16 rounded-full bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white flex items-center justify-center transition-colors"
+            title="Add 60 seconds"
+          >
+            <div className="flex flex-col items-center text-xs">
+              <Plus size={16} />
+              <span>60s</span>
+            </div>
           </button>
           
           <button
