@@ -4,6 +4,7 @@ import { Settings, SettingsButton } from './components/Settings';
 import { Statistics } from './components/Statistics';
 import { Labels } from './components/Labels';
 import { TimerProfiles } from './components/TimerProfiles';
+import { AdvancedSettings } from './components/AdvancedSettings';
 import { useTimerStore } from './stores/timerStore';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { currentType } = useTimerStore();
 
   // Update document title based on timer state
@@ -71,6 +73,7 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         onOpenLabels={() => setIsLabelsOpen(true)}
         onOpenProfiles={() => setIsProfilesOpen(true)}
+        onOpenAdvanced={() => setIsAdvancedOpen(true)}
       />
       <Statistics 
         isOpen={isStatsOpen} 
@@ -83,6 +86,10 @@ function App() {
       <TimerProfiles 
         isOpen={isProfilesOpen} 
         onClose={() => setIsProfilesOpen(false)} 
+      />
+      <AdvancedSettings 
+        isOpen={isAdvancedOpen} 
+        onClose={() => setIsAdvancedOpen(false)} 
       />
     </div>
   );
