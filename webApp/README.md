@@ -107,6 +107,88 @@ npm run dev
 
 The app will be available at **`http://localhost:5173`**
 
+## 📖 How-To Guide (Step-by-Step)
+
+### 🏷️ How to Add Custom Tags/Labels (like "W1-Cmn")
+
+1. **Open the app** in your browser
+2. **Click the ⚙️ Settings button** (top-right corner)
+3. **Click the "Labels" button** (blue button with tag icon)
+4. **Click "Add New Label"** (+ icon at the top)
+5. **Enter your tag name**: Type "W1-Cmn" (or any custom name)
+6. **Choose a color**: Click on any of the 25 color options
+7. **Click "Save"** - your new tag is now available!
+
+**To use your new tag:**
+- Select "W1-Cmn" from the dropdown above the timer before starting
+- Your session will be tracked under this custom label
+
+### ⏰ How to Change Default Timer Duration
+
+**Method 1: Quick Timer Adjustment (Basic Settings)**
+1. **Click ⚙️ Settings** (top-right)  
+2. **Change "Focus Duration"**: 
+   - Type any number from 1-999 minutes
+   - Use +5/-5 buttons for quick adjustments
+   - Example: Set to 72 for a 72-minute session
+3. **Click "Save"** - this becomes your new default
+
+**Method 2: Using Timer Profiles (Advanced)**
+1. **Click ⚙️ Settings** → **"Profiles" button** (purple button)
+2. **Create new profile**: Click "+ Add Profile" 
+3. **Name your profile**: e.g., "Deep Work 72min"
+4. **Set durations**:
+   - Work Duration: 72 minutes
+   - Break Duration: 15 minutes  
+   - Long Break: 30 minutes
+5. **Save profile** - now you can switch between different timer setups instantly
+
+### 🔄 How to Switch Between Different Timer Setups
+
+**From the main timer screen:**
+- Look for the profile dropdown (shows current profile name)
+- Click to see all your profiles: Classic (25/5), Extended (45/15), your custom ones
+- Select any profile to instantly change timer durations
+
+### 🎨 How to Customize App Appearance
+
+1. **Click ⚙️ Settings** → **"Advanced" button** (green button)
+2. **Choose theme**: Light, Dark, or Auto (follows system)
+3. **Enable "Minimalist Mode"** for distraction-free interface
+4. **Show/hide seconds** in timer display
+5. **Configure notifications** and sound volume
+
+### 📊 How to Track Your Productivity by Project
+
+1. **Create labels** for each project (as shown above)
+2. **Always select the appropriate label** before starting timer
+3. **View statistics**: Click the "View Stats" button on main timer
+4. **See breakdown**: Your time is automatically categorized by label
+5. **Export data**: Click "Export JSON" to get detailed reports
+
+### 🆘 Quick Troubleshooting
+
+**"I can't find the Settings button"**
+- Look for the ⚙️ gear icon in the **top-right corner** of the main timer screen
+
+**"I don't see Labels/Profiles buttons in Settings"**  
+- After clicking ⚙️ Settings, look for **3 colored buttons at the top**:
+  - 🏷️ **Labels** (blue button)
+  - ⏰ **Profiles** (purple button) 
+  - ⚙️ **Advanced** (green button)
+
+**"My custom timer duration isn't saving"**
+- Make sure to click **"Save"** after changing the focus duration
+- Timer duration must be between 1-999 minutes
+
+**"I created a label but can't select it"**
+- New labels appear in the **dropdown above the main timer**
+- Click the dropdown (shows current label) to see all available labels
+
+**"Timer keeps resetting to 25 minutes"**
+- You might be switching profiles - check the profile dropdown on main screen
+- Each profile has its own timer durations
+
 ### 🏗️ Building for Production
 
 ```bash
