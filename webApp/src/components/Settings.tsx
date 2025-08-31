@@ -88,17 +88,49 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Focus Duration (minutes)
             </label>
-            <input
-              type="number"
-              min="1"
-              max="120"
-              value={tempProfile.workDuration}
-              onChange={(e) => setTempProfile({ 
-                ...tempProfile, 
-                workDuration: parseInt(e.target.value) || 25 
-              })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min="1"
+                max="999"
+                step="1"
+                value={tempProfile.workDuration}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 1;
+                  setTempProfile({ 
+                    ...tempProfile, 
+                    workDuration: Math.max(1, Math.min(999, value))
+                  });
+                }}
+                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g. 25, 45, 72"
+              />
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setTempProfile({ 
+                    ...tempProfile, 
+                    workDuration: Math.min(999, tempProfile.workDuration + 5)
+                  })}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                >
+                  +5
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTempProfile({ 
+                    ...tempProfile, 
+                    workDuration: Math.max(1, tempProfile.workDuration - 5)
+                  })}
+                  className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                >
+                  -5
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Any duration from 1 to 999 minutes (e.g. 25, 45, 72, 90)
+            </p>
           </div>
 
           {/* Break Settings */}
@@ -117,18 +149,45 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
             </label>
             
             {tempProfile.isBreakEnabled && (
-              <input
-                type="number"
-                min="1"
-                max="60"
-                value={tempProfile.breakDuration}
-                onChange={(e) => setTempProfile({ 
-                  ...tempProfile, 
-                  breakDuration: parseInt(e.target.value) || 5 
-                })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Break duration (minutes)"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max="120"
+                  value={tempProfile.breakDuration}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 1;
+                    setTempProfile({ 
+                      ...tempProfile, 
+                      breakDuration: Math.max(1, Math.min(120, value))
+                    });
+                  }}
+                  className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="Break duration (minutes)"
+                />
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setTempProfile({ 
+                      ...tempProfile, 
+                      breakDuration: Math.min(120, tempProfile.breakDuration + 1)
+                    })}
+                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    +1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTempProfile({ 
+                      ...tempProfile, 
+                      breakDuration: Math.max(1, tempProfile.breakDuration - 1)
+                    })}
+                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                  >
+                    -1
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
@@ -148,31 +207,85 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
             </label>
             
             {tempProfile.isLongBreakEnabled && (
-              <div className="space-y-2">
-                <input
-                  type="number"
-                  min="1"
-                  max="120"
-                  value={tempProfile.longBreakDuration}
-                  onChange={(e) => setTempProfile({ 
-                    ...tempProfile, 
-                    longBreakDuration: parseInt(e.target.value) || 15 
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Long break duration (minutes)"
-                />
-                <input
-                  type="number"
-                  min="2"
-                  max="10"
-                  value={tempProfile.sessionsBeforeLongBreak}
-                  onChange={(e) => setTempProfile({ 
-                    ...tempProfile, 
-                    sessionsBeforeLongBreak: parseInt(e.target.value) || 4 
-                  })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="Sessions before long break"
-                />
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="240"
+                    value={tempProfile.longBreakDuration}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 1;
+                      setTempProfile({ 
+                        ...tempProfile, 
+                        longBreakDuration: Math.max(1, Math.min(240, value))
+                      });
+                    }}
+                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Long break duration (minutes)"
+                  />
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTempProfile({ 
+                        ...tempProfile, 
+                        longBreakDuration: Math.min(240, tempProfile.longBreakDuration + 5)
+                      })}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      +5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTempProfile({ 
+                        ...tempProfile, 
+                        longBreakDuration: Math.max(1, tempProfile.longBreakDuration - 5)
+                      })}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      -5
+                    </button>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="2"
+                    max="20"
+                    value={tempProfile.sessionsBeforeLongBreak}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 2;
+                      setTempProfile({ 
+                        ...tempProfile, 
+                        sessionsBeforeLongBreak: Math.max(2, Math.min(20, value))
+                      });
+                    }}
+                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    placeholder="Sessions before long break"
+                  />
+                  <div className="flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setTempProfile({ 
+                        ...tempProfile, 
+                        sessionsBeforeLongBreak: Math.min(20, tempProfile.sessionsBeforeLongBreak + 1)
+                      })}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      +1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTempProfile({ 
+                        ...tempProfile, 
+                        sessionsBeforeLongBreak: Math.max(2, tempProfile.sessionsBeforeLongBreak - 1)
+                      })}
+                      className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                    >
+                      -1
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
