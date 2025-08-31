@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Session, TimerType } from '../types';
+import { sessionService } from '../database/services/sessionService';
 
 interface SessionStore {
   sessions: Session[];
-  addSession: (session: Omit<Session, 'id'>) => void;
-  updateSession: (id: string, updates: Partial<Omit<Session, 'id'>>) => void;
-  deleteSession: (id: string) => void;
-  clearSessions: () => void;
-  exportSessions: () => string;
+  isLoading: boolean;
+  loadSessions: () => Promise<void>;
+  addSession: (session: Omit<Session, 'id'>) => Promise<void>;
+  updateSession: (id: string, updates: Partial<Omit<Session, 'id'>>) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
+  clearSessions: () => Promise<void>;
+  exportSessions: () => Promise<string>;
   getSessionStats: () => {
     totalSessions: number;
     focusSessions: number;
@@ -23,55 +26,74 @@ export const useSessionStore = create<SessionStore>()(
   persist(
     (set, get) => ({
       sessions: [],
+      isLoading: false,
 
-      addSession: (sessionData) => {
-        const newSession: Session = {
-          ...sessionData,
-          id: crypto.randomUUID(),
-        };
-        
-        set((state) => ({
-          sessions: [...state.sessions, newSession]
-        }));
+      loadSessions: async () => {
+        set({ isLoading: true });
+        try {
+          const sessions = await sessionService.getAllSessions();
+          set({ sessions, isLoading: false });
+        } catch (error) {
+          console.error('Failed to load sessions:', error);
+          set({ isLoading: false });
+        }
       },
 
-      updateSession: (id, updates) => {
-        set((state) => ({
-          sessions: state.sessions.map(session =>
-            session.id === id ? { ...session, ...updates } : session
-          )
-        }));
+      addSession: async (sessionData) => {
+        try {
+          const newSession = await sessionService.addSession(sessionData);
+          set((state) => ({
+            sessions: [...state.sessions, newSession]
+          }));
+        } catch (error) {
+          console.error('Failed to add session:', error);
+          throw error;
+        }
       },
 
-      deleteSession: (id) => {
-        set((state) => ({
-          sessions: state.sessions.filter(session => session.id !== id)
-        }));
+      updateSession: async (id, updates) => {
+        try {
+          await sessionService.updateSession(id, updates);
+          set((state) => ({
+            sessions: state.sessions.map(session =>
+              session.id === id ? { ...session, ...updates } : session
+            )
+          }));
+        } catch (error) {
+          console.error('Failed to update session:', error);
+          throw error;
+        }
       },
 
-      clearSessions: () => {
-        set({ sessions: [] });
+      deleteSession: async (id) => {
+        try {
+          await sessionService.deleteSession(id);
+          set((state) => ({
+            sessions: state.sessions.filter(session => session.id !== id)
+          }));
+        } catch (error) {
+          console.error('Failed to delete session:', error);
+          throw error;
+        }
       },
 
-      exportSessions: () => {
-        const { sessions } = get();
-        const stats = get().getSessionStats();
-        
-        const exportData = {
-          exportDate: new Date().toISOString(),
-          totalSessions: stats.totalSessions,
-          statistics: stats,
-          sessions: sessions.map(session => ({
-            id: session.id,
-            label: session.label,
-            timerType: session.timerType,
-            duration: session.duration,
-            endTime: new Date(session.endTime).toISOString(),
-            archived: session.archived
-          }))
-        };
-        
-        return JSON.stringify(exportData, null, 2);
+      clearSessions: async () => {
+        try {
+          await sessionService.clearSessions();
+          set({ sessions: [] });
+        } catch (error) {
+          console.error('Failed to clear sessions:', error);
+          throw error;
+        }
+      },
+
+      exportSessions: async () => {
+        try {
+          return await sessionService.exportSessions();
+        } catch (error) {
+          console.error('Failed to export sessions:', error);
+          throw error;
+        }
       },
 
       getSessionStats: () => {

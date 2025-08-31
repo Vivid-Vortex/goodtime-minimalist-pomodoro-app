@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { TimerProfile, DEFAULT_TIMER_PROFILE } from '../types';
+import { profileService } from '../database/services/profileService';
 
 export interface TimerProfileWithId extends TimerProfile {
   id: string;
@@ -68,17 +69,18 @@ export const PRESET_PROFILES: Omit<TimerProfileWithId, 'id' | 'createdAt'>[] = [
 interface ProfileStore {
   profiles: TimerProfileWithId[];
   activeProfile: TimerProfileWithId;
+  isLoading: boolean;
   
   // Actions
-  addProfile: (profile: Omit<TimerProfile, 'name'> & { name: string }) => void;
-  updateProfile: (id: string, updates: Partial<TimerProfile>) => void;
-  deleteProfile: (id: string) => void;
-  setActiveProfile: (id: string) => void;
-  duplicateProfile: (id: string, newName: string) => void;
-  resetToPresets: () => void;
+  loadProfiles: () => Promise<void>;
+  addProfile: (profile: Omit<TimerProfile, 'name'> & { name: string }) => Promise<void>;
+  updateProfile: (name: string, updates: Partial<TimerProfile>) => Promise<void>;
+  deleteProfile: (name: string) => Promise<void>;
+  setActiveProfile: (name: string) => void;
+  duplicateProfile: (name: string, newName: string) => Promise<void>;
+  resetToPresets: () => Promise<void>;
   
   // Getters
-  getProfileById: (id: string) => TimerProfileWithId | undefined;
   getProfileByName: (name: string) => TimerProfileWithId | undefined;
 }
 
@@ -93,91 +95,151 @@ export const useProfileStore = create<ProfileStore>()(
     (set, get) => ({
       profiles: [DEFAULT_PROFILE_WITH_ID],
       activeProfile: DEFAULT_PROFILE_WITH_ID,
+      isLoading: false,
 
-      addProfile: (profileData) => {
-        const newProfile: TimerProfileWithId = {
-          ...profileData,
-          id: crypto.randomUUID(),
-          createdAt: Date.now()
-        };
-        
-        set((state) => ({
-          profiles: [...state.profiles, newProfile]
-        }));
+      loadProfiles: async () => {
+        set({ isLoading: true });
+        try {
+          const dbProfiles = await profileService.getAllProfiles();
+          const profiles: TimerProfileWithId[] = dbProfiles.map(profile => ({
+            ...profile,
+            id: crypto.randomUUID(), // Generate client-side ID for compatibility
+            createdAt: Date.now()
+          }));
+
+          const activeProfiles = profiles.length > 0 ? profiles : [DEFAULT_PROFILE_WITH_ID];
+          set({ 
+            profiles: activeProfiles, 
+            activeProfile: activeProfiles[0],
+            isLoading: false 
+          });
+        } catch (error) {
+          console.error('Failed to load profiles:', error);
+          set({ isLoading: false });
+        }
       },
 
-      updateProfile: (id, updates) => {
-        set((state) => {
-          const updatedProfiles = state.profiles.map(profile => 
-            profile.id === id ? { ...profile, ...updates } : profile
-          );
-          
-          const updatedActiveProfile = state.activeProfile.id === id 
-            ? { ...state.activeProfile, ...updates }
-            : state.activeProfile;
-
-          return {
-            profiles: updatedProfiles,
-            activeProfile: updatedActiveProfile
+      addProfile: async (profileData) => {
+        try {
+          await profileService.addProfile(profileData);
+          const newProfile: TimerProfileWithId = {
+            ...profileData,
+            id: crypto.randomUUID(),
+            createdAt: Date.now()
           };
-        });
+          
+          set((state) => ({
+            profiles: [...state.profiles, newProfile]
+          }));
+        } catch (error) {
+          console.error('Failed to add profile:', error);
+          throw error;
+        }
       },
 
-      deleteProfile: (id) => {
-        if (id === 'default') return; // Can't delete default profile
-        
-        const { profiles, activeProfile } = get();
-        const updatedProfiles = profiles.filter(profile => profile.id !== id);
-        
-        set({
-          profiles: updatedProfiles,
-          activeProfile: activeProfile.id === id 
-            ? profiles.find(p => p.id === 'default') || DEFAULT_PROFILE_WITH_ID
-            : activeProfile
-        });
+      updateProfile: async (name, updates) => {
+        try {
+          await profileService.updateProfile(name, updates);
+          set((state) => {
+            const updatedProfiles = state.profiles.map(profile => 
+              profile.name === name ? { ...profile, ...updates } : profile
+            );
+            
+            const updatedActiveProfile = state.activeProfile.name === name 
+              ? { ...state.activeProfile, ...updates }
+              : state.activeProfile;
+
+            return {
+              profiles: updatedProfiles,
+              activeProfile: updatedActiveProfile
+            };
+          });
+        } catch (error) {
+          console.error('Failed to update profile:', error);
+          throw error;
+        }
       },
 
-      setActiveProfile: (id) => {
-        const profile = get().profiles.find(p => p.id === id);
+      deleteProfile: async (name) => {
+        if (name === '25/5') return; // Can't delete default profile
+        
+        try {
+          await profileService.deleteProfile(name);
+          const { profiles, activeProfile } = get();
+          const updatedProfiles = profiles.filter(profile => profile.name !== name);
+          
+          set({
+            profiles: updatedProfiles,
+            activeProfile: activeProfile.name === name 
+              ? profiles.find(p => p.name === '25/5') || DEFAULT_PROFILE_WITH_ID
+              : activeProfile
+          });
+        } catch (error) {
+          console.error('Failed to delete profile:', error);
+          throw error;
+        }
+      },
+
+      setActiveProfile: (name) => {
+        const profile = get().profiles.find(p => p.name === name);
         if (profile) {
           set({ activeProfile: profile });
         }
       },
 
-      duplicateProfile: (id, newName) => {
-        const profile = get().profiles.find(p => p.id === id);
+      duplicateProfile: async (name, newName) => {
+        const profile = get().profiles.find(p => p.name === name);
         if (profile) {
-          const duplicated: TimerProfileWithId = {
-            ...profile,
-            id: crypto.randomUUID(),
-            name: newName,
-            createdAt: Date.now()
-          };
-          
-          set((state) => ({
-            profiles: [...state.profiles, duplicated]
-          }));
+          try {
+            const duplicatedData = {
+              ...profile,
+              name: newName
+            };
+            await profileService.addProfile(duplicatedData);
+            
+            const duplicated: TimerProfileWithId = {
+              ...duplicatedData,
+              id: crypto.randomUUID(),
+              createdAt: Date.now()
+            };
+            
+            set((state) => ({
+              profiles: [...state.profiles, duplicated]
+            }));
+          } catch (error) {
+            console.error('Failed to duplicate profile:', error);
+            throw error;
+          }
         }
       },
 
-      resetToPresets: () => {
-        const presetProfiles: TimerProfileWithId[] = [
-          DEFAULT_PROFILE_WITH_ID,
-          ...PRESET_PROFILES.map(preset => ({
-            ...preset,
-            id: crypto.randomUUID(),
-            createdAt: Date.now()
-          }))
-        ];
-        
-        set({
-          profiles: presetProfiles,
-          activeProfile: DEFAULT_PROFILE_WITH_ID
-        });
-      },
-
-      getProfileById: (id) => {
-        return get().profiles.find(p => p.id === id);
+      resetToPresets: async () => {
+        try {
+          // Clear existing profiles in database
+          await profileService.clearProfiles();
+          
+          // Add preset profiles to database
+          for (const preset of PRESET_PROFILES) {
+            await profileService.addProfile(preset);
+          }
+          
+          const presetProfiles: TimerProfileWithId[] = [
+            DEFAULT_PROFILE_WITH_ID,
+            ...PRESET_PROFILES.map(preset => ({
+              ...preset,
+              id: crypto.randomUUID(),
+              createdAt: Date.now()
+            }))
+          ];
+          
+          set({
+            profiles: presetProfiles,
+            activeProfile: DEFAULT_PROFILE_WITH_ID
+          });
+        } catch (error) {
+          console.error('Failed to reset to presets:', error);
+          throw error;
+        }
       },
 
       getProfileByName: (name) => {

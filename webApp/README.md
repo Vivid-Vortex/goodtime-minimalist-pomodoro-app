@@ -32,16 +32,25 @@ A comprehensive web-based Pomodoro timer that matches all features of the Androi
 - 🚀 **Quick Profile Switching**: Instantly switch between different work patterns
 
 ### 📊 Advanced Statistics & Data Management
-- 📈 **Comprehensive Session Tracking**: Every session automatically recorded
+- 💾 **Persistent Data Storage**: All data permanently stored in browser's IndexedDB
+- 📈 **Comprehensive Session Tracking**: Every session automatically recorded with full history
 - 📊 **Detailed Analytics**:
   - Total focus/break sessions with label breakdown
   - Focus time accumulation with daily/weekly views
   - Average session durations and productivity trends
+  - Real-time statistics that persist across sessions
 - 🔧 **Manual Session Editing**: 
   - Add sessions manually with custom date/time
   - Edit existing session details (duration, label, type, timestamp)
-  - Delete unwanted sessions
-- 📋 **Flexible Data Export**: JSON export with complete session history
+  - Delete unwanted sessions with confirmation
+- 📋 **Advanced Data Export/Import**: 
+  - Complete JSON export with session history, statistics, and metadata
+  - Backup and restore functionality for data portability
+  - Compatible export format for external analysis
+- 🔄 **Cross-Session Persistence**: 
+  - Data survives browser restarts, updates, and device changes
+  - Automatic data initialization and migration
+  - Robust error handling with fallback to local storage
 
 ### 🎛️ Advanced Settings & Personalization
 - 🎨 **Theme System**: Light, Dark, and Auto themes with system detection
@@ -78,6 +87,7 @@ A comprehensive web-based Pomodoro timer that matches all features of the Androi
   - Page title shows remaining time
   - Favicon changes based on timer type
   - Color-coded visual feedback
+- 💾 **Reliable Data Persistence**: IndexedDB ensures data survives browser updates and restarts
 
 ## 🚀 Quick Start
 
@@ -251,10 +261,20 @@ webApp/
 │   │   └── Statistics.tsx      # Stats, analytics & export
 │   ├── stores/           # Zustand state management
 │   │   ├── timerStore.ts       # Core timer logic & integration
-│   │   ├── sessionStore.ts     # Session tracking & history
-│   │   ├── labelStore.ts       # Label management with colors
-│   │   ├── profileStore.ts     # Timer profiles & presets
+│   │   ├── sessionStore.ts     # Session tracking & history with persistence
+│   │   ├── labelStore.ts       # Label management with colors & persistence
+│   │   ├── profileStore.ts     # Timer profiles & presets with persistence
 │   │   └── appSettingsStore.ts # Advanced app configuration
+│   ├── database/         # Data persistence layer
+│   │   ├── indexedDBManager.ts # IndexedDB database management
+│   │   ├── database.ts         # Database abstraction layer
+│   │   ├── schema.sql          # Database schema documentation
+│   │   └── services/           # Data access services
+│   │       ├── sessionService.ts   # Session data operations
+│   │       ├── labelService.ts     # Label data operations
+│   │       └── profileService.ts   # Profile data operations
+│   ├── hooks/            # React hooks
+│   │   └── useDataInit.ts      # Data initialization hook
 │   ├── utils/            # Utility functions
 │   │   ├── timer.ts       # Timer calculations & notifications
 │   │   └── export.ts      # Data export functionality
@@ -356,6 +376,51 @@ The exported JSON file contains:
 }
 ```
 
+## 🗄️ Data Persistence Architecture
+
+The web app now features a robust data persistence system that ensures your productivity data is never lost:
+
+### 💾 Storage Technologies
+- **Primary Storage**: **IndexedDB** - Browser-native database with full ACID compliance
+- **Fallback Storage**: **LocalStorage** - Automatic fallback for compatibility
+- **State Management**: **Zustand with Persistence** - Seamless state hydration
+
+### 📊 Database Schema
+- **Sessions Table**: Complete session history with timestamps, labels, and durations
+- **Labels Table**: Color-coded project labels with custom ordering
+- **Timer Profiles**: Multiple timer configurations with work/break patterns
+- **App Settings**: User preferences and configuration data
+
+### 🔄 Data Flow
+1. **User Actions** → Zustand Store Updates
+2. **Store Changes** → Database Service Layer 
+3. **Database Layer** → IndexedDB Operations
+4. **App Restart** → Automatic Data Loading & State Hydration
+
+### 🛠️ Database Services
+- **sessionService**: CRUD operations for session management
+- **labelService**: Label creation, editing, and organization
+- **profileService**: Timer profile management
+- **Automatic Migration**: Seamless updates and data compatibility
+
+### 📤 Export & Backup
+```json
+{
+  "exportDate": "2025-01-31T...",
+  "version": "1.0",
+  "statistics": { /* aggregated stats */ },
+  "sessions": [ /* complete session history */ ],
+  "labels": [ /* user-defined labels */ ],
+  "timerProfiles": [ /* custom timer configurations */ ]
+}
+```
+
+### 🔒 Data Privacy & Security
+- **Local Storage Only**: All data stays in your browser - no server uploads
+- **No Tracking**: Zero analytics or telemetry unless explicitly enabled
+- **Full Control**: Export, backup, or clear your data anytime
+- **GDPR Compliant**: Complete data ownership and control
+
 ## 🏗️ Technology Stack
 
 ### Core Technologies
@@ -366,8 +431,10 @@ The exported JSON file contains:
 
 ### State Management & Storage  
 - **[Zustand](https://zustand-demo.pmnd.rs/)** - Lightweight state management with persistence
-- **Browser LocalStorage** - Automatic persistence for settings and session data
+- **IndexedDB** - Browser-native database for robust data persistence
 - **Zustand Persist Middleware** - Seamless hydration and state persistence
+- **Custom Database Layer** - Structured data management with full CRUD operations
+- **Automatic Data Migration** - Ensures compatibility across app updates
 
 ### PWA & User Experience
 - **[Vite PWA Plugin](https://vite-pwa-org.netlify.app/)** - Complete Progressive Web App features  
@@ -452,9 +519,11 @@ This project inherits the license from the main Goodtime repository. See the roo
 - Ensure the tab/app has focus when timer completes
 
 **Data not persisting:**
-- Check if browser storage is enabled
-- Ensure you're not in incognito/private mode
-- Clear browser data and restart if issues persist
+- Check if IndexedDB is supported and enabled in your browser
+- Ensure you're not in incognito/private mode (IndexedDB may be limited)
+- Check browser storage permissions and quota
+- Try clearing browser data and restarting the app
+- Fallback to localStorage will be used if IndexedDB is unavailable
 
 ### Performance Optimization
 - The app uses efficient state management with Zustand

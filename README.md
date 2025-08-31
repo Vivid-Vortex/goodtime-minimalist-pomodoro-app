@@ -17,7 +17,13 @@ Native Android application with full Pomodoro timer functionality.
     height="60">](https://f-droid.org/packages/com.apps.adrcotfas.goodtime)
 
 ### 🌐 Web/Desktop App (PWA)
-Cross-platform web application that can be installed as a desktop app.
+Cross-platform web application that can be installed as a desktop app with **full data persistence**.
+
+**✨ New Features:**
+- 💾 **Persistent Data Storage** - All sessions, labels, and settings saved permanently in IndexedDB
+- 📊 **Advanced Statistics** - Complete session history and productivity analytics
+- 📤 **Data Export/Import** - JSON export for backup and data portability
+- 🔄 **Cross-session Persistence** - Data survives browser restarts and updates
 
 **Quick Start:**
 ```bash

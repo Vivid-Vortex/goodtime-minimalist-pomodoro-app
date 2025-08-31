@@ -118,4 +118,13 @@ public/workbox-*.js.map
 # SvelteKit build / generate output
 .svelte-kit
 
+# Database files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# But keep the database schema
+!src/database/schema.sql
+
 # End of https://www.toptal.com/developers/gitignore/api/node,vite,react

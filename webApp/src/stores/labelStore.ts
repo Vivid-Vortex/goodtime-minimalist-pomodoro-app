@@ -1,23 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
-export interface Label {
-  id: string;
-  name: string;
-  colorIndex: number;
-  orderIndex: number;
-  useDefaultTimeProfile: boolean;
-  timerProfile?: {
-    name?: string;
-    workDuration: number;
-    breakDuration: number;
-    longBreakDuration: number;
-    sessionsBeforeLongBreak: number;
-    isBreakEnabled: boolean;
-    isLongBreakEnabled: boolean;
-  };
-  isArchived: boolean;
-}
+import { Label } from '../types';
+import { labelService } from '../database/services/labelService';
 
 export const LABEL_COLORS = [
   '#ef4444', // red-500
@@ -49,22 +33,23 @@ export const LABEL_COLORS = [
 
 export const DEFAULT_LABEL: Label = {
   id: 'default',
-  name: 'Work',
-  colorIndex: 0,
+  title: 'Work',
+  color: 0,
   orderIndex: 0,
-  useDefaultTimeProfile: true,
-  isArchived: false,
+  archived: false,
 };
 
 interface LabelStore {
   labels: Label[];
   selectedLabel: Label;
-  addLabel: (label: Omit<Label, 'id' | 'orderIndex'>) => void;
-  updateLabel: (id: string, updates: Partial<Label>) => void;
-  deleteLabel: (id: string) => void;
+  isLoading: boolean;
+  loadLabels: () => Promise<void>;
+  addLabel: (label: Omit<Label, 'id' | 'orderIndex'>) => Promise<void>;
+  updateLabel: (id: string, updates: Partial<Label>) => Promise<void>;
+  deleteLabel: (id: string) => Promise<void>;
   setSelectedLabel: (labelId: string) => void;
-  archiveLabel: (id: string, archived: boolean) => void;
-  reorderLabels: (startIndex: number, endIndex: number) => void;
+  archiveLabel: (id: string, archived: boolean) => Promise<void>;
+  reorderLabels: (startIndex: number, endIndex: number) => Promise<void>;
   getActiveLabels: () => Label[];
   getLabelColor: (colorIndex: number) => string;
 }
@@ -74,46 +59,80 @@ export const useLabelStore = create<LabelStore>()(
     (set, get) => ({
       labels: [DEFAULT_LABEL],
       selectedLabel: DEFAULT_LABEL,
+      isLoading: false,
 
-      addLabel: (labelData) => {
-        const labels = get().labels;
-        const newLabel: Label = {
-          ...labelData,
-          id: crypto.randomUUID(),
-          orderIndex: Math.max(...labels.map(l => l.orderIndex), 0) + 1,
-        };
-        
-        set({
-          labels: [...labels, newLabel]
-        });
-      },
-
-      updateLabel: (id, updates) => {
-        set((state) => ({
-          labels: state.labels.map(label => 
-            label.id === id ? { ...label, ...updates } : label
-          )
-        }));
-        
-        // Update selected label if it was the one being updated
-        const { selectedLabel } = get();
-        if (selectedLabel.id === id) {
-          set({
-            selectedLabel: { ...selectedLabel, ...updates }
+      loadLabels: async () => {
+        set({ isLoading: true });
+        try {
+          const labels = await labelService.getAllLabels();
+          const activeLabels = labels.length > 0 ? labels : [DEFAULT_LABEL];
+          set({ 
+            labels: activeLabels, 
+            selectedLabel: activeLabels[0],
+            isLoading: false 
           });
+        } catch (error) {
+          console.error('Failed to load labels:', error);
+          set({ isLoading: false });
         }
       },
 
-      deleteLabel: (id) => {
+      addLabel: async (labelData) => {
+        try {
+          const labels = get().labels;
+          const newLabelData = {
+            ...labelData,
+            orderIndex: Math.max(...labels.map(l => l.orderIndex), 0) + 1,
+          };
+          
+          const newLabel = await labelService.addLabel(newLabelData);
+          set((state) => ({
+            labels: [...state.labels, newLabel]
+          }));
+        } catch (error) {
+          console.error('Failed to add label:', error);
+          throw error;
+        }
+      },
+
+      updateLabel: async (id, updates) => {
+        try {
+          await labelService.updateLabel(id, updates);
+          set((state) => ({
+            labels: state.labels.map(label => 
+              label.id === id ? { ...label, ...updates } : label
+            )
+          }));
+          
+          // Update selected label if it was the one being updated
+          const { selectedLabel } = get();
+          if (selectedLabel.id === id) {
+            set({
+              selectedLabel: { ...selectedLabel, ...updates }
+            });
+          }
+        } catch (error) {
+          console.error('Failed to update label:', error);
+          throw error;
+        }
+      },
+
+      deleteLabel: async (id) => {
         if (id === 'default') return; // Can't delete default label
         
-        const { labels, selectedLabel } = get();
-        const updatedLabels = labels.filter(label => label.id !== id);
-        
-        set({
-          labels: updatedLabels,
-          selectedLabel: selectedLabel.id === id ? DEFAULT_LABEL : selectedLabel
-        });
+        try {
+          await labelService.deleteLabel(id);
+          const { labels, selectedLabel } = get();
+          const updatedLabels = labels.filter(label => label.id !== id);
+          
+          set({
+            labels: updatedLabels,
+            selectedLabel: selectedLabel.id === id ? DEFAULT_LABEL : selectedLabel
+          });
+        } catch (error) {
+          console.error('Failed to delete label:', error);
+          throw error;
+        }
       },
 
       setSelectedLabel: (labelId) => {
@@ -123,32 +142,40 @@ export const useLabelStore = create<LabelStore>()(
         }
       },
 
-      archiveLabel: (id, archived) => {
-        get().updateLabel(id, { isArchived: archived });
+      archiveLabel: async (id, archived) => {
+        await get().updateLabel(id, { archived });
       },
 
-      reorderLabels: (startIndex, endIndex) => {
-        const labels = get().getActiveLabels();
-        const result = Array.from(labels);
-        const [removed] = result.splice(startIndex, 1);
-        result.splice(endIndex, 0, removed);
-        
-        const reorderedLabels = result.map((label, index) => ({
-          ...label,
-          orderIndex: index
-        }));
-        
-        set((state) => ({
-          labels: [
-            ...reorderedLabels,
-            ...state.labels.filter(l => l.isArchived)
-          ]
-        }));
+      reorderLabels: async (startIndex, endIndex) => {
+        try {
+          const labels = get().getActiveLabels();
+          const result = Array.from(labels);
+          const [removed] = result.splice(startIndex, 1);
+          result.splice(endIndex, 0, removed);
+          
+          const reorderedLabels = result.map((label, index) => ({
+            ...label,
+            orderIndex: index
+          }));
+          
+          // Update order in database
+          await labelService.reorderLabels(reorderedLabels.map(l => l.id));
+          
+          set((state) => ({
+            labels: [
+              ...reorderedLabels,
+              ...state.labels.filter(l => l.archived)
+            ]
+          }));
+        } catch (error) {
+          console.error('Failed to reorder labels:', error);
+          throw error;
+        }
       },
 
       getActiveLabels: () => {
         return get().labels
-          .filter(label => !label.isArchived)
+          .filter(label => !label.archived)
           .sort((a, b) => a.orderIndex - b.orderIndex);
       },
 
