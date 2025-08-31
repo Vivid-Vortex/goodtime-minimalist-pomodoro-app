@@ -1,32 +1,66 @@
-# Goodtime Web App
+# Goodtime Web App - Complete Pomodoro Productivity Suite
 
-A minimalist but powerful Pomodoro timer web application that runs in browsers and can be installed as a desktop app via PWA capabilities. This is part of the Goodtime Productivity monorepo, providing cross-platform Pomodoro timer functionality.
+A comprehensive web-based Pomodoro timer that matches all features of the Android version. Built with React, TypeScript, and PWA technology for a native app-like experience in any browser.
 
-## ✨ Features
+## ✨ Complete Feature Set
 
 ### 🎯 Core Timer Functionality
-- ⏰ **Customizable Timer**: Configure focus, break, and long break durations (1-120 minutes)
+- ⏰ **Flexible Timer Duration**: Set any duration from 1-999 minutes (e.g., 25, 45, 72, 90 minutes)
 - 🔄 **Multiple Timer Modes**: 
   - **Countdown Mode**: Traditional Pomodoro with set durations
   - **Stopwatch Mode**: Open-ended timing sessions
-- ⚡ **Smart Break Management**: 
-  - Regular breaks after focus sessions
-  - Long breaks after configurable session count (2-10 sessions)
-  - Optional break disable for continuous focus
-- 🎵 **Audio & Visual Feedback**:
-  - Browser notification alerts
-  - Audio notification sounds
-  - Color-coded timer states (Red=Focus, Green=Break, Blue=Long Break)
+- ⚡ **Advanced Timer Controls**: 
+  - Pause, resume, stop, skip sessions
+  - **+60 Seconds Feature**: Extend current session by 60 seconds
+  - Smart break management with configurable intervals
+- 🎵 **Rich Audio & Visual Feedback**:
+  - Browser notification alerts with custom messages
+  - Configurable audio notification sounds with volume control
+  - Dynamic color-coded timer states and favicon updates
 
-### 📊 Statistics & Data Export
-- 📈 **Session Tracking**: Automatic tracking of completed sessions
-- 📊 **Detailed Statistics**:
-  - Total focus/break sessions count
-  - Total focus time accumulation
-  - Average session duration
-  - Recent sessions history (last 10)
-- 📋 **JSON Export**: Complete session data export with timestamps
-- 🗑️ **Data Management**: Clear all session data option
+### 🏷️ Labels & Organization System
+- 🌈 **Colored Labels/Tags**: 25 beautiful predefined colors for session categorization
+- 📝 **Label Management**: Create, edit, archive, and restore labels
+- 🎨 **Visual Organization**: Color-coded sessions with intuitive interface
+- 📊 **Label-based Statistics**: Track productivity by category/project
+
+### ⚙️ Timer Profiles System
+- 📋 **Pre-built Profiles**: 
+  - Classic (25/5), Extended (45/15), Deep Work (90/20)
+  - Sprint (15/3), Marathon (120/30), Custom profiles
+- 🔧 **Profile Management**: Create, edit, delete custom timer configurations
+- 🚀 **Quick Profile Switching**: Instantly switch between different work patterns
+
+### 📊 Advanced Statistics & Data Management
+- 📈 **Comprehensive Session Tracking**: Every session automatically recorded
+- 📊 **Detailed Analytics**:
+  - Total focus/break sessions with label breakdown
+  - Focus time accumulation with daily/weekly views
+  - Average session durations and productivity trends
+- 🔧 **Manual Session Editing**: 
+  - Add sessions manually with custom date/time
+  - Edit existing session details (duration, label, type, timestamp)
+  - Delete unwanted sessions
+- 📋 **Flexible Data Export**: JSON export with complete session history
+
+### 🎛️ Advanced Settings & Personalization
+- 🎨 **Theme System**: Light, Dark, and Auto themes with system detection
+- 🔔 **Notification Control**: 
+  - Browser notifications with custom messages
+  - Audio alerts with volume control (0-100%)
+  - Vibration support on mobile devices
+- ⌨️ **Keyboard Shortcuts**: 
+  - Space (play/pause), S (stop), R (reset), + (add 60s)
+  - Configurable shortcuts for power users
+- 📅 **Daily Goals**: Set and track daily focus time targets
+- 🎯 **Behavior Settings**:
+  - Auto-start breaks and next sessions
+  - Break budget system for flexible scheduling
+  - Long break triggers after session streaks
+- 🛡️ **Privacy & Data Controls**:
+  - Configurable data retention periods
+  - Settings backup and restore
+  - Anonymous analytics toggle
 
 ### 📱 Progressive Web App (PWA)
 - 🖥️ **Desktop Installation**: Install as native-like desktop app
@@ -35,12 +69,15 @@ A minimalist but powerful Pomodoro timer web application that runs in browsers a
 - 💾 **Persistent Storage**: Settings and session data saved locally
 - 🔔 **Background Notifications**: Timer alerts even when app is not active
 
-### 🎨 User Experience
-- 🎨 **Clean Minimalist UI**: Distraction-free design focused on productivity
+### 🎨 User Experience & Interface
+- 🎨 **Minimalist Mode**: Distraction-free interface option
 - 🌈 **Visual Timer**: Circular progress indicator with color coding
-- ⚙️ **Customizable Settings**: Easy-to-access configuration panel
-- 📱 **Responsive Design**: Works on desktop, tablet, and mobile devices
-- 🖼️ **Dynamic Page Title**: Shows remaining time in browser tab
+- 📊 **Real-time Statistics**: Live productivity metrics display  
+- 📱 **Responsive Design**: Optimized for desktop, tablet, and mobile
+- 🖼️ **Dynamic Elements**: 
+  - Page title shows remaining time
+  - Favicon changes based on timer type
+  - Color-coded visual feedback
 
 ## 🚀 Quick Start
 
@@ -51,17 +88,24 @@ A minimalist but powerful Pomodoro timer web application that runs in browsers a
 ### Installation & Setup
 
 ```bash
-# 1. Navigate to the webApp directory
+# 1. Clone the repository (if not already done)
+git clone <your-repo-url>
+cd goodtime-minimalist-pomodoro-app
+
+# 2. Switch to the browser app branch
+git checkout browser-app-v1
+
+# 3. Navigate to the webApp directory
 cd webApp
 
-# 2. Install dependencies
+# 4. Install dependencies
 npm install
 
-# 3. Start development server
+# 5. Start development server
 npm run dev
 ```
 
-The app will be available at **`http://localhost:3000`**
+The app will be available at **`http://localhost:5173`**
 
 ### 🏗️ Building for Production
 
@@ -116,12 +160,19 @@ webApp/
 │   └── icons/             # App icons for PWA
 ├── src/
 │   ├── components/        # React components
-│   │   ├── Timer.tsx      # Main timer interface
-│   │   ├── Settings.tsx   # Settings modal
-│   │   └── Statistics.tsx # Stats & export modal
+│   │   ├── Timer.tsx           # Main timer interface with +60s feature
+│   │   ├── Settings.tsx        # Basic timer settings
+│   │   ├── AdvancedSettings.tsx # Comprehensive settings panel
+│   │   ├── Labels.tsx          # Label/tag management system
+│   │   ├── TimerProfiles.tsx   # Timer profile management
+│   │   ├── SessionEditor.tsx   # Manual session editing
+│   │   └── Statistics.tsx      # Stats, analytics & export
 │   ├── stores/           # Zustand state management
-│   │   ├── timerStore.ts  # Timer state & logic
-│   │   └── sessionStore.ts # Session tracking
+│   │   ├── timerStore.ts       # Core timer logic & integration
+│   │   ├── sessionStore.ts     # Session tracking & history
+│   │   ├── labelStore.ts       # Label management with colors
+│   │   ├── profileStore.ts     # Timer profiles & presets
+│   │   └── appSettingsStore.ts # Advanced app configuration
 │   ├── utils/            # Utility functions
 │   │   ├── timer.ts       # Timer calculations & notifications
 │   │   └── export.ts      # Data export functionality
@@ -130,38 +181,71 @@ webApp/
 │   ├── main.tsx          # Application entry point
 │   └── index.css         # Global styles (Tailwind CSS)
 ├── package.json          # Dependencies and scripts
-├── vite.config.ts        # Vite configuration
+├── vite.config.ts        # Vite configuration with PWA
 ├── tailwind.config.js    # Tailwind CSS configuration
-└── tsconfig.json         # TypeScript configuration
+├── tsconfig.json         # TypeScript configuration
+└── README.md             # Complete documentation (this file)
 ```
 
-## 🎯 Usage Guide
+## 🎯 Complete Usage Guide
 
 ### Basic Timer Operation
 1. **Start Timer**: Click the green play button
-2. **Pause/Resume**: Click yellow pause button (play button while paused)
+2. **Pause/Resume**: Click yellow pause button (play button while paused)  
 3. **Stop**: Click red stop button to end current session
 4. **Skip**: Click blue skip button to move to next timer type
 5. **Reset**: Click gray reset button to return to initial state
+6. **+60 Seconds**: Click the "+60s" button to extend current session
 
-### Timer Configuration
-1. Click the **⚙️ Settings** button (top-right corner)
-2. Configure timer preferences:
-   - **Timer Mode**: Choose Countdown or Stopwatch
-   - **Focus Duration**: Set work session length (1-120 minutes)
-   - **Break Settings**: Enable/disable breaks and set duration
-   - **Long Break**: Configure long breaks and session intervals
+### Advanced Timer Features
 
-### Viewing Statistics & Exporting Data
-1. Complete some timer sessions (they're automatically tracked)
-2. Click **"View Statistics"** button on the main timer screen
-3. Review your productivity metrics:
-   - Focus/break session counts
-   - Total focus time
-   - Average session duration
-   - Recent session history
-4. **Export Data**: Click **"Export JSON Report"** to download complete session data
-5. **Clear Data**: Use "Clear Data" to reset all statistics (with confirmation)
+#### Custom Timer Durations
+- Set any duration from 1-999 minutes in Settings
+- Examples: 25 min (classic), 45 min (extended), 72 min (custom), 90 min (deep work)
+- Supports both countdown and stopwatch modes
+
+#### Labels & Organization
+1. Access **Labels** from Settings → Labels button
+2. **Create Labels**: Add new colored labels for different projects/activities
+3. **Manage Labels**: Edit names, change colors (25 options), or archive unused labels
+4. **Session Labeling**: Select label before starting timer or assign to completed sessions
+5. **Label Statistics**: View productivity breakdown by label/project
+
+#### Timer Profiles
+1. Access **Profiles** from Settings → Profiles button
+2. **Use Presets**: Classic (25/5), Extended (45/15), Deep Work (90/20), etc.
+3. **Create Custom**: Build profiles with specific work/break/long break durations
+4. **Quick Switch**: Change profiles from main timer interface
+5. **Profile Management**: Edit, duplicate, or delete profiles as needed
+
+#### Manual Session Editing
+1. Access **Statistics** → Session Editor (from advanced menu)
+2. **Add Sessions**: Manually log past work sessions with custom times
+3. **Edit Sessions**: Modify duration, labels, timestamps, or session type
+4. **Flexible Duration Input**: Enter time as MM:SS (25:00) or HH:MM:SS (1:30:00)
+5. **Delete Sessions**: Remove incorrect or unwanted session entries
+
+### Advanced Settings & Personalization
+1. Click **Settings** → **Advanced** button  
+2. Configure comprehensive options:
+   - **Appearance**: Theme (Light/Dark/Auto), minimalist mode, show seconds
+   - **Notifications**: Browser alerts, sound volume, vibration on mobile
+   - **Timer Behavior**: Auto-start breaks, break budgets, long break triggers
+   - **Statistics**: Daily goals, week start day, label-based tracking
+   - **Privacy**: Data retention, analytics settings, confirm deletions
+   - **Keyboard Shortcuts**: Enable/disable shortcuts (Space, S, R, +)
+
+### Statistics & Data Management
+1. **Real-time Stats**: View current session progress and daily totals
+2. **Detailed Analytics**: 
+   - Total sessions by type and label
+   - Focus time accumulation with goals tracking
+   - Average session durations and productivity trends
+3. **Data Export**: 
+   - JSON export with complete session history
+   - Includes timestamps, durations, labels, and metadata
+4. **Settings Backup**: Export/import app settings for backup/restore
+5. **Data Cleanup**: Clear specific sessions or reset all data
 
 ### JSON Export Format
 The exported JSON file contains:
@@ -193,22 +277,26 @@ The exported JSON file contains:
 ## 🏗️ Technology Stack
 
 ### Core Technologies
-- **[React 18](https://react.dev/)** - Modern UI framework with hooks
-- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript
-- **[Vite](https://vitejs.dev/)** - Fast build tool and dev server
-- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
+- **[React 18](https://react.dev/)** - Modern UI framework with hooks & concurrent features
+- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe JavaScript with full IntelliSense
+- **[Vite](https://vitejs.dev/)** - Lightning-fast build tool and dev server
+- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS for rapid UI development
 
-### State Management & Storage
-- **[Zustand](https://zustand-demo.pmnd.rs/)** - Lightweight state management
-- **Browser LocalStorage** - Persistent settings and session storage
+### State Management & Storage  
+- **[Zustand](https://zustand-demo.pmnd.rs/)** - Lightweight state management with persistence
+- **Browser LocalStorage** - Automatic persistence for settings and session data
+- **Zustand Persist Middleware** - Seamless hydration and state persistence
 
-### PWA & Icons
-- **[Vite PWA Plugin](https://vite-pwa-org.netlify.app/)** - Progressive Web App features
-- **[Lucide React](https://lucide.dev/)** - Beautiful, consistent icons
+### PWA & User Experience
+- **[Vite PWA Plugin](https://vite-pwa-org.netlify.app/)** - Complete Progressive Web App features  
+- **[Workbox](https://developers.google.com/web/tools/workbox)** - Service worker with advanced caching
+- **[Web App Manifest](https://developer.mozilla.org/en-US/docs/Web/Manifest)** - Native app-like installation
+- **[Lucide React](https://lucide.dev/)** - Beautiful, consistent icon library
 
-### Development Tools
-- **[ESLint](https://eslint.org/)** - Code linting and style enforcement  
-- **[PostCSS](https://postcss.org/)** - CSS processing with Autoprefixer
+### Development & Quality Tools
+- **[ESLint](https://eslint.org/)** - Code linting and style enforcement
+- **[PostCSS](https://postcss.org/)** - CSS processing with Autoprefixer  
+- **[TypeScript Config](https://www.typescriptlang.org/tsconfig)** - Strict type checking configuration
 
 ## 🌐 Browser Compatibility
 
