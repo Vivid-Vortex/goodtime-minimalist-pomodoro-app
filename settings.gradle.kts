@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "goodtime-productivity"
 include(":androidApp")
 include(":shared")
+include(":webApp")

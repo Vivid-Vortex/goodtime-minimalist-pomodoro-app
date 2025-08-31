@@ -1,7 +1,7 @@
+# Android specific
 *.iml
 .gradle
 .idea
-.DS_Store
 build
 captures
 .externalNativeBuild
@@ -12,3 +12,21 @@ xcuserdata
 androidApp/build
 androidApp/google
 androidApp/fdroid
+
+# Web app specific
+webApp/node_modules/
+webApp/dist/
+webApp/.env
+webApp/.env.local
+webApp/.env.*.local
+webApp/npm-debug.log*
+webApp/yarn-debug.log*
+webApp/yarn-error.log*
+webApp/pnpm-debug.log*
+webApp/.eslintcache
+
+# General
+.DS_Store
+*.log
+.vscode/
+.idea/
