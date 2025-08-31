@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Timer } from './components/Timer';
 import { Settings, SettingsButton } from './components/Settings';
 import { Statistics } from './components/Statistics';
+import { Labels } from './components/Labels';
 import { useTimerStore } from './stores/timerStore';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isLabelsOpen, setIsLabelsOpen] = useState(false);
   const { currentType } = useTimerStore();
 
   // Update document title based on timer state
@@ -64,11 +66,16 @@ function App() {
       <Timer onShowStats={() => setIsStatsOpen(true)} />
       <Settings 
         isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
+        onClose={() => setIsSettingsOpen(false)}
+        onOpenLabels={() => setIsLabelsOpen(true)}
       />
       <Statistics 
         isOpen={isStatsOpen} 
         onClose={() => setIsStatsOpen(false)} 
+      />
+      <Labels 
+        isOpen={isLabelsOpen} 
+        onClose={() => setIsLabelsOpen(false)} 
       />
     </div>
   );

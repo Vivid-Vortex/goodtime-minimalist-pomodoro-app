@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, X } from 'lucide-react';
+import { Settings as SettingsIcon, X, Tag } from 'lucide-react';
 import { useTimerStore } from '../stores/timerStore';
 
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenLabels?: () => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
+export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels }) => {
   const { profile, updateProfile } = useTimerStore();
   const [tempProfile, setTempProfile] = useState(profile);
 
@@ -37,6 +38,22 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
         </div>
 
         <div className="space-y-6">
+          {/* Labels Button */}
+          {onOpenLabels && (
+            <div>
+              <button
+                onClick={() => {
+                  onOpenLabels();
+                  onClose();
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-2 border-dashed border-blue-300 transition-colors"
+              >
+                <Tag size={20} />
+                Manage Labels
+              </button>
+            </div>
+          )}
+
           {/* Timer Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

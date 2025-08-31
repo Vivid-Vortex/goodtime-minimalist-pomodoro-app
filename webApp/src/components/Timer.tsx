@@ -3,6 +3,8 @@ import { Play, Pause, Square, SkipForward, RotateCcw, BarChart3 } from 'lucide-r
 import { useTimerStore } from '../stores/timerStore';
 import { formatTime, getTimerTypeLabel, requestNotificationPermission } from '../utils/timer';
 import { TimerState, TimerType } from '../types';
+import { LabelSelector } from './LabelSelector';
+import { useLabelStore } from '../stores/labelStore';
 
 interface TimerProps {
   onShowStats?: () => void;
@@ -21,13 +23,21 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     resume,
     stop,
     skip,
-    reset
+    reset,
+    setLabel
   } = useTimerStore();
+
+  const { selectedLabel } = useLabelStore();
 
   useEffect(() => {
     // Request notification permission on component mount
     requestNotificationPermission();
   }, []);
+
+  // Update timer label when selected label changes
+  useEffect(() => {
+    setLabel(selectedLabel.name);
+  }, [selectedLabel, setLabel]);
 
   const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0;
   const isRunning = state === TimerState.RUNNING;
@@ -74,12 +84,14 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     <div className={`min-h-screen flex items-center justify-center p-4 ${getBackgroundColor()}`}>
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Goodtime</h1>
-          <p className="text-gray-600">{getTimerTypeLabel(currentType)}</p>
-          {currentLabel && (
-            <p className="text-sm text-gray-500 mt-1">"{currentLabel}"</p>
-          )}
+          <p className="text-gray-600 mb-3">{getTimerTypeLabel(currentType)}</p>
+          
+          {/* Label Selector */}
+          <div className="max-w-48 mx-auto">
+            <LabelSelector compact />
+          </div>
         </div>
 
         {/* Timer Circle */}
