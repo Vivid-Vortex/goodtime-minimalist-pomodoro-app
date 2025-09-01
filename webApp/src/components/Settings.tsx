@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, X, Tag, Clock, Sliders } from 'lucide-react';
 import { useTimerStore } from '../stores/timerStore';
+import { useProfileStore } from '../stores/profileStore';
 
 interface SettingsProps {
   isOpen: boolean;
@@ -11,16 +12,32 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels, onOpenProfiles, onOpenAdvanced }) => {
-  const { profile, updateProfile } = useTimerStore();
-  const [tempProfile, setTempProfile] = useState(profile);
+  const { reset } = useTimerStore();
+  const { activeProfile, updateProfile } = useProfileStore();
+  const [tempProfile, setTempProfile] = useState(activeProfile);
 
-  const handleSave = () => {
-    updateProfile(tempProfile);
-    onClose();
+  // Update tempProfile when activeProfile changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTempProfile(activeProfile);
+    }
+  }, [activeProfile, isOpen]);
+
+  const handleSave = async () => {
+    try {
+      if (activeProfile.name) {
+        await updateProfile(activeProfile.name, tempProfile);
+        // Reset timer to apply new settings
+        reset();
+      }
+      onClose();
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+    }
   };
 
   const handleCancel = () => {
-    setTempProfile(profile);
+    setTempProfile(activeProfile);
     onClose();
   };
 

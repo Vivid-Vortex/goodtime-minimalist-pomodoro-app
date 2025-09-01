@@ -5,6 +5,7 @@ import { formatTime, getTimerTypeLabel, requestNotificationPermission } from '..
 import { TimerState, TimerType } from '../types';
 import { LabelSelector } from './LabelSelector';
 import { useLabelStore } from '../stores/labelStore';
+import { useAppSettingsStore } from '../stores/appSettingsStore';
 
 interface TimerProps {
   onShowStats?: () => void;
@@ -17,7 +18,6 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     timeRemaining,
     totalTime,
     completedSessions,
-    currentLabel,
     start,
     pause,
     resume,
@@ -29,6 +29,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
   } = useTimerStore();
 
   const { selectedLabel } = useLabelStore();
+  const { settings } = useAppSettingsStore();
 
   useEffect(() => {
     // Request notification permission on component mount
@@ -37,7 +38,9 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
 
   // Update timer label when selected label changes
   useEffect(() => {
-    setLabel(selectedLabel.name);
+    if (selectedLabel && selectedLabel.title) {
+      setLabel(selectedLabel.title);
+    }
   }, [selectedLabel, setLabel]);
 
   const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0;
@@ -89,6 +92,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Goodtime</h1>
           <p className="text-gray-600 mb-3">{getTimerTypeLabel(currentType)}</p>
           
+
           {/* Label Selector */}
           <div className="max-w-48 mx-auto">
             <LabelSelector compact />
@@ -127,7 +131,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className={`text-4xl font-mono font-bold ${getTimerColor().split(' ')[0]}`}>
-                {formatTime(timeRemaining)}
+                {formatTime(timeRemaining, settings?.timerDisplayFormat || 'minutes', settings?.showSeconds !== false)}
               </div>
             </div>
           </div>

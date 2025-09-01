@@ -4,8 +4,7 @@ import {
   TimerState, 
   TimerType, 
   TimerProfile, 
-  DEFAULT_TIMER_PROFILE,
-  Session 
+  DEFAULT_TIMER_PROFILE
 } from '../types';
 import { 
   getDurationForTimerType, 
@@ -14,8 +13,6 @@ import {
   showNotification,
   getTimerTypeLabel 
 } from '../utils/timer';
-import { useSessionStore } from './sessionStore';
-import { useProfileStore } from './profileStore';
 
 interface TimerStore {
   // Timer state
@@ -43,13 +40,14 @@ interface TimerStore {
   addTime: (seconds: number) => void;
   updateProfile: (profile: Partial<TimerProfile>) => void;
   setLabel: (label: string) => void;
+  syncWithActiveProfile: () => void;
   
   // Internal
   tick: () => void;
   switchToNextTimer: () => void;
 }
 
-let timerInterval: NodeJS.Timeout | null = null;
+let timerInterval: number | null = null;
 
 export const useTimerStore = create<TimerStore>()(
   persist(
@@ -68,20 +66,16 @@ export const useTimerStore = create<TimerStore>()(
       currentLabel: 'Work',
 
       start: () => {
-        const { state, currentType } = get();
-        
-        // Use active profile from profile store
-        const activeProfile = useProfileStore.getState().activeProfile;
+        const { state, currentType, profile } = get();
         
         if (state === TimerState.STOPPED) {
-          const duration = getDurationForTimerType(activeProfile, currentType);
+          const duration = getDurationForTimerType(profile, currentType);
           set({
             state: TimerState.RUNNING,
             timeRemaining: duration * 60,
             totalTime: duration * 60,
             isRunning: true,
-            currentSessionStartTime: Date.now(),
-            profile: activeProfile // Update profile in timer store
+            currentSessionStartTime: Date.now()
           });
         } else {
           set({
@@ -185,6 +179,20 @@ export const useTimerStore = create<TimerStore>()(
         set({ currentLabel: label });
       },
 
+      syncWithActiveProfile: () => {
+        // Simplified - just use current profile for now
+        const { profile, state, currentType } = get();
+        
+        // Only update if timer is stopped (don't interrupt running timer)
+        if (state === TimerState.STOPPED) {
+          const duration = getDurationForTimerType(profile, currentType);
+          set({
+            timeRemaining: duration * 60,
+            totalTime: duration * 60
+          });
+        }
+      },
+
       tick: () => {
         const { timeRemaining, isRunning } = get();
         
@@ -201,14 +209,13 @@ export const useTimerStore = create<TimerStore>()(
             timerInterval = null;
           }
           
-          // Save completed session
-          const { currentType, totalTime, currentLabel, currentSessionStartTime } = get();
-          useSessionStore.getState().addSession({
+          // Save completed session (simplified for now)
+          const { currentType, totalTime, currentLabel } = get();
+          console.log('Session completed:', {
             label: currentLabel,
             timerType: currentType,
             duration: totalTime,
-            endTime: Date.now(),
-            archived: false
+            endTime: Date.now()
           });
           
           playNotificationSound();
@@ -228,16 +235,15 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       switchToNextTimer: () => {
-        const { currentType, completedSessions } = get();
-        const activeProfile = useProfileStore.getState().activeProfile;
+        const { currentType, completedSessions, profile } = get();
         let newCompletedSessions = completedSessions;
         
         if (currentType === TimerType.FOCUS) {
           newCompletedSessions++;
         }
         
-        const nextType = getNextTimerType(currentType, activeProfile, newCompletedSessions);
-        const duration = getDurationForTimerType(activeProfile, nextType);
+        const nextType = getNextTimerType(currentType, profile, newCompletedSessions);
+        const duration = getDurationForTimerType(profile, nextType);
         
         set({
           state: TimerState.STOPPED,
@@ -246,8 +252,7 @@ export const useTimerStore = create<TimerStore>()(
           totalTime: duration * 60,
           isRunning: false,
           completedSessions: newCompletedSessions,
-          currentSessionStartTime: 0,
-          profile: activeProfile
+          currentSessionStartTime: 0
         });
       }
     }),

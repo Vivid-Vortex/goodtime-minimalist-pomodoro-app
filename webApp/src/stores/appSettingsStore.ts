@@ -12,6 +12,7 @@ export interface AppSettings {
   enableVibration: boolean;
   showSeconds: boolean;
   minimalistMode: boolean;
+  timerDisplayFormat: 'minutes' | 'hours';
   
   // Timer Behavior
   autoStartBreaks: boolean;
@@ -40,6 +41,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   enableVibration: false,
   showSeconds: true,
   minimalistMode: false,
+  timerDisplayFormat: 'minutes',
   
   autoStartBreaks: false,
   autoStartNextPomodoro: false,

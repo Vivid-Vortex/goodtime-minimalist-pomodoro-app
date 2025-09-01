@@ -14,7 +14,7 @@ export class LabelService {
       id: crypto.randomUUID(),
     };
 
-    this.db.insertLabel({
+    await this.db.insertLabel({
       id: newLabel.id,
       title: newLabel.title,
       color: newLabel.color,
@@ -26,15 +26,15 @@ export class LabelService {
   }
 
   async updateLabel(id: string, updates: Partial<Omit<Label, 'id'>>): Promise<void> {
-    this.db.updateLabel(id, updates);
+    await this.db.updateLabel(id, updates);
   }
 
   async deleteLabel(id: string): Promise<void> {
-    this.db.deleteLabel(id);
+    await this.db.deleteLabel(id);
   }
 
   async getAllLabels(): Promise<Label[]> {
-    const dbLabels = this.db.getAllLabels();
+    const dbLabels = await this.db.getAllLabels();
     
     return dbLabels.map(label => ({
       id: label.id,
@@ -52,14 +52,14 @@ export class LabelService {
     // Delete each label except default
     for (const label of labels) {
       if (label.id !== 'default') {
-        this.db.deleteLabel(label.id);
+        await this.db.deleteLabel(label.id);
       }
     }
   }
 
   async reorderLabels(labelIds: string[]): Promise<void> {
     for (let i = 0; i < labelIds.length; i++) {
-      this.db.updateLabel(labelIds[i], { orderIndex: i });
+      await this.db.updateLabel(labelIds[i], { orderIndex: i });
     }
   }
 }

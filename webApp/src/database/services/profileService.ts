@@ -13,8 +13,7 @@ export class ProfileService {
       ...profileData,
     };
 
-    this.db.insertTimerProfile({
-      id: crypto.randomUUID(),
+    await this.db.insertTimerProfile({
       name: newProfile.name!,
       isCountdown: newProfile.isCountdown,
       workDuration: newProfile.workDuration,
@@ -31,30 +30,22 @@ export class ProfileService {
 
   async updateProfile(name: string, updates: Partial<TimerProfile>): Promise<void> {
     // First get the profile ID by name
-    const profiles = this.db.getAllTimerProfiles();
+    const profiles = await this.db.getAllTimerProfiles();
     const profile = profiles.find(p => p.name === name);
     
     if (!profile) {
       throw new Error(`Profile with name '${name}' not found`);
     }
 
-    this.db.updateTimerProfile(profile.id, updates);
+    await this.db.updateTimerProfile(profile.name, updates);
   }
 
   async deleteProfile(name: string): Promise<void> {
-    // First get the profile ID by name
-    const profiles = this.db.getAllTimerProfiles();
-    const profile = profiles.find(p => p.name === name);
-    
-    if (!profile) {
-      throw new Error(`Profile with name '${name}' not found`);
-    }
-
-    this.db.deleteTimerProfile(profile.id);
+    await this.db.deleteTimerProfile(name);
   }
 
   async getAllProfiles(): Promise<TimerProfile[]> {
-    const dbProfiles = this.db.getAllTimerProfiles();
+    const dbProfiles = await this.db.getAllTimerProfiles();
     
     return dbProfiles.map(profile => ({
       name: profile.name,
@@ -76,12 +67,12 @@ export class ProfileService {
 
   async clearProfiles(): Promise<void> {
     // Get all profiles except default
-    const profiles = this.db.getAllTimerProfiles();
+    const profiles = await this.db.getAllTimerProfiles();
     
     // Delete each profile except default
     for (const profile of profiles) {
-      if (profile.id !== 'default') {
-        this.db.deleteTimerProfile(profile.id);
+      if (profile.name !== '25/5') {
+        await this.db.deleteTimerProfile(profile.name);
       }
     }
   }

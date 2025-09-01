@@ -14,7 +14,7 @@ export class SessionService {
       id: crypto.randomUUID(),
     };
 
-    this.db.insertSession({
+    await this.db.insertSession({
       id: newSession.id,
       labelId: newSession.label,
       timerType: newSession.timerType,
@@ -35,15 +35,15 @@ export class SessionService {
     if (updates.endTime !== undefined) dbUpdates.endTime = updates.endTime;
     if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
 
-    this.db.updateSession(id, dbUpdates);
+    await this.db.updateSession(id, dbUpdates);
   }
 
   async deleteSession(id: string): Promise<void> {
-    this.db.deleteSession(id);
+    await this.db.deleteSession(id);
   }
 
   async getAllSessions(): Promise<Session[]> {
-    const dbSessions = this.db.getAllSessions();
+    const dbSessions = await this.db.getAllSessions();
     
     return dbSessions.map(session => ({
       id: session.id,
@@ -61,16 +61,16 @@ export class SessionService {
     
     // Delete each session
     for (const session of sessions) {
-      this.db.deleteSession(session.id);
+      await this.db.deleteSession(session.id);
     }
   }
 
   async getSessionStats() {
-    return this.db.getSessionStats();
+    return await this.db.getSessionStats();
   }
 
   async exportSessions(): Promise<string> {
-    return this.db.exportData();
+    return await this.db.exportData();
   }
 }
 

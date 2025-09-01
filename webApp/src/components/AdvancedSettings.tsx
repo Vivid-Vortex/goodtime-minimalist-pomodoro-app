@@ -219,6 +219,35 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
               </div>
             </div>
             
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Timer Display Format</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => updateSettings({ timerDisplayFormat: 'minutes' })}
+                  className={`px-3 py-2 rounded-lg border transition-colors ${
+                    settings.timerDisplayFormat === 'minutes'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Minutes Only
+                </button>
+                <button
+                  onClick={() => updateSettings({ timerDisplayFormat: 'hours' })}
+                  className={`px-3 py-2 rounded-lg border transition-colors ${
+                    settings.timerDisplayFormat === 'hours'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  Hours:Minutes
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Minutes Only: "72" or "72:45" | Hours:Minutes: "01:12:00" or "25:00"
+              </p>
+            </div>
+            
             <ToggleSwitch
               enabled={settings.showSeconds}
               onChange={(enabled) => updateSettings({ showSeconds: enabled })}

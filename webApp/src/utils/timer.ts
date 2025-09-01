@@ -1,14 +1,27 @@
 import { TimerProfile, TimerType } from '../types';
 
-export const formatTime = (seconds: number): string => {
+export const formatTime = (seconds: number, format: 'minutes' | 'hours' = 'hours', showSeconds: boolean = true): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
 
-  if (hours > 0) {
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  if (format === 'minutes') {
+    // Display as minutes only (e.g., "72:45" or "72" if not showing seconds)
+    const totalMinutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    
+    if (showSeconds) {
+      return `${totalMinutes}:${secs.toString().padStart(2, '0')}`;
+    } else {
+      return `${totalMinutes}`;
+    }
+  } else {
+    // Original hours format
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
 export const getDurationForTimerType = (profile: TimerProfile, timerType: TimerType): number => {

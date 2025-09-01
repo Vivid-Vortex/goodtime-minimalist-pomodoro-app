@@ -1,16 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useSessionStore } from '../stores/sessionStore';
-import { useLabelStore } from '../stores/labelStore';
-import { useProfileStore } from '../stores/profileStore';
 
 export function useDataInit() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const loadSessions = useSessionStore(state => state.loadSessions);
-  const loadLabels = useLabelStore(state => state.loadLabels);
-  const loadProfiles = useProfileStore(state => state.loadProfiles);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -18,19 +11,15 @@ export function useDataInit() {
         setIsLoading(true);
         setError(null);
 
-        // Load data from database in parallel
-        await Promise.all([
-          loadSessions(),
-          loadLabels(),
-          loadProfiles()
-        ]);
+        // Simple initialization - just wait a bit to simulate loading
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         setIsInitialized(true);
       } catch (err) {
         console.error('Failed to initialize data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
         
-        // Still mark as initialized to allow the app to work with local storage fallback
+        // Still mark as initialized to allow the app to work
         setIsInitialized(true);
       } finally {
         setIsLoading(false);
@@ -38,7 +27,7 @@ export function useDataInit() {
     };
 
     initializeData();
-  }, [loadSessions, loadLabels, loadProfiles]);
+  }, []);
 
   return {
     isInitialized,

@@ -6,6 +6,7 @@ import { Labels } from './components/Labels';
 import { TimerProfiles } from './components/TimerProfiles';
 import { AdvancedSettings } from './components/AdvancedSettings';
 import { useTimerStore } from './stores/timerStore';
+import { useDataInit } from './hooks/useDataInit';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -14,6 +15,7 @@ function App() {
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { currentType } = useTimerStore();
+  const { isInitialized, isLoading, error } = useDataInit();
 
   // Update document title based on timer state
   useEffect(() => {
@@ -63,6 +65,36 @@ function App() {
 
     return unsubscribe;
   }, []);
+
+  // Show loading screen while initializing data
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Goodtime...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if data initialization failed
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center p-6 bg-white rounded-lg shadow-lg max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Initialization Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
