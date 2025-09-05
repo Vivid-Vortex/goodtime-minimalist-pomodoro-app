@@ -41,9 +41,9 @@ export interface Label {
 }
 
 export const DEFAULT_TIMER_PROFILE: TimerProfile = {
-  name: '25/5',
+  name: '72/5',
   isCountdown: true,
-  workDuration: 25,
+  workDuration: 72,
   isBreakEnabled: true,
   breakDuration: 5,
   isLongBreakEnabled: false,

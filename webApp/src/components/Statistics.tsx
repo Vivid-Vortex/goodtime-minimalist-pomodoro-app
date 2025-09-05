@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, BarChart3, Clock, Target, X, Edit3 } from 'lucide-react';
 import { useSessionStore } from '../stores/sessionStore';
+import { useLabelStore } from '../stores/labelStore';
 import { exportSessionsAsJson, formatDurationForExport } from '../utils/export';
 import { TimerType } from '../types';
 import { SessionEditor } from './SessionEditor';
@@ -12,8 +13,15 @@ interface StatisticsProps {
 
 export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
   const { sessions, getSessionStats, clearSessions } = useSessionStore();
+  const { labels } = useLabelStore();
   const [isSessionEditorOpen, setIsSessionEditorOpen] = useState(false);
   const stats = getSessionStats();
+
+  // Helper function to get label title by ID
+  const getLabelTitle = (labelId: string): string => {
+    const label = labels.find(l => l.id === labelId);
+    return label?.title || 'Unknown Label';
+  };
 
   const handleExportJson = () => {
     exportSessionsAsJson();
@@ -113,7 +121,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
                       />
                       <div>
                         <p className="text-sm font-medium text-gray-800">
-                          {session.label || 'Untitled'}
+                          {getLabelTitle(session.label)}
                         </p>
                         <p className="text-xs text-gray-500">
                           {session.timerType} • {formatDurationForExport(session.duration)}
