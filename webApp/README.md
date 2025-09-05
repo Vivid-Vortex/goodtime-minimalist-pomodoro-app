@@ -233,35 +233,105 @@ npm run serve:low-mem
 npm run serve
 ```
 
+#### 🚀 Quick Reference - Copy & Paste Commands
+
+**Linux/Mac:**
+```bash
+# START: Complete setup and start
+npm run build:prod && npm install -g serve && nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid) on http://localhost:3000"
+
+# STOP: Stop server
+kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && rm -f minimal-pomodoro-webapp.pid && echo "❌ Stopped: Minimal Pomodoro WebApp" || echo "⚠️ Not running"
+```
+
+**Windows PowerShell:**
+```powershell
+# START: Complete setup and start
+npm run build:prod; npm install -g serve; $process = Start-Process -NoNewWindow -PassThru npm -ArgumentList 'run', 'serve:low-mem'; $process.Id | Out-File 'minimal-pomodoro-webapp.pid'; Write-Host "✅ Started: PID $($process.Id) on http://localhost:3000"
+
+# STOP: Stop server
+if (Test-Path 'minimal-pomodoro-webapp.pid') { $pid = Get-Content 'minimal-pomodoro-webapp.pid'; Stop-Process -Id $pid -Force; Remove-Item 'minimal-pomodoro-webapp.pid'; Write-Host "❌ Stopped: PID $pid" } else { Write-Host "⚠️ Not running" }
+```
+
+**Windows CMD:**
+```cmd
+REM START: Complete setup and start
+npm run build:prod && npm install -g serve && start /B npm run serve:low-mem && echo ✅ Started: Check Task Manager for process
+
+REM STOP: Stop server
+taskkill /IM node.exe /F /FI "COMMANDLINE eq *serve:low-mem*" && echo ❌ Stopped: Minimal Pomodoro WebApp || echo ⚠️ Not running
+```
+
+---
+
 #### One-Line Production Deployment (Detached Mode)
 
-**Complete Setup & Start (Linux/Mac):**
+### 🖥️ Linux/Mac Commands
+
+**Complete Setup & Start:**
 ```bash
-npm run build:prod && npm install -g serve && nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Minimal Pomodoro WebApp started with PID: $(cat minimal-pomodoro-webapp.pid) on http://localhost:3000"
+npm run build:prod && npm install -g serve && nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid) on http://localhost:3000"
 ```
 
-**Simple Process Management:**
+**Start Only (if already built):**
 ```bash
-# Start server (if already built)
 nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid)"
-
-# Stop server
-kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && rm -f minimal-pomodoro-webapp.pid && echo "❌ Stopped: Minimal Pomodoro WebApp" || echo "⚠️  Server not running or PID file missing"
-
-# Check status
-[ -f minimal-pomodoro-webapp.pid ] && kill -0 $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && echo "✅ Running: PID $(cat minimal-pomodoro-webapp.pid)" || echo "❌ Not running"
-
-# Restart server
-kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null; rm -f minimal-pomodoro-webapp.pid; nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "🔄 Restarted: PID $(cat minimal-pomodoro-webapp.pid)"
 ```
 
-**Windows Commands:**
-```cmd
-REM Complete setup and start (Windows CMD)
-npm run build:prod && npm install -g serve && start /B npm run serve:low-mem
+**Stop:**
+```bash
+kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && rm -f minimal-pomodoro-webapp.pid && echo "❌ Stopped: Minimal Pomodoro WebApp" || echo "⚠️ Not running"
+```
 
-REM Or using PowerShell for better process management
-powershell -Command "npm run build:prod; npm install -g serve; $process = Start-Process -NoNewWindow -PassThru npm -ArgumentList 'run', 'serve:low-mem'; $process.Id | Out-File 'minimal-pomodoro-webapp.pid'; Write-Host 'Started with PID:' $process.Id"
+### 💻 Windows PowerShell Commands
+
+**Complete Setup & Start:**
+```powershell
+npm run build:prod; npm install -g serve; $process = Start-Process -NoNewWindow -PassThru npm -ArgumentList 'run', 'serve:low-mem'; $process.Id | Out-File 'minimal-pomodoro-webapp.pid'; Write-Host "✅ Started: PID $($process.Id) on http://localhost:3000"
+```
+
+**Start Only (if already built):**
+```powershell
+$process = Start-Process -NoNewWindow -PassThru npm -ArgumentList 'run', 'serve:low-mem'; $process.Id | Out-File 'minimal-pomodoro-webapp.pid'; Write-Host "✅ Started: PID $($process.Id)"
+```
+
+**Stop:**
+```powershell
+if (Test-Path 'minimal-pomodoro-webapp.pid') { $pid = Get-Content 'minimal-pomodoro-webapp.pid'; Stop-Process -Id $pid -Force; Remove-Item 'minimal-pomodoro-webapp.pid'; Write-Host "❌ Stopped: PID $pid" } else { Write-Host "⚠️ Not running" }
+```
+
+### 🖼️ Windows CMD Commands
+
+**Complete Setup & Start:**
+```cmd
+npm run build:prod && npm install -g serve && start /B npm run serve:low-mem && echo ✅ Started: Check Task Manager for process
+```
+
+**Start Only (if already built):**
+```cmd
+start /B npm run serve:low-mem && echo ✅ Started: Check Task Manager for process
+```
+
+**Stop:**
+```cmd
+taskkill /IM node.exe /F /FI "COMMANDLINE eq *serve:low-mem*" && echo ❌ Stopped: Minimal Pomodoro WebApp || echo ⚠️ Not running
+```
+
+### 🍎 macOS Specific (same as Linux but with system notifications)
+
+**Complete Setup & Start:**
+```bash
+npm run build:prod && npm install -g serve && nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid) on http://localhost:3000" && osascript -e 'display notification "Minimal Pomodoro WebApp started" with title "Production Server"' 2>/dev/null || true
+```
+
+**Start Only:**
+```bash
+nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid)" && osascript -e 'display notification "Server started" with title "Pomodoro WebApp"' 2>/dev/null || true
+```
+
+**Stop:**
+```bash
+kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && rm -f minimal-pomodoro-webapp.pid && echo "❌ Stopped: Minimal Pomodoro WebApp" && osascript -e 'display notification "Server stopped" with title "Pomodoro WebApp"' 2>/dev/null || echo "⚠️ Not running"
 ```
 
 #### Automated Management Script
