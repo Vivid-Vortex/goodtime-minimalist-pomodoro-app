@@ -13,6 +13,7 @@ import {
   showNotification,
   getTimerTypeLabel 
 } from '../utils/timer';
+import { useProfileStore } from './profileStore';
 
 interface TimerStore {
   // Timer state
@@ -26,8 +27,7 @@ interface TimerStore {
   completedSessions: number;
   currentSessionStartTime: number;
   
-  // Profile and settings
-  profile: TimerProfile;
+  // Settings
   currentLabel: string;
   
   // Actions
@@ -38,9 +38,11 @@ interface TimerStore {
   skip: () => void;
   reset: () => void;
   addTime: (seconds: number) => void;
-  updateProfile: (profile: Partial<TimerProfile>) => void;
   setLabel: (label: string) => void;
   syncWithActiveProfile: () => void;
+  
+  // Getters
+  getActiveProfile: () => TimerProfile;
   
   // Internal
   tick: () => void;
@@ -62,11 +64,22 @@ export const useTimerStore = create<TimerStore>()(
       completedSessions: 0,
       currentSessionStartTime: 0,
       
-      profile: DEFAULT_TIMER_PROFILE,
       currentLabel: 'Work',
 
+      getActiveProfile: () => {
+        try {
+          // Get the active profile from profile store
+          const profileState = useProfileStore.getState();
+          return profileState.activeProfile || DEFAULT_TIMER_PROFILE;
+        } catch (error) {
+          console.warn('Failed to get active profile, using default:', error);
+          return DEFAULT_TIMER_PROFILE;
+        }
+      },
+
       start: () => {
-        const { state, currentType, profile } = get();
+        const { state, currentType, getActiveProfile } = get();
+        const profile = getActiveProfile();
         
         if (state === TimerState.STOPPED) {
           const duration = getDurationForTimerType(profile, currentType);
@@ -133,7 +146,8 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       reset: () => {
-        const { profile } = get();
+        const { getActiveProfile } = get();
+        const profile = getActiveProfile();
         
         if (timerInterval) {
           clearInterval(timerInterval);
@@ -163,25 +177,15 @@ export const useTimerStore = create<TimerStore>()(
         });
       },
 
-      updateProfile: (newProfile: Partial<TimerProfile>) => {
-        const { profile, currentType } = get();
-        const updatedProfile = { ...profile, ...newProfile };
-        const duration = getDurationForTimerType(updatedProfile, currentType);
-        
-        set({
-          profile: updatedProfile,
-          timeRemaining: duration * 60,
-          totalTime: duration * 60
-        });
-      },
+      // Note: updateProfile removed - use profile store directly
 
       setLabel: (label: string) => {
         set({ currentLabel: label });
       },
 
       syncWithActiveProfile: () => {
-        // Simplified - just use current profile for now
-        const { profile, state, currentType } = get();
+        const { getActiveProfile, state, currentType } = get();
+        const profile = getActiveProfile();
         
         // Only update if timer is stopped (don't interrupt running timer)
         if (state === TimerState.STOPPED) {
@@ -235,7 +239,8 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       switchToNextTimer: () => {
-        const { currentType, completedSessions, profile } = get();
+        const { currentType, completedSessions, getActiveProfile } = get();
+        const profile = getActiveProfile();
         let newCompletedSessions = completedSessions;
         
         if (currentType === TimerType.FOCUS) {
@@ -259,7 +264,6 @@ export const useTimerStore = create<TimerStore>()(
     {
       name: 'goodtime-timer-store',
       partialize: (state) => ({
-        profile: state.profile,
         completedSessions: state.completedSessions,
         currentLabel: state.currentLabel
       })

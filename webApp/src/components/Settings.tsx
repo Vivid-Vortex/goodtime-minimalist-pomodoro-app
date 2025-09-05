@@ -12,7 +12,7 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels, onOpenProfiles, onOpenAdvanced }) => {
-  const { reset } = useTimerStore();
+  const { reset, syncWithActiveProfile } = useTimerStore();
   const { activeProfile, updateProfile } = useProfileStore();
   const [tempProfile, setTempProfile] = useState(activeProfile);
 
@@ -27,8 +27,8 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
     try {
       if (activeProfile.name) {
         await updateProfile(activeProfile.name, tempProfile);
-        // Reset timer to apply new settings
-        reset();
+        // Sync timer with the updated profile settings
+        syncWithActiveProfile();
       }
       onClose();
     } catch (error) {

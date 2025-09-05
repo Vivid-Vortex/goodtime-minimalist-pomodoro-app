@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useProfileStore } from '../stores/profileStore';
+import { useTimerStore } from '../stores/timerStore';
 
 export function useDataInit() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -11,8 +13,11 @@ export function useDataInit() {
         setIsLoading(true);
         setError(null);
 
-        // Simple initialization - just wait a bit to simulate loading
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Load profiles from database
+        await useProfileStore.getState().loadProfiles();
+        
+        // Sync timer with the active profile
+        useTimerStore.getState().syncWithActiveProfile();
 
         setIsInitialized(true);
       } catch (err) {

@@ -6,6 +6,7 @@ import { TimerState, TimerType } from '../types';
 import { LabelSelector } from './LabelSelector';
 import { useLabelStore } from '../stores/labelStore';
 import { useAppSettingsStore } from '../stores/appSettingsStore';
+import { useProfileStore } from '../stores/profileStore';
 
 interface TimerProps {
   onShowStats?: () => void;
@@ -25,11 +26,13 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     skip,
     reset,
     addTime,
-    setLabel
+    setLabel,
+    syncWithActiveProfile
   } = useTimerStore();
 
   const { selectedLabel } = useLabelStore();
   const { settings } = useAppSettingsStore();
+  const { activeProfile } = useProfileStore();
 
   useEffect(() => {
     // Request notification permission on component mount
@@ -42,6 +45,11 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
       setLabel(selectedLabel.title);
     }
   }, [selectedLabel, setLabel]);
+
+  // Sync timer with active profile when it changes
+  useEffect(() => {
+    syncWithActiveProfile();
+  }, [activeProfile, syncWithActiveProfile]);
 
   const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0;
   const isRunning = state === TimerState.RUNNING;
