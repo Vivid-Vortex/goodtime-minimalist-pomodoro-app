@@ -8,7 +8,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(chmod:*)",
-      "Bash(./manage-webapp.sh)"
+      "Bash(./manage-webapp.sh)",
+      "Bash(npm run typecheck:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": [],
     "ask": []
