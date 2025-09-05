@@ -12,9 +12,9 @@ export const downloadJsonFile = (filename: string, content: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const exportSessionsAsJson = () => {
+export const exportSessionsAsJson = async () => {
   const sessionStore = useSessionStore.getState();
-  const jsonData = sessionStore.exportSessions();
+  const jsonData = await sessionStore.exportSessions();
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `goodtime_sessions_${timestamp}.json`;
   

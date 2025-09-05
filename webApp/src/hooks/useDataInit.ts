@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useProfileStore } from '../stores/profileStore';
 import { useTimerStore } from '../stores/timerStore';
+import { useLabelStore } from '../stores/labelStore';
+import { useSessionStore } from '../stores/sessionStore';
 
 export function useDataInit() {
   const [isInitialized, setIsInitialized] = useState(false);
@@ -13,8 +15,10 @@ export function useDataInit() {
         setIsLoading(true);
         setError(null);
 
-        // Load profiles from database
+        // Load all data from database
         await useProfileStore.getState().loadProfiles();
+        await useLabelStore.getState().loadLabels();
+        await useSessionStore.getState().loadSessions();
         
         // Sync timer with the active profile
         useTimerStore.getState().syncWithActiveProfile();
