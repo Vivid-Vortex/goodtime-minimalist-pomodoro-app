@@ -14,6 +14,7 @@ import {
   getTimerTypeLabel 
 } from '../utils/timer';
 import { useProfileStore } from './profileStore';
+import { useSessionStore } from './sessionStore';
 
 interface TimerStore {
   // Timer state
@@ -213,13 +214,20 @@ export const useTimerStore = create<TimerStore>()(
             timerInterval = null;
           }
           
-          // Save completed session (simplified for now)
-          const { currentType, totalTime, currentLabel } = get();
-          console.log('Session completed:', {
-            label: currentLabel,
+          // Save completed session to database
+          const { currentType, currentLabel, currentSessionStartTime } = get();
+          const sessionDuration = Math.floor((Date.now() - currentSessionStartTime) / 1000);
+          
+          // Save to session store
+          const sessionStore = useSessionStore.getState();
+          sessionStore.addSession({
+            label: currentLabel || 'Default',
             timerType: currentType,
-            duration: totalTime,
-            endTime: Date.now()
+            duration: sessionDuration,
+            endTime: Date.now(),
+            archived: false
+          }).catch(error => {
+            console.error('Failed to save session:', error);
           });
           
           playNotificationSound();

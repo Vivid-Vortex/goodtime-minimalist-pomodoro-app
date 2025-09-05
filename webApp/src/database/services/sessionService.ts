@@ -47,10 +47,10 @@ export class SessionService {
     
     return dbSessions.map(session => ({
       id: session.id,
-      label: session.label_id || 'default',
-      timerType: session.timer_type as TimerType,
+      label: session.labelId || 'default',
+      timerType: session.timerType as TimerType,
       duration: session.duration,
-      endTime: session.end_time,
+      endTime: session.endTime,
       archived: Boolean(session.archived)
     }));
   }
