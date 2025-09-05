@@ -233,6 +233,64 @@ npm run serve:low-mem
 npm run serve
 ```
 
+#### One-Line Production Deployment (Detached Mode)
+
+**Complete Setup & Start (Linux/Mac):**
+```bash
+npm run build:prod && npm install -g serve && nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Minimal Pomodoro WebApp started with PID: $(cat minimal-pomodoro-webapp.pid) on http://localhost:3000"
+```
+
+**Simple Process Management:**
+```bash
+# Start server (if already built)
+nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "✅ Started: PID $(cat minimal-pomodoro-webapp.pid)"
+
+# Stop server
+kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && rm -f minimal-pomodoro-webapp.pid && echo "❌ Stopped: Minimal Pomodoro WebApp" || echo "⚠️  Server not running or PID file missing"
+
+# Check status
+[ -f minimal-pomodoro-webapp.pid ] && kill -0 $(cat minimal-pomodoro-webapp.pid) 2>/dev/null && echo "✅ Running: PID $(cat minimal-pomodoro-webapp.pid)" || echo "❌ Not running"
+
+# Restart server
+kill $(cat minimal-pomodoro-webapp.pid) 2>/dev/null; rm -f minimal-pomodoro-webapp.pid; nohup npm run serve:low-mem > /dev/null 2>&1 & echo $! > minimal-pomodoro-webapp.pid && echo "🔄 Restarted: PID $(cat minimal-pomodoro-webapp.pid)"
+```
+
+**Windows Commands:**
+```cmd
+REM Complete setup and start (Windows CMD)
+npm run build:prod && npm install -g serve && start /B npm run serve:low-mem
+
+REM Or using PowerShell for better process management
+powershell -Command "npm run build:prod; npm install -g serve; $process = Start-Process -NoNewWindow -PassThru npm -ArgumentList 'run', 'serve:low-mem'; $process.Id | Out-File 'minimal-pomodoro-webapp.pid'; Write-Host 'Started with PID:' $process.Id"
+```
+
+#### Automated Management Script
+
+For even simpler management, use the included shell script:
+
+```bash
+# Make script executable (one-time setup)
+chmod +x manage-webapp.sh
+
+# Complete setup and start
+./manage-webapp.sh setup
+
+# Or individual commands
+./manage-webapp.sh build    # Build production version
+./manage-webapp.sh start    # Start server in background
+./manage-webapp.sh status   # Check if running (shows PID and memory usage)
+./manage-webapp.sh stop     # Stop server
+./manage-webapp.sh restart  # Restart server
+```
+
+**Features of management script:**
+- ✅ Automatic `serve` installation if missing
+- 🔍 Process status checking with memory usage
+- 🛡️ Prevents duplicate instances
+- 📝 Clear status messages with emojis
+- 🔄 Safe restart functionality
+- 🧹 Automatic cleanup of stale PID files
+
 #### Manual Production Deployment
 ```bash
 # Build with production optimizations

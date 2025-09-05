@@ -6,7 +6,9 @@
       "Bash(npm install)",
       "Bash(npm run serve:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(chmod:*)",
+      "Bash(./manage-webapp.sh)"
     ],
     "deny": [],
     "ask": []
