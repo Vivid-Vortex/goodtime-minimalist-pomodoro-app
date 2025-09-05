@@ -1182,6 +1182,339 @@ export interface NewFeatureStore {
 - [ ] Performance impact is minimal
 - [ ] Security considerations are addressed
 
+## 🧪 Testing Setup & Guidelines
+
+### Testing Strategy Overview
+
+The Goodtime web application employs a comprehensive testing strategy covering unit tests, integration tests, and end-to-end testing to ensure reliability and maintainability.
+
+#### Testing Framework Stack
+
+```bash
+# Core Testing Libraries
+npm install --save-dev @testing-library/react @testing-library/jest-dom @testing-library/user-event
+npm install --save-dev vitest @vitejs/plugin-react jsdom
+npm install --save-dev @types/testing-library__jest-dom
+
+# Additional Testing Utilities
+npm install --save-dev msw mock-service-worker  # API mocking
+npm install --save-dev @testing-library/react-hooks  # Hook testing
+```
+
+#### Vite Test Configuration
+
+Update `vite.config.ts` to include test setup:
+
+```typescript
+/// <reference types="vitest" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
+
+export default defineConfig({
+  // ... existing config
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: true,
+    // Exclude e2e tests from unit test runs
+    exclude: ['**/node_modules/**', '**/e2e/**']
+  }
+});
+```
+
+#### Test Setup File
+
+Create `src/test/setup.ts`:
+
+```typescript
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+
+// Mock IndexedDB for tests
+const mockIndexedDB = {
+  open: vi.fn(),
+  deleteDatabase: vi.fn(),
+  cmp: vi.fn()
+};
+
+Object.defineProperty(window, 'indexedDB', {
+  value: mockIndexedDB,
+  writable: true
+});
+
+// Mock Notification API
+Object.defineProperty(window, 'Notification', {
+  value: vi.fn().mockImplementation(() => ({})),
+  writable: true
+});
+
+Object.defineProperty(Notification, 'permission', {
+  value: 'granted',
+  writable: true
+});
+
+Object.defineProperty(Notification, 'requestPermission', {
+  value: vi.fn().mockResolvedValue('granted'),
+  writable: true
+});
+
+// Mock AudioContext for notification sounds
+const mockAudioContext = {
+  createOscillator: vi.fn().mockReturnValue({
+    connect: vi.fn(),
+    frequency: { value: 0 },
+    type: 'sine',
+    start: vi.fn(),
+    stop: vi.fn()
+  }),
+  createGain: vi.fn().mockReturnValue({
+    connect: vi.fn(),
+    gain: { value: 0 }
+  }),
+  destination: {}
+};
+
+Object.defineProperty(window, 'AudioContext', {
+  value: vi.fn().mockImplementation(() => mockAudioContext),
+  writable: true
+});
+```
+
+### Test Categories & Examples
+
+#### 1. Store Testing (Unit Tests)
+
+Test Zustand stores in isolation:
+
+```typescript
+// src/stores/__tests__/timerStore.test.ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { useTimerStore } from '../timerStore';
+import { TimerState, TimerType } from '../../types';
+
+describe('TimerStore', () => {
+  beforeEach(() => {
+    useTimerStore.setState({
+      state: TimerState.STOPPED,
+      currentType: TimerType.FOCUS,
+      timeRemaining: 1500,
+      totalTime: 1500
+    });
+  });
+
+  it('should start timer and change state to RUNNING', () => {
+    const { start, state } = useTimerStore.getState();
+    
+    start();
+    
+    expect(useTimerStore.getState().state).toBe(TimerState.RUNNING);
+  });
+
+  it('should pause running timer', () => {
+    const { start, pause } = useTimerStore.getState();
+    
+    start();
+    pause();
+    
+    expect(useTimerStore.getState().state).toBe(TimerState.PAUSED);
+  });
+});
+```
+
+#### 2. Component Testing (Integration Tests)
+
+Test components with their store integrations:
+
+```typescript
+// src/components/__tests__/Timer.test.tsx
+import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Timer } from '../Timer';
+
+describe('Timer Component', () => {
+  it('should render timer display', () => {
+    render(<Timer />);
+    
+    expect(screen.getByText(/25:00/)).toBeInTheDocument();
+  });
+
+  it('should start timer when play button is clicked', async () => {
+    render(<Timer />);
+    
+    const playButton = screen.getByLabelText(/play/i);
+    fireEvent.click(playButton);
+    
+    // Timer should show running state
+    expect(screen.getByLabelText(/pause/i)).toBeInTheDocument();
+  });
+});
+```
+
+#### 3. Database Testing
+
+Test IndexedDB operations with mocks:
+
+```typescript
+// src/database/__tests__/sessionService.test.ts
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { sessionService } from '../services/sessionService';
+import { TimerType } from '../../types';
+
+// Mock the database manager
+vi.mock('../database', () => ({
+  default: {
+    getInstance: () => ({
+      insertSession: vi.fn().mockResolvedValue({}),
+      getAllSessions: vi.fn().mockResolvedValue([]),
+      deleteSession: vi.fn().mockResolvedValue({})
+    })
+  }
+}));
+
+describe('SessionService', () => {
+  it('should add new session with generated ID', async () => {
+    const sessionData = {
+      label: 'Test Work',
+      timerType: TimerType.FOCUS,
+      duration: 1500,
+      endTime: Date.now(),
+      archived: false
+    };
+
+    const result = await sessionService.addSession(sessionData);
+    
+    expect(result.id).toBeDefined();
+    expect(result.label).toBe('Test Work');
+  });
+});
+```
+
+#### 4. Utility Testing
+
+Test pure functions and utilities:
+
+```typescript
+// src/utils/__tests__/timer.test.ts
+import { describe, it, expect } from 'vitest';
+import { formatTime, getDurationForTimerType } from '../timer';
+import { TimerType, DEFAULT_TIMER_PROFILE } from '../../types';
+
+describe('Timer Utilities', () => {
+  it('should format time correctly in minutes mode', () => {
+    expect(formatTime(1500, 'minutes', true)).toBe('25:00');
+    expect(formatTime(90, 'minutes', true)).toBe('1:30');
+  });
+
+  it('should get correct duration for timer type', () => {
+    const duration = getDurationForTimerType(DEFAULT_TIMER_PROFILE, TimerType.FOCUS);
+    expect(duration).toBe(25);
+  });
+});
+```
+
+### Test Scripts
+
+Add to `package.json`:
+
+```json
+{
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch"
+  }
+}
+```
+
+### Testing Best Practices
+
+#### Do's ✅
+- Test behavior, not implementation details
+- Use meaningful test descriptions
+- Test edge cases and error conditions
+- Mock external dependencies (APIs, browser APIs)
+- Test component integration with stores
+- Use `data-testid` for complex queries
+
+#### Don'ts ❌
+- Don't test internal state directly
+- Don't test third-party library internals
+- Don't write tests that depend on specific CSS
+- Don't mock everything (test real integrations when possible)
+
+#### Test File Organization
+```
+src/
+├── components/
+│   ├── __tests__/
+│   │   ├── Timer.test.tsx
+│   │   └── Statistics.test.tsx
+├── stores/
+│   ├── __tests__/
+│   │   ├── timerStore.test.ts
+│   │   └── sessionStore.test.ts
+├── utils/
+│   ├── __tests__/
+│   │   └── timer.test.ts
+└── test/
+    ├── setup.ts
+    └── mocks/
+        └── database.ts
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests once (CI mode)
+npm run test:run
+
+# Run with coverage report
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+
+# Run specific test file
+npm run test Timer
+
+# Run tests matching pattern
+npm run test -- --grep "timer"
+```
+
+### Continuous Integration
+
+Example GitHub Actions workflow (`.github/workflows/test.yml`):
+
+```yaml
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - run: npm ci
+      - run: npm run test:run
+      - run: npm run build
+```
+
 ## 📚 Additional Resources
 
 ### External Documentation

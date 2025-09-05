@@ -33,7 +33,7 @@ class IndexedDBManager {
 
         // Create timer profiles store
         if (!db.objectStoreNames.contains('timerProfiles')) {
-          const profilesStore = db.createObjectStore('timerProfiles', { keyPath: 'name' });
+          db.createObjectStore('timerProfiles', { keyPath: 'name' });
         }
 
         // Create app settings store

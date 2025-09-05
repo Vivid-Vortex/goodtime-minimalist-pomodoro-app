@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Timer } from './components/Timer';
 import { Settings, SettingsButton } from './components/Settings';
 import { Statistics } from './components/Statistics';
@@ -15,7 +15,7 @@ function App() {
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { currentType } = useTimerStore();
-  const { isInitialized, isLoading, error } = useDataInit();
+  const { isLoading, error } = useDataInit();
 
   // Update document title based on timer state
   useEffect(() => {
