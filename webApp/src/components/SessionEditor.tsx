@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit3, Trash2, X, Check, Calendar, Clock, Save } from 'lucide-react';
+import { Plus, Edit3, Trash2, X, Calendar, Save } from 'lucide-react';
 import { useSessionStore } from '../stores/sessionStore';
 import { useLabelStore } from '../stores/labelStore';
 import { TimerType } from '../types';
@@ -42,7 +42,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
   const handleStartCreate = () => {
     const now = new Date();
     setFormData({
-      label: activeLabels[0]?.name || 'Work',
+      label: activeLabels[0]?.title || 'Work',
       timerType: TimerType.FOCUS,
       duration: 1500,
       endTime: now.getTime(),
@@ -159,8 +159,8 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
             className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {activeLabels.map((label) => (
-              <option key={label.id} value={label.name}>
-                {label.name}
+              <option key={label.id} value={label.title}>
+                {label.title}
               </option>
             ))}
           </select>
@@ -297,8 +297,8 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {recentSessions.length > 0 ? (
               recentSessions.map((session) => {
-                const label = activeLabels.find(l => l.name === session.label);
-                const labelColor = label ? getLabelColor(label.colorIndex) : '#6b7280';
+                const label = activeLabels.find(l => l.title === session.label);
+                const labelColor = label ? getLabelColor(label.color) : '#6b7280';
                 
                 return (
                   <div

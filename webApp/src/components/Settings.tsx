@@ -12,7 +12,7 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabels, onOpenProfiles, onOpenAdvanced }) => {
-  const { reset, syncWithActiveProfile } = useTimerStore();
+  const { syncWithActiveProfile } = useTimerStore();
   const { activeProfile, updateProfile } = useProfileStore();
   const [tempProfile, setTempProfile] = useState(activeProfile);
 

@@ -27,19 +27,19 @@ export const Labels: React.FC<LabelsProps> = ({ isOpen, onClose }) => {
   const [showArchived, setShowArchived] = useState(false);
 
   const activeLabels = getActiveLabels();
-  const archivedLabels = labels.filter(l => l.isArchived);
+  const archivedLabels = labels.filter(l => l.archived);
 
   const handleStartEdit = (label: Label) => {
     setEditingId(label.id);
-    setEditName(label.name);
-    setEditColorIndex(label.colorIndex);
+    setEditName(label.title);
+    setEditColorIndex(label.color);
   };
 
   const handleSaveEdit = () => {
     if (editingId && editName.trim()) {
       updateLabel(editingId, {
-        name: editName.trim(),
-        colorIndex: editColorIndex
+        title: editName.trim(),
+        color: editColorIndex
       });
       setEditingId(null);
       setEditName('');
@@ -54,10 +54,9 @@ export const Labels: React.FC<LabelsProps> = ({ isOpen, onClose }) => {
   const handleCreate = () => {
     if (newName.trim()) {
       addLabel({
-        name: newName.trim(),
-        colorIndex: newColorIndex,
-        useDefaultTimeProfile: true,
-        isArchived: false
+        title: newName.trim(),
+        color: newColorIndex,
+        archived: false
       });
       setIsCreating(false);
       setNewName('');
@@ -185,7 +184,7 @@ export const Labels: React.FC<LabelsProps> = ({ isOpen, onClose }) => {
             >
               <div
                 className="w-4 h-4 rounded-full border border-gray-300"
-                style={{ backgroundColor: getLabelColor(label.colorIndex) }}
+                style={{ backgroundColor: getLabelColor(label.color) }}
               />
               
               {editingId === label.id ? (
@@ -221,7 +220,7 @@ export const Labels: React.FC<LabelsProps> = ({ isOpen, onClose }) => {
               ) : (
                 <>
                   <span className="flex-1 font-medium text-gray-800">
-                    {label.name}
+                    {label.title}
                     {label.id === 'default' && (
                       <span className="ml-2 text-xs text-gray-500">(Default)</span>
                     )}
@@ -268,9 +267,9 @@ export const Labels: React.FC<LabelsProps> = ({ isOpen, onClose }) => {
                 >
                   <div
                     className="w-4 h-4 rounded-full border border-gray-300"
-                    style={{ backgroundColor: getLabelColor(label.colorIndex) }}
+                    style={{ backgroundColor: getLabelColor(label.color) }}
                   />
-                  <span className="flex-1 text-gray-600">{label.name}</span>
+                  <span className="flex-1 text-gray-600">{label.title}</span>
                   <div className="flex gap-1">
                     <button
                       onClick={() => archiveLabel(label.id, false)}

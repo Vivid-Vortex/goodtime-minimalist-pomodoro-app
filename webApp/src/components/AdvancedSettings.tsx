@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Volume2, 
-  VolumeX, 
   Bell, 
-  BellOff, 
   Moon, 
   Sun, 
   Monitor,
@@ -16,7 +13,7 @@ import {
   Target,
   Calendar
 } from 'lucide-react';
-import { useAppSettingsStore, DEFAULT_APP_SETTINGS } from '../stores/appSettingsStore';
+import { useAppSettingsStore } from '../stores/appSettingsStore';
 
 interface AdvancedSettingsProps {
   isOpen: boolean;

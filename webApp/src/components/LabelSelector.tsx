@@ -41,10 +41,10 @@ export const LabelSelector: React.FC<LabelSelectorProps> = ({
       >
         <div
           className="w-3 h-3 rounded-full border border-gray-300"
-          style={{ backgroundColor: getLabelColor(selectedLabel.colorIndex) }}
+          style={{ backgroundColor: getLabelColor(selectedLabel.color) }}
         />
         <span className="flex-1 font-medium text-gray-800 truncate">
-          {selectedLabel.name}
+          {selectedLabel.title}
         </span>
         <ChevronDown size={16} className="text-gray-500" />
       </button>
@@ -73,10 +73,10 @@ export const LabelSelector: React.FC<LabelSelectorProps> = ({
                 >
                   <div
                     className="w-3 h-3 rounded-full border border-gray-300"
-                    style={{ backgroundColor: getLabelColor(label.colorIndex) }}
+                    style={{ backgroundColor: getLabelColor(label.color) }}
                   />
                   <span className="flex-1 font-medium text-gray-800 truncate">
-                    {label.name}
+                    {label.title}
                   </span>
                   {selectedLabel.id === label.id && (
                     <div className="w-2 h-2 bg-blue-500 rounded-full" />

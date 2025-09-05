@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit3, Trash2, X, Check, Copy, Clock, Play, RotateCcw } from 'lucide-react';
-import { useProfileStore, TimerProfileWithId, PRESET_PROFILES } from '../stores/profileStore';
+import { useProfileStore, TimerProfileWithId } from '../stores/profileStore';
 import { TimerProfile } from '../types';
 
 interface TimerProfilesProps {
@@ -104,7 +104,7 @@ export const TimerProfiles: React.FC<TimerProfilesProps> = ({
   };
 
   const handleSelectProfile = (profile: TimerProfileWithId) => {
-    setActiveProfile(profile.id);
+    setActiveProfile(profile.name!);
     onProfileSelect?.(profile);
   };
 

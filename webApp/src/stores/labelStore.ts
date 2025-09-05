@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { Label } from '../types';
 import { labelService } from '../database/services/labelService';
 
+export type { Label } from '../types';
+
 export const LABEL_COLORS = [
   '#ef4444', // red-500
   '#f97316', // orange-500

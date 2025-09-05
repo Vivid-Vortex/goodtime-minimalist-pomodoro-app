@@ -8,7 +8,7 @@ export interface TimerProfileWithId extends TimerProfile {
   createdAt: number;
 }
 
-export const PRESET_PROFILES: Omit<TimerProfileWithId, 'id' | 'createdAt'>[] = [
+export const PRESET_PROFILES: (Omit<TimerProfileWithId, 'id' | 'createdAt'> & { name: string })[] = [
   {
     name: '25/5 Classic',
     isCountdown: true,
