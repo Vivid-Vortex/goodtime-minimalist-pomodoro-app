@@ -345,8 +345,13 @@ class IndexedDBManager {
 
   // Export/Import methods
   async exportData(): Promise<string> {
+    // Force a fresh read from IndexedDB to ensure we have the latest data
+    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure any pending writes are complete
+    
     const sessions = await this.getAllSessions();
     const labels = await this.getAllLabels();
+    
+    console.log(`Exporting ${sessions.length} sessions`); // Debug log
     
     // Create a map of label IDs to label titles for quick lookup
     const labelMap = new Map();

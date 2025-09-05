@@ -20,7 +20,8 @@ export class SessionService {
       timerType: newSession.timerType,
       duration: newSession.duration,
       endTime: newSession.endTime,
-      archived: newSession.archived
+      archived: newSession.archived,
+      notes: (sessionData as any).notes || ""
     });
 
     return newSession;

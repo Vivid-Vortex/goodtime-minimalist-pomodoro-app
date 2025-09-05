@@ -15,6 +15,7 @@ import {
 } from '../utils/timer';
 import { useProfileStore } from './profileStore';
 import { useSessionStore } from './sessionStore';
+import { useLabelStore } from './labelStore';
 
 interface TimerStore {
   // Timer state
@@ -134,8 +135,10 @@ export const useTimerStore = create<TimerStore>()(
           // Only save if the session ran for at least 1 second
           if (sessionDuration > 0) {
             const sessionStore = useSessionStore.getState();
+            // Get the current selected label ID from the label store
+            const labelStore = useLabelStore.getState();
             sessionStore.addSession({
-              label: currentLabel || 'Default',
+              label: labelStore.selectedLabel.id,
               timerType: currentType,
               duration: sessionDuration,
               endTime: Date.now(),
@@ -242,8 +245,10 @@ export const useTimerStore = create<TimerStore>()(
           
           // Save to session store
           const sessionStore = useSessionStore.getState();
+          // Get the current selected label ID from the label store
+          const labelStore = useLabelStore.getState();
           sessionStore.addSession({
-            label: currentLabel || 'Default',
+            label: labelStore.selectedLabel.id,
             timerType: currentType,
             duration: sessionDuration,
             endTime: Date.now(),

@@ -89,6 +89,8 @@ export const useSessionStore = create<SessionStore>()(
 
       exportSessions: async () => {
         try {
+          // First reload sessions from database to ensure we have the latest data
+          await get().loadSessions();
           return await sessionService.exportSessions();
         } catch (error) {
           console.error('Failed to export sessions:', error);
