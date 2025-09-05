@@ -4,7 +4,13 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      // Optimize React for production
+      jsxRuntime: 'automatic',
+      babel: {
+        compact: true,
+      },
+    }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -32,7 +38,40 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    // Optimize for minimal resource usage
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        // Manual chunking to reduce memory usage
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['lucide-react'],
+          state: ['zustand']
+        },
+      },
+    },
+    // Reduce chunk size warnings
+    chunkSizeWarningLimit: 1000,
+    // Optimize assets
+    assetsDir: 'assets',
+    cssCodeSplit: true,
+  },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'zustand', 'lucide-react'],
+  },
   server: {
+    port: 3000,
+    host: true
+  },
+  preview: {
     port: 3000,
     host: true
   }
