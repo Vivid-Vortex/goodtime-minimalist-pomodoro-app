@@ -347,19 +347,25 @@ class IndexedDBManager {
   async exportData(): Promise<string> {
     const sessions = await this.getAllSessions();
     const labels = await this.getAllLabels();
-    const profiles = await this.getAllTimerProfiles();
-    const stats = await this.getSessionStats();
+    
+    // Create a map of label IDs to label titles for quick lookup
+    const labelMap = new Map();
+    labels.forEach(label => {
+      labelMap.set(label.id, label.title);
+    });
 
-    const exportData = {
-      exportDate: new Date().toISOString(),
-      version: '1.0',
-      statistics: stats,
-      sessions: sessions,
-      labels: labels,
-      timerProfiles: profiles
-    };
+    // Transform sessions to match the desired Android format
+    const transformedSessions = sessions.map(session => ({
+      archived: session.archived || false,
+      duration: Math.round(session.duration / 60), // Convert seconds to minutes
+      end: new Date(session.endTime).toISOString(),
+      interruptions: 0, // Not tracked in current version, defaulting to 0
+      is_break: session.timerType === 'BREAK' || session.timerType === 'LONG_BREAK',
+      label: labelMap.get(session.labelId) || 'Default',
+      notes: session.notes || ""
+    }));
 
-    return JSON.stringify(exportData, null, 2);
+    return JSON.stringify(transformedSessions);
   }
 
   async clearAllData(): Promise<void> {

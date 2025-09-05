@@ -40,3 +40,6 @@ Configurable start of day/week: Set custom rules for how stat tracking begins.
 
 Screensaver mode: Minimize distractions when in session (premium).
 
+Desired export json format:
+[{"archived":false,"duration":6,"end":"2025-06-06T20:55:14.977","interruptions":326,"is_break":false,"label":"W1 main","notes":""},{"archived":false,"duration":1,"end":"2025-06-06T15:23:04.292","interruptions":0,"is_break":true,"label":"W1 main","notes":""},{"archived":false,"duration":72,"end":"2025-06-06T15:22:04.215","interruptions":0,"is_break":false,"label":"W1 main","notes":""},{"archived":false,"duration":1,"end":"2025-06-06T14:10:03.815","interruptions":0,"is_break":true,"label":"W1 main","notes":""},{"archived":false,"duration":72,"end":"2025-06-06T14:09:03.735","interruptions":66,"is_break":false,"label":"W1 main","notes":""},{"archived":false,"duration":1,"end":"2025-06-06T11:50:15.467","interruptions":0,"is_break":true,"label":"W1 main","notes":""},{"archived":false,"duration":72,"end":"2025-06-06T11:49:15.403","interruptions":33,"is_break":false,"label":"W1 main","notes":""}]
+

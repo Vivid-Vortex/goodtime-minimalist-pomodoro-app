@@ -10,7 +10,9 @@
       "Bash(chmod:*)",
       "Bash(./manage-webapp.sh)",
       "Bash(npm run typecheck:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(npm run lint)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

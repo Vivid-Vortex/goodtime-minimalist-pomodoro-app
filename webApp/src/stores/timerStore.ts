@@ -125,10 +125,32 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       stop: () => {
+        const { currentSessionStartTime, currentType, currentLabel, totalTime, timeRemaining } = get();
+        
+        // If there was an active session, save it as a partial session
+        if (currentSessionStartTime > 0) {
+          const sessionDuration = Math.floor((Date.now() - currentSessionStartTime) / 1000);
+          
+          // Only save if the session ran for at least 1 second
+          if (sessionDuration > 0) {
+            const sessionStore = useSessionStore.getState();
+            sessionStore.addSession({
+              label: currentLabel || 'Default',
+              timerType: currentType,
+              duration: sessionDuration,
+              endTime: Date.now(),
+              archived: false
+            }).catch(error => {
+              console.error('Failed to save partial session:', error);
+            });
+          }
+        }
+        
         set({
           state: TimerState.STOPPED,
           isRunning: false,
-          timeRemaining: get().totalTime
+          timeRemaining: get().totalTime,
+          currentSessionStartTime: 0
         });
         
         if (timerInterval) {
