@@ -27,7 +27,8 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
     reset,
     addTime,
     setLabel,
-    syncWithActiveProfile
+    syncWithActiveProfile,
+    initialize
   } = useTimerStore();
 
   const { selectedLabel } = useLabelStore();
@@ -37,7 +38,9 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
   useEffect(() => {
     // Request notification permission on component mount
     requestNotificationPermission();
-  }, []);
+    // Initialize timer with proper values
+    initialize();
+  }, [initialize]);
 
   // Update timer label when selected label changes
   useEffect(() => {

@@ -42,6 +42,7 @@ interface TimerStore {
   addTime: (seconds: number) => void;
   setLabel: (label: string) => void;
   syncWithActiveProfile: () => void;
+  initialize: () => void;
   
   // Getters
   getActiveProfile: () => TimerProfile;
@@ -51,7 +52,7 @@ interface TimerStore {
   switchToNextTimer: () => void;
 }
 
-let timerInterval: number | null = null;
+let timerInterval: ReturnType<typeof setInterval> | null = null;
 
 export const useTimerStore = create<TimerStore>()(
   persist(
@@ -59,8 +60,8 @@ export const useTimerStore = create<TimerStore>()(
       // Initial state
       state: TimerState.STOPPED,
       currentType: TimerType.FOCUS,
-      timeRemaining: DEFAULT_TIMER_PROFILE.workDuration * 60,
-      totalTime: DEFAULT_TIMER_PROFILE.workDuration * 60,
+      timeRemaining: (DEFAULT_TIMER_PROFILE.workDuration || 72) * 60,
+      totalTime: (DEFAULT_TIMER_PROFILE.workDuration || 72) * 60,
       isRunning: false,
       
       completedSessions: 0,
@@ -72,10 +73,24 @@ export const useTimerStore = create<TimerStore>()(
         try {
           // Get the active profile from profile store
           const profileState = useProfileStore.getState();
-          return profileState.activeProfile || DEFAULT_TIMER_PROFILE;
+          const profile = profileState.activeProfile || DEFAULT_TIMER_PROFILE;
+          
+          // Ensure all required properties have valid values
+          return {
+            ...DEFAULT_TIMER_PROFILE,
+            ...profile,
+            workDuration: profile.workDuration || DEFAULT_TIMER_PROFILE.workDuration || 72,
+            breakDuration: profile.breakDuration || DEFAULT_TIMER_PROFILE.breakDuration || 5,
+            longBreakDuration: profile.longBreakDuration || DEFAULT_TIMER_PROFILE.longBreakDuration || 15
+          };
         } catch (error) {
           console.warn('Failed to get active profile, using default:', error);
-          return DEFAULT_TIMER_PROFILE;
+          return {
+            ...DEFAULT_TIMER_PROFILE,
+            workDuration: 72,
+            breakDuration: 5,
+            longBreakDuration: 15
+          };
         }
       },
 
@@ -126,7 +141,7 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       stop: () => {
-        const { currentSessionStartTime, currentType, currentLabel, totalTime, timeRemaining } = get();
+        const { currentSessionStartTime, currentType } = get();
         
         // If there was an active session, save it as a partial session
         if (currentSessionStartTime > 0) {
@@ -216,9 +231,42 @@ export const useTimerStore = create<TimerStore>()(
         // Only update if timer is stopped (don't interrupt running timer)
         if (state === TimerState.STOPPED) {
           const duration = getDurationForTimerType(profile, currentType);
+          const timeInSeconds = duration * 60;
+          
+          // Safety check for valid time values
+          if (isNaN(timeInSeconds) || timeInSeconds <= 0) {
+            const defaultTime = 72 * 60; // 72 minutes default
+            set({
+              timeRemaining: defaultTime,
+              totalTime: defaultTime
+            });
+          } else {
+            set({
+              timeRemaining: timeInSeconds,
+              totalTime: timeInSeconds
+            });
+          }
+        }
+      },
+
+      // Initialize timer with proper values
+      initialize: () => {
+        const { getActiveProfile, currentType } = get();
+        const profile = getActiveProfile();
+        const duration = getDurationForTimerType(profile, currentType);
+        const timeInSeconds = duration * 60;
+        
+        // Safety check and set proper initial values
+        if (isNaN(timeInSeconds) || timeInSeconds <= 0) {
+          const defaultTime = 72 * 60; // 72 minutes default
           set({
-            timeRemaining: duration * 60,
-            totalTime: duration * 60
+            timeRemaining: defaultTime,
+            totalTime: defaultTime
+          });
+        } else {
+          set({
+            timeRemaining: timeInSeconds,
+            totalTime: timeInSeconds
           });
         }
       },
@@ -240,7 +288,7 @@ export const useTimerStore = create<TimerStore>()(
           }
           
           // Save completed session to database
-          const { currentType, currentLabel, currentSessionStartTime } = get();
+          const { currentType, currentSessionStartTime } = get();
           const sessionDuration = Math.floor((Date.now() - currentSessionStartTime) / 1000);
           
           // Save to session store

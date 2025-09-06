@@ -12,7 +12,8 @@
       "Bash(npm run typecheck:*)",
       "WebFetch(domain:localhost)",
       "Bash(npm run lint)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []

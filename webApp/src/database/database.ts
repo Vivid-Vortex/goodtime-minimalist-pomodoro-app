@@ -45,9 +45,9 @@ class DatabaseManager {
       const profiles = await this.indexedDB.getAllTimerProfiles();
       if (profiles.length === 0) {
         await this.indexedDB.insertTimerProfile({
-          name: '25/5',
+          name: '72/5',
           isCountdown: true,
-          workDuration: 25,
+          workDuration: 72,
           isBreakEnabled: true,
           breakDuration: 5,
           isLongBreakEnabled: false,
@@ -64,25 +64,36 @@ class DatabaseManager {
   // Session methods
   public insertSession(session: {
     id: string;
-    labelId?: string;
+    label?: string;
     timerType: string;
     duration: number;
     endTime: number;
     archived?: boolean;
     notes?: string;
+    interruptions?: number;
   }): Promise<void> {
-    return this.indexedDB.insertSession(session);
+    return this.indexedDB.insertSession({
+      ...session,
+      labelId: session.label || 'default',
+      archived: session.archived || false
+    });
   }
 
   public updateSession(id: string, updates: {
-    labelId?: string;
+    label?: string;
     timerType?: string;
     duration?: number;
     endTime?: number;
     archived?: boolean;
     notes?: string;
+    interruptions?: number;
   }): Promise<void> {
-    return this.indexedDB.updateSession(id, updates);
+    const indexedDBUpdates: any = { ...updates };
+    if (updates.label) {
+      indexedDBUpdates.labelId = updates.label;
+      delete indexedDBUpdates.label;
+    }
+    return this.indexedDB.updateSession(id, indexedDBUpdates);
   }
 
   public deleteSession(id: string): Promise<void> {

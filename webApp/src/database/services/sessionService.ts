@@ -16,7 +16,7 @@ export class SessionService {
 
     await this.db.insertSession({
       id: newSession.id,
-      labelId: newSession.label,
+      label: newSession.label,
       timerType: newSession.timerType,
       duration: newSession.duration,
       endTime: newSession.endTime,
@@ -30,7 +30,7 @@ export class SessionService {
   async updateSession(id: string, updates: Partial<Omit<Session, 'id'>>): Promise<void> {
     const dbUpdates: any = {};
     
-    if (updates.label !== undefined) dbUpdates.labelId = updates.label;
+    if (updates.label !== undefined) dbUpdates.label = updates.label;
     if (updates.timerType !== undefined) dbUpdates.timerType = updates.timerType;
     if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
     if (updates.endTime !== undefined) dbUpdates.endTime = updates.endTime;
@@ -48,7 +48,7 @@ export class SessionService {
     
     return dbSessions.map(session => ({
       id: session.id,
-      label: session.labelId || 'default',
+      label: session.label || 'default',
       timerType: session.timerType as TimerType,
       duration: session.duration,
       endTime: session.endTime,

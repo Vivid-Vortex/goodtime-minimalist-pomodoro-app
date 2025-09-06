@@ -1,6 +1,11 @@
 import { TimerProfile, TimerType } from '../types';
 
 export const formatTime = (seconds: number, format: 'minutes' | 'hours' = 'hours', showSeconds: boolean = true): string => {
+  // Safety check for NaN or invalid values
+  if (isNaN(seconds) || seconds < 0) {
+    seconds = 0;
+  }
+  
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const remainingSeconds = seconds % 60;
@@ -27,13 +32,13 @@ export const formatTime = (seconds: number, format: 'minutes' | 'hours' = 'hours
 export const getDurationForTimerType = (profile: TimerProfile, timerType: TimerType): number => {
   switch (timerType) {
     case TimerType.FOCUS:
-      return profile.workDuration;
+      return profile.workDuration || 72;
     case TimerType.BREAK:
-      return profile.breakDuration;
+      return profile.breakDuration || 5;
     case TimerType.LONG_BREAK:
-      return profile.longBreakDuration;
+      return profile.longBreakDuration || 15;
     default:
-      return profile.workDuration;
+      return profile.workDuration || 72;
   }
 };
 

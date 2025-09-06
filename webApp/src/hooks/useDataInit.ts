@@ -20,7 +20,8 @@ export function useDataInit() {
         await useLabelStore.getState().loadLabels();
         await useSessionStore.getState().loadSessions();
         
-        // Sync timer with the active profile
+        // Initialize and sync timer with the active profile
+        useTimerStore.getState().initialize();
         useTimerStore.getState().syncWithActiveProfile();
 
         setIsInitialized(true);
