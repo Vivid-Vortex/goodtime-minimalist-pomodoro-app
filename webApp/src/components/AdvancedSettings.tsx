@@ -71,7 +71,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
   }> = ({ enabled, onChange, label, description }) => (
     <div className="flex items-start justify-between">
       <div className="flex-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
         {description && (
           <p className="text-xs text-gray-500 mt-1">{description}</p>
         )}
@@ -100,7 +100,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
     unit?: string;
   }> = ({ value, onChange, min, max, label, unit = '' }) => (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         {label}: {value}{unit}
       </label>
       <input
@@ -118,12 +118,12 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Advanced Settings</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 dark:text-gray-100">Advanced Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
@@ -132,7 +132,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
         <div className="grid gap-8 md:grid-cols-2">
           {/* Notifications & Sounds */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Bell size={20} />
               Notifications & Sounds
             </h3>
@@ -172,20 +172,20 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
           {/* Appearance */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Monitor size={20} />
               Appearance
             </h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Theme</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => updateSettings({ theme: 'light' })}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
                     settings.theme === 'light'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   <Sun size={16} />
@@ -196,7 +196,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
                     settings.theme === 'dark'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   <Moon size={16} />
@@ -207,7 +207,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
                     settings.theme === 'auto'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   <Monitor size={16} />
@@ -217,14 +217,14 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Timer Display Format</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Timer Display Format</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => updateSettings({ timerDisplayFormat: 'minutes' })}
                   className={`px-3 py-2 rounded-lg border transition-colors ${
                     settings.timerDisplayFormat === 'minutes'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   Minutes Only
@@ -234,7 +234,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
                   className={`px-3 py-2 rounded-lg border transition-colors ${
                     settings.timerDisplayFormat === 'hours'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   Hours:Minutes
@@ -262,7 +262,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
           {/* Timer Behavior */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Target size={20} />
               Timer Behavior
             </h3>
@@ -298,20 +298,20 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
           {/* Statistics & Goals */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Calendar size={20} />
               Statistics & Goals
             </h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start of Week</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start of Week</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => updateSettings({ startOfWeek: 'monday' })}
                   className={`px-3 py-2 rounded-lg border transition-colors ${
                     settings.startOfWeek === 'monday'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   Monday
@@ -321,7 +321,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
                   className={`px-3 py-2 rounded-lg border transition-colors ${
                     settings.startOfWeek === 'sunday'
                       ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:bg-gray-50'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:bg-gray-50 dark:bg-gray-700/50 dark:hover:bg-gray-600'
                   }`}
                 >
                   Sunday
@@ -350,7 +350,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
           {/* Privacy & Data */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Shield size={20} />
               Privacy & Data
             </h3>
@@ -381,7 +381,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
           {/* Advanced Features */}
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
               <Keyboard size={20} />
               Advanced Features
             </h3>
@@ -393,7 +393,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
               description="Enable keyboard shortcuts for timer control"
             />
             
-            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
               <strong>Shortcuts:</strong> Space = Play/Pause, S = Stop, R = Reset, + = Add 60s
             </div>
           </div>
@@ -401,18 +401,18 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
 
         {/* Import/Export & Reset */}
         <div className="mt-8 pt-8 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Backup & Reset</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Backup & Reset</h3>
           
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleExportSettings}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
             >
               <Download size={16} />
               Export Settings
             </button>
             
-            <label className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors cursor-pointer">
+            <label className="flex items-center gap-2 px-4 py-2 bg-green-500 dark:bg-green-600 text-white rounded-lg hover:bg-green-600 transition-colors cursor-pointer">
               <Upload size={16} />
               Import Settings
               <input
@@ -425,7 +425,7 @@ export const AdvancedSettings: React.FC<AdvancedSettingsProps> = ({ isOpen, onCl
             
             <button
               onClick={handleResetSettings}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 transition-colors"
             >
               <RotateCcw size={16} />
               Reset to Defaults

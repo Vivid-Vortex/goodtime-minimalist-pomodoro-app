@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import DatabaseManager from '../database/database';
 
 export interface AppSettings {
   // Notifications
@@ -60,10 +61,11 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 interface AppSettingsStore {
   settings: AppSettings;
-  updateSettings: (updates: Partial<AppSettings>) => void;
+  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   resetToDefaults: () => void;
   exportSettings: () => string;
   importSettings: (settingsJson: string) => boolean;
+  loadSettingsFromCloud: () => Promise<void>;
 }
 
 export const useAppSettingsStore = create<AppSettingsStore>()(
@@ -71,10 +73,26 @@ export const useAppSettingsStore = create<AppSettingsStore>()(
     (set, get) => ({
       settings: DEFAULT_APP_SETTINGS,
 
-      updateSettings: (updates) => {
-        set((state) => ({
-          settings: { ...state.settings, ...updates }
-        }));
+      updateSettings: async (updates) => {
+        const newSettings = { ...get().settings, ...updates };
+        
+        // Update local state immediately
+        set({ settings: newSettings });
+        
+        // Sync to cloud database
+        try {
+          const dbManager = DatabaseManager.getInstance();
+          if (dbManager.isCloudConnected()) {
+            // Save each setting to cloud database
+            for (const [key, value] of Object.entries(updates)) {
+              await dbManager.setSetting(`appSettings.${key}`, JSON.stringify(value));
+            }
+            console.log('Settings synced to cloud:', Object.keys(updates));
+          }
+        } catch (error) {
+          console.warn('Failed to sync settings to cloud:', error);
+          // Don't revert local changes - they're still saved locally
+        }
       },
 
       resetToDefaults: () => {
@@ -102,6 +120,39 @@ export const useAppSettingsStore = create<AppSettingsStore>()(
           return false;
         } catch {
           return false;
+        }
+      },
+
+      loadSettingsFromCloud: async () => {
+        try {
+          const dbManager = DatabaseManager.getInstance();
+          if (!dbManager.isCloudConnected()) {
+            return;
+          }
+
+          const cloudSettings: Partial<AppSettings> = {};
+          const settingKeys = Object.keys(DEFAULT_APP_SETTINGS) as Array<keyof AppSettings>;
+
+          // Load each setting from cloud
+          for (const key of settingKeys) {
+            try {
+              const value = await dbManager.getSetting(`appSettings.${key}`);
+              if (value !== null) {
+                cloudSettings[key] = JSON.parse(value) as any;
+              }
+            } catch (error) {
+              console.warn(`Failed to load setting ${key} from cloud:`, error);
+            }
+          }
+
+          // Merge cloud settings with current settings
+          if (Object.keys(cloudSettings).length > 0) {
+            const mergedSettings = { ...get().settings, ...cloudSettings };
+            set({ settings: mergedSettings });
+            console.log('Loaded settings from cloud:', Object.keys(cloudSettings));
+          }
+        } catch (error) {
+          console.warn('Failed to load settings from cloud:', error);
         }
       }
     }),

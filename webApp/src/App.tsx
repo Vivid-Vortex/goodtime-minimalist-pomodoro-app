@@ -8,6 +8,8 @@ import { AdvancedSettings } from './components/AdvancedSettings';
 import SyncStatus from './components/SyncStatus';
 import { useTimerStore } from './stores/timerStore';
 import { useDataInit } from './hooks/useDataInit';
+import { useTheme } from './hooks/useTheme';
+import { useAppSettingsStore } from './stores/appSettingsStore';
 import DatabaseManager from './database/database';
 import SyncServiceWorkerManager from './sync/syncServiceWorker';
 
@@ -19,6 +21,10 @@ function App() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { currentType } = useTimerStore();
   const { isLoading, error } = useDataInit();
+  const { loadSettingsFromCloud } = useAppSettingsStore();
+  
+  // Initialize theme
+  useTheme();
 
   // Initialize sync service worker and real-time sync
   useEffect(() => {
@@ -40,6 +46,9 @@ function App() {
         } else {
           console.log('Running in local-only mode');
         }
+
+        // Load settings from cloud if available
+        await loadSettingsFromCloud();
       } catch (error) {
         console.error('Failed to initialize sync:', error);
       }
@@ -131,7 +140,7 @@ function App() {
   const syncManager = dbManager.getSyncManager();
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <SettingsButton onClick={() => setIsSettingsOpen(true)} />
       
       {/* Sync Status Indicator */}

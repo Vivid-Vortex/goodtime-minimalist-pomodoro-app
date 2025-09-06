@@ -85,23 +85,23 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
   const getBackgroundColor = () => {
     switch (currentType) {
       case TimerType.FOCUS:
-        return 'bg-red-50';
+        return 'bg-red-50 dark:bg-red-900/20';
       case TimerType.BREAK:
-        return 'bg-green-50';
+        return 'bg-green-50 dark:bg-green-900/20';
       case TimerType.LONG_BREAK:
-        return 'bg-blue-50';
+        return 'bg-blue-50 dark:bg-blue-900/20';
       default:
-        return 'bg-red-50';
+        return 'bg-red-50 dark:bg-red-900/20';
     }
   };
 
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 ${getBackgroundColor()}`}>
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 w-full max-w-md transition-colors duration-300">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Goodtime</h1>
-          <p className="text-gray-600 mb-3">{getTimerTypeLabel(currentType)}</p>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Goodtime</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-3">{getTimerTypeLabel(currentType)}</p>
           
 
           {/* Label Selector */}
@@ -121,7 +121,7 @@ export const Timer: React.FC<TimerProps> = ({ onShowStats }) => {
               stroke="currentColor"
               strokeWidth="8"
               fill="transparent"
-              className="text-gray-200"
+              className="text-gray-200 dark:text-gray-600"
             />
             {/* Progress circle */}
             <circle

@@ -45,12 +45,12 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Settings</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
@@ -65,7 +65,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                   onOpenLabels();
                   onClose();
                 }}
-                className="flex flex-col items-center gap-2 px-3 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-2 border-dashed border-blue-300 transition-colors"
+                className="flex flex-col items-center gap-2 px-3 py-3 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-800/50 text-blue-700 dark:text-blue-300 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-600 transition-colors"
               >
                 <Tag size={18} />
                 <span className="text-xs font-medium">Labels</span>
@@ -78,7 +78,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                   onOpenProfiles();
                   onClose();
                 }}
-                className="flex flex-col items-center gap-2 px-3 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border-2 border-dashed border-purple-300 transition-colors"
+                className="flex flex-col items-center gap-2 px-3 py-3 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-800/50 text-purple-700 dark:text-purple-300 rounded-lg border-2 border-dashed border-purple-300 dark:border-purple-600 transition-colors"
               >
                 <Clock size={18} />
                 <span className="text-xs font-medium">Profiles</span>
@@ -91,7 +91,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                   onOpenAdvanced();
                   onClose();
                 }}
-                className="flex flex-col items-center gap-2 px-3 py-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border-2 border-dashed border-green-300 transition-colors"
+                className="flex flex-col items-center gap-2 px-3 py-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-800/50 text-green-700 dark:text-green-300 rounded-lg border-2 border-dashed border-green-300 dark:border-green-600 transition-colors"
               >
                 <Sliders size={18} />
                 <span className="text-xs font-medium">Advanced</span>
@@ -101,7 +101,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
 
           {/* Timer Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Timer Mode
             </label>
             <div className="space-y-2">
@@ -113,7 +113,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                   onChange={() => setTempProfile({ ...tempProfile, isCountdown: true })}
                   className="mr-2"
                 />
-                <span className="text-sm">Countdown Timer</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">Countdown Timer</span>
               </label>
               <label className="flex items-center">
                 <input
@@ -123,14 +123,14 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                   onChange={() => setTempProfile({ ...tempProfile, isCountdown: false })}
                   className="mr-2"
                 />
-                <span className="text-sm">Stopwatch Timer</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">Stopwatch Timer</span>
               </label>
             </div>
           </div>
 
           {/* Work Duration */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Focus Duration (minutes)
             </label>
             <div className="flex gap-2">
@@ -147,7 +147,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                     workDuration: Math.max(1, Math.min(999, value))
                   });
                 }}
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="flex-1 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 placeholder="e.g. 25, 45, 72"
               />
               <div className="flex flex-col gap-1">
@@ -207,7 +207,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                       breakDuration: Math.max(1, Math.min(120, value))
                     });
                   }}
-                  className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="flex-1 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   placeholder="Break duration (minutes)"
                 />
                 <div className="flex flex-col gap-1">
@@ -266,7 +266,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                         longBreakDuration: Math.max(1, Math.min(240, value))
                       });
                     }}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="Long break duration (minutes)"
                   />
                   <div className="flex flex-col gap-1">
@@ -305,7 +305,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
                         sessionsBeforeLongBreak: Math.max(2, Math.min(20, value))
                       });
                     }}
-                    className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     placeholder="Sessions before long break"
                   />
                   <div className="flex flex-col gap-1">
@@ -340,13 +340,13 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose, onOpenLabel
         <div className="flex space-x-3 mt-8">
           <button
             onClick={handleCancel}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="flex-1 px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-colors"
           >
             Save
           </button>
@@ -360,9 +360,9 @@ export const SettingsButton: React.FC<{ onClick: () => void }> = ({ onClick }) =
   return (
     <button
       onClick={onClick}
-      className="fixed top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+      className="fixed top-4 right-4 p-3 bg-white dark:bg-gray-700 rounded-full shadow-lg hover:shadow-xl transition-shadow"
     >
-      <SettingsIcon size={20} className="text-gray-600" />
+      <SettingsIcon size={20} className="text-gray-600 dark:text-gray-300" />
     </button>
   );
 };

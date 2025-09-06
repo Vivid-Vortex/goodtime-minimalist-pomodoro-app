@@ -130,7 +130,7 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ syncManager, className = '' }) 
         return 'text-red-600 bg-red-50 border-red-200';
       case SyncStatusEnum.DISCONNECTED:
       default:
-        return 'text-gray-600 bg-gray-50 border-gray-200';
+        return 'text-gray-600 dark:text-gray-300 bg-gray-50 border-gray-200 dark:border-gray-600';
     }
   };
 
@@ -139,6 +139,10 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ syncManager, className = '' }) 
       // First trigger bidirectional sync via DatabaseManager
       const dbManager = (await import('../database/database')).default.getInstance();
       await dbManager.performBidirectionalSync();
+      
+      // Load settings from cloud
+      const { useAppSettingsStore } = await import('../stores/appSettingsStore');
+      await useAppSettingsStore.getState().loadSettingsFromCloud();
       
       // Then trigger real-time sync
       await syncManager.forceFullSync();
@@ -187,23 +191,23 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ syncManager, className = '' }) 
 
       {/* Detailed status panel */}
       {showDetails && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Sync Status</h3>
+        <div className="absolute top-full right-0 mt-2 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 dark:border-gray-600 rounded-lg shadow-lg z-50 transition-colors duration-300">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">Sync Status</h3>
             
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Connection:</span>
+                <span className="text-gray-600 dark:text-gray-300">Connection:</span>
                 <div className="flex items-center space-x-1">
                   {getStatusIcon()}
-                  <span className={getStatusText() === 'Connected' ? 'text-green-600' : 'text-gray-600'}>
+                  <span className={getStatusText() === 'Connected' ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}>
                     {getStatusText()}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Network:</span>
+                <span className="text-gray-600 dark:text-gray-300">Network:</span>
                 <div className="flex items-center space-x-1">
                   {isOnline ? (
                     <Wifi className="w-4 h-4 text-green-500" />
@@ -217,23 +221,23 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ syncManager, className = '' }) 
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Last sync:</span>
+                <span className="text-gray-600 dark:text-gray-300">Last sync:</span>
                 <div className="flex items-center space-x-1">
                   <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{formatLastSyncTime()}</span>
+                  <span className="text-gray-600 dark:text-gray-300">{formatLastSyncTime()}</span>
                 </div>
               </div>
 
               {syncQueueLength > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Pending items:</span>
+                  <span className="text-gray-600 dark:text-gray-300">Pending items:</span>
                   <span className="text-orange-600 font-medium">{syncQueueLength}</span>
                 </div>
               )}
 
               {conflictCount > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Conflicts:</span>
+                  <span className="text-gray-600 dark:text-gray-300">Conflicts:</span>
                   <span className="text-red-600 font-medium">{conflictCount}</span>
                 </div>
               )}

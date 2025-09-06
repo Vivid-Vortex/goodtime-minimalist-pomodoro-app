@@ -39,9 +39,9 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 dark:text-gray-100 flex items-center">
             <BarChart3 className="mr-2" size={24} />
             Statistics & Export
           </h2>
@@ -100,7 +100,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
 
         {/* Recent Sessions */}
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3">Recent Sessions</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Recent Sessions</h3>
           <div className="max-h-48 overflow-y-auto">
             {recentSessions.length > 0 ? (
               <div className="space-y-2">
@@ -120,7 +120,7 @@ export const Statistics: React.FC<StatisticsProps> = ({ isOpen, onClose }) => {
                         }`}
                       />
                       <div>
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                           {getLabelTitle(session.label)}
                         </p>
                         <p className="text-xs text-gray-500">

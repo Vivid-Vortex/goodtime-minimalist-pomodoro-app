@@ -146,7 +146,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
 
   const SessionForm: React.FC = () => (
     <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-      <h3 className="font-semibold text-gray-800">
+      <h3 className="font-semibold text-gray-800 dark:text-gray-100">
         {isCreating ? 'Add Manual Session' : 'Edit Session'}
       </h3>
       
@@ -245,9 +245,9 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <Edit3 size={24} />
             Manual Session Editor
           </h2>
@@ -264,7 +264,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
           <div className="mb-6 p-4 border-2 border-dashed border-gray-300 rounded-lg">
             <button
               onClick={handleStartCreate}
-              className="w-full flex items-center justify-center gap-2 py-3 text-gray-600 hover:text-gray-800 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 text-gray-600 hover:text-gray-800 dark:text-gray-100 transition-colors"
             >
               <Plus size={20} />
               Add Manual Session
@@ -277,7 +277,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
         {/* Recent Sessions */}
         <div className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               Recent Sessions ({recentSessions.length})
             </h3>
             {sessions.length > 0 && (
@@ -312,7 +312,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({ isOpen, onClose })
                     
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800">{session.label}</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-100">{session.label}</span>
                         <span className="text-xs px-2 py-1 bg-gray-200 rounded-full text-gray-600">
                           {session.timerType}
                         </span>

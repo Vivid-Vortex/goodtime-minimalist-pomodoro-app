@@ -210,15 +210,22 @@ app.put('/api/settings/:key', async (req, res) => {
 app.get('/api/export', async (req, res) => {
   try {
     const sessions = await db.collection('sessions').find({}).toArray();
+    const labels = await db.collection('labels').find({}).toArray();
+    
+    // Create a map of label IDs to label titles for quick lookup
+    const labelMap = {};
+    labels.forEach(label => {
+      labelMap[label.id] = label.title;
+    });
     
     // Convert to desired format
     const exportData = sessions.map(session => ({
       archived: session.archived,
-      duration: session.duration,
+      duration: Math.round(session.duration / 60), // Convert seconds to minutes
       end: session.end,
       interruptions: session.interruptions,
       is_break: session.is_break,
-      label: session.label,
+      label: labelMap[session.label] || session.label, // Use label title, fallback to ID if not found
       notes: session.notes
     }));
     
