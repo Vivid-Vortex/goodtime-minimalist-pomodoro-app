@@ -4,14 +4,18 @@
   "description": "Goodtime Pomodoro Timer - Web Application",
   "main": "index.js",
   "scripts": {
+    "predev": "node scripts/check-env.js",
     "dev": "vite",
+    "prebuild": "node scripts/check-env.js",
     "build": "vite build",
     "build:prod": "vite build --mode production",
     "preview": "vite preview",
     "serve": "npx serve dist -s -l 3000",
     "serve:low-mem": "npx serve dist -s -l 3000",
     "lint": "eslint . --ext .ts,.tsx --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "setup-secrets": "node scripts/setup-secrets.js",
+    "check-env": "node scripts/check-env.js"
   },
   "dependencies": {
     "@types/sql.js": "^1.4.9",

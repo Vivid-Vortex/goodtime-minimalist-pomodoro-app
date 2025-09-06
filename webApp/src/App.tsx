@@ -5,8 +5,11 @@ import { Statistics } from './components/Statistics';
 import { Labels } from './components/Labels';
 import { TimerProfiles } from './components/TimerProfiles';
 import { AdvancedSettings } from './components/AdvancedSettings';
+import SyncStatus from './components/SyncStatus';
 import { useTimerStore } from './stores/timerStore';
 import { useDataInit } from './hooks/useDataInit';
+import DatabaseManager from './database/database';
+import SyncServiceWorkerManager from './sync/syncServiceWorker';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -16,6 +19,34 @@ function App() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const { currentType } = useTimerStore();
   const { isLoading, error } = useDataInit();
+
+  // Initialize sync service worker and real-time sync
+  useEffect(() => {
+    const initializeSync = async () => {
+      try {
+        // Register sync service worker
+        const syncSWManager = new SyncServiceWorkerManager();
+        if (syncSWManager.isSupported()) {
+          await syncSWManager.register();
+          console.log('Sync service worker initialized');
+        }
+
+        // Get database manager and initialize sync if available
+        const dbManager = DatabaseManager.getInstance();
+        const syncManager = dbManager.getSyncManager();
+        
+        if (syncManager) {
+          console.log('Real-time sync initialized');
+        } else {
+          console.log('Running in local-only mode');
+        }
+      } catch (error) {
+        console.error('Failed to initialize sync:', error);
+      }
+    };
+
+    initializeSync();
+  }, []);
 
   // Update document title based on timer state
   useEffect(() => {
@@ -96,9 +127,20 @@ function App() {
     );
   }
 
+  const dbManager = DatabaseManager.getInstance();
+  const syncManager = dbManager.getSyncManager();
+
   return (
     <div className="min-h-screen">
       <SettingsButton onClick={() => setIsSettingsOpen(true)} />
+      
+      {/* Sync Status Indicator */}
+      {syncManager && (
+        <div className="fixed top-4 right-4 z-50">
+          <SyncStatus syncManager={syncManager} />
+        </div>
+      )}
+      
       <Timer onShowStats={() => setIsStatsOpen(true)} />
       <Settings 
         isOpen={isSettingsOpen} 
