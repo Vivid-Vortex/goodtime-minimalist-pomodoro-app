@@ -6,6 +6,7 @@ export class LabelService {
 
   constructor() {
     this.db = DatabaseManager.getInstance();
+    console.log('🏷️ LabelService: Using DatabaseManager instance:', this.db.constructor.name);
   }
 
   async addLabel(labelData: Omit<Label, 'id'>): Promise<Label> {
@@ -41,7 +42,7 @@ export class LabelService {
       title: label.title,
       color: label.color,
       archived: Boolean(label.archived),
-      orderIndex: label.order_index
+      orderIndex: label.orderIndex
     }));
   }
 

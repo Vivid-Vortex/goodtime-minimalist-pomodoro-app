@@ -5,13 +5,11 @@ import { Statistics } from './components/Statistics';
 import { Labels } from './components/Labels';
 import { TimerProfiles } from './components/TimerProfiles';
 import { AdvancedSettings } from './components/AdvancedSettings';
-import SyncStatus from './components/SyncStatus';
 import { useTimerStore } from './stores/timerStore';
 import { useDataInit } from './hooks/useDataInit';
 import { useTheme } from './hooks/useTheme';
 import { useAppSettingsStore } from './stores/appSettingsStore';
 import DatabaseManager from './database/database';
-import SyncServiceWorkerManager from './sync/syncServiceWorker';
 
 function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -26,35 +24,30 @@ function App() {
   // Initialize theme
   useTheme();
 
-  // Initialize sync service worker and real-time sync
+  // Initialize API connection and load settings
   useEffect(() => {
-    const initializeSync = async () => {
+    const initializeServices = async () => {
       try {
-        // Register sync service worker
-        const syncSWManager = new SyncServiceWorkerManager();
-        if (syncSWManager.isSupported()) {
-          await syncSWManager.register();
-          console.log('Sync service worker initialized');
-        }
-
-        // Get database manager and initialize sync if available
+        // Database manager connects to API automatically
         const dbManager = DatabaseManager.getInstance();
-        const syncManager = dbManager.getSyncManager();
+        console.log('✅ Database manager initialized with API backend');
         
-        if (syncManager) {
-          console.log('Real-time sync initialized');
-        } else {
-          console.log('Running in local-only mode');
+        
+        // Load settings from API backend
+        try {
+          await loadSettingsFromCloud();
+          console.log('✅ Settings loaded from API backend');
+        } catch (error) {
+          console.warn('⚠️ Failed to load settings from API backend:', error);
         }
 
-        // Load settings from cloud if available
-        await loadSettingsFromCloud();
+        console.log('🚀 App initialized with Express API backend');
       } catch (error) {
-        console.error('Failed to initialize sync:', error);
+        console.error('❌ Failed to initialize services:', error);
       }
     };
 
-    initializeSync();
+    initializeServices();
   }, []);
 
   // Update document title based on timer state
@@ -136,19 +129,9 @@ function App() {
     );
   }
 
-  const dbManager = DatabaseManager.getInstance();
-  const syncManager = dbManager.getSyncManager();
-
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <SettingsButton onClick={() => setIsSettingsOpen(true)} />
-      
-      {/* Sync Status Indicator */}
-      {syncManager && (
-        <div className="fixed top-4 right-4 z-50">
-          <SyncStatus syncManager={syncManager} />
-        </div>
-      )}
       
       <Timer onShowStats={() => setIsStatsOpen(true)} />
       <Settings 

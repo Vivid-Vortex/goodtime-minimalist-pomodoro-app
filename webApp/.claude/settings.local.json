@@ -17,7 +17,11 @@
       "Bash(npm run check-env:*)",
       "Bash(npm start)",
       "Bash(curl:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(timeout 10 curl -s http://localhost:3002/api/labels)",
+      "Bash(timeout:*)",
+      "Bash(cat:*)",
+      "Bash(wmic process where processid=14076 delete:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { Label } from '../types';
 import { labelService } from '../database/services/labelService';
 
@@ -46,6 +45,7 @@ interface LabelStore {
   selectedLabel: Label;
   isLoading: boolean;
   loadLabels: () => Promise<void>;
+  forceRefreshFromCloud: () => Promise<void>;
   addLabel: (label: Omit<Label, 'id' | 'orderIndex'>) => Promise<void>;
   updateLabel: (id: string, updates: Partial<Label>) => Promise<void>;
   deleteLabel: (id: string) => Promise<void>;
@@ -56,27 +56,37 @@ interface LabelStore {
   getLabelColor: (colorIndex: number) => string;
 }
 
-export const useLabelStore = create<LabelStore>()(
-  persist(
-    (set, get) => ({
-      labels: [DEFAULT_LABEL],
-      selectedLabel: DEFAULT_LABEL,
-      isLoading: false,
+export const useLabelStore = create<LabelStore>()((set, get) => ({
+  labels: [DEFAULT_LABEL],
+  selectedLabel: DEFAULT_LABEL,
+  isLoading: false,
 
       loadLabels: async () => {
         set({ isLoading: true });
         try {
           const labels = await labelService.getAllLabels();
           const activeLabels = labels.length > 0 ? labels : [DEFAULT_LABEL];
+          
+          // Always update with fresh data from cloud/API
+          const currentState = get();
+          const newSelectedLabel = activeLabels.find(label => 
+            label.id === currentState.selectedLabel.id
+          ) || activeLabels[0];
+          
           set({ 
             labels: activeLabels, 
-            selectedLabel: activeLabels[0],
+            selectedLabel: newSelectedLabel,
             isLoading: false 
           });
         } catch (error) {
           console.error('Failed to load labels:', error);
           set({ isLoading: false });
         }
+      },
+
+      forceRefreshFromCloud: async () => {
+        console.log('🔄 Force refreshing labels from cloud...');
+        await get().loadLabels();
       },
 
       addLabel: async (labelData) => {
@@ -184,9 +194,4 @@ export const useLabelStore = create<LabelStore>()(
       getLabelColor: (colorIndex) => {
         return LABEL_COLORS[colorIndex] || LABEL_COLORS[0];
       }
-    }),
-    {
-      name: 'goodtime-labels-store'
-    }
-  )
-);
+    }));
