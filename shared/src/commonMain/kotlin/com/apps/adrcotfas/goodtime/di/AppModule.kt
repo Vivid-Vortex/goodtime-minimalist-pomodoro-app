@@ -27,6 +27,7 @@ import co.touchlab.kermit.platformLogWriter
 import com.apps.adrcotfas.goodtime.bl.FinishedSessionsHandler
 import com.apps.adrcotfas.goodtime.bl.TimeProvider
 import com.apps.adrcotfas.goodtime.bl.createTimeProvider
+import com.apps.adrcotfas.goodtime.data.firestore.FirestoreManager
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepositoryImpl
 import com.apps.adrcotfas.goodtime.data.local.ProductivityDatabase
@@ -102,11 +103,14 @@ val coreModule =
                 getWith("SettingsRepository"),
             )
         }
+        single { get<ProductivityDatabase>().sessionsDao() }
+        single { get<ProductivityDatabase>().labelsDao() }
+        single { get<ProductivityDatabase>().timerProfileDao() }
         single<LocalDataRepository> {
             LocalDataRepositoryImpl(
-                get<ProductivityDatabase>().sessionsDao(),
-                get<ProductivityDatabase>().labelsDao(),
-                get<ProductivityDatabase>().timerProfileDao(),
+                get(),
+                get(),
+                get(),
                 get<SettingsRepository>(),
                 get<CoroutineScope>(named(IO_SCOPE)),
             )
@@ -135,6 +139,10 @@ val coreModule =
                 get<LocalDataRepository>(),
                 getWith("BackupManager"),
             )
+        }
+
+        single<FirestoreManager> {
+            FirestoreManager(get(), get(), get())
         }
     }
 

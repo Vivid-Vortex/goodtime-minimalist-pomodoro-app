@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(emulator -list-avds:*)",
+      "Bash(adb devices:*)",
+      "Bash(./gradlew:*)",
+      "Bash(cat:*)",
+      "Bash(adb:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

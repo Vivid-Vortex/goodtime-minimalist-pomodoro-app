@@ -19,6 +19,7 @@ package com.apps.adrcotfas.goodtime.data.local.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.apps.adrcotfas.goodtime.data.firestore.FirestoreManager
 import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -37,14 +38,18 @@ data class BackupUiState(
     val isCsvBackupInProgress: Boolean = false,
     val isJsonBackupInProgress: Boolean = false,
     val isRestoreInProgress: Boolean = false,
+    val isSyncingWithFirestore: Boolean = false,
     val backupResult: Boolean? = null,
     val restoreResult: Boolean? = null,
+    val firestoreSyncResult: Boolean? = null,
+    val firestoreSyncError: String? = null,
     val backupSettings: BackupSettings = BackupSettings(),
 )
 
 class BackupViewModel(
     private val backupManager: BackupManager,
     private val settingsRepository: SettingsRepository,
+    private val firestoreManager: FirestoreManager,
     private val coroutineScope: CoroutineScope,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -123,9 +128,30 @@ class BackupViewModel(
         }
     }
 
+    fun syncWithFirestore() {
+        coroutineScope.launch {
+            _uiState.update { it.copy(isSyncingWithFirestore = true) }
+            val result = firestoreManager.syncData()
+            _uiState.update {
+                it.copy(
+                    isSyncingWithFirestore = false,
+                    firestoreSyncResult = result is com.apps.adrcotfas.goodtime.data.firestore.FirestoreSyncResult.Success,
+                    firestoreSyncError =
+                        if (result is com.apps.adrcotfas.goodtime.data.firestore.FirestoreSyncResult.Error) {
+                            result.message
+                        } else {
+                            null
+                        },
+                )
+            }
+        }
+    }
+
     fun clearBackupError() = _uiState.update { it.copy(backupResult = null) }
 
     fun clearRestoreError() = _uiState.update { it.copy(restoreResult = null) }
+
+    fun clearFirestoreSyncError() = _uiState.update { it.copy(firestoreSyncResult = null, firestoreSyncError = null) }
 
     fun clearProgress() =
         _uiState.update {
@@ -134,6 +160,7 @@ class BackupViewModel(
                 isRestoreInProgress = false,
                 isCsvBackupInProgress = false,
                 isJsonBackupInProgress = false,
+                isSyncingWithFirestore = false,
             )
         }
 

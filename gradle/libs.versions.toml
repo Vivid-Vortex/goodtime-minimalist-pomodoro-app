@@ -49,6 +49,9 @@ androidchart = "3.1.0.25"
 
 work = "2.10.3"
 
+gms = "4.4.2"
+firebase-firestore = "25.0.0"
+
 [libraries]
 acra-mail = { module = "ch.acra:acra-mail", version.ref = "acra" }
 acra-notification = { module = "ch.acra:acra-notification", version.ref = "acra" }
@@ -106,6 +109,7 @@ touchlab-kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 touchlab-kermit-simple = { module = "co.touchlab:kermit-simple", version.ref = "kermit" }
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "mikepenz-aboutlibraries" }
 mikepenz-aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "mikepenz-aboutlibraries" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebase-firestore"}
 
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
@@ -123,6 +127,7 @@ mikepenz-aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.r
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 room = { id = "androidx.room", version.ref = "androidx-room" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+gms = { id = "com.google.gms.google-services", version.ref = "gms"}
 
 [bundles]
 shared-commonTest = [

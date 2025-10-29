@@ -162,6 +162,21 @@ fun BackupScreen(
         }
     }
 
+    LaunchedEffect(uiState.firestoreSyncResult, uiState.firestoreSyncError) {
+        if (uiState.firestoreSyncResult != null) {
+            val message =
+                if (uiState.firestoreSyncResult == true) {
+                    context.getString(R.string.backup_sync_firestore_success)
+                } else {
+                    uiState.firestoreSyncError?.let {
+                        context.getString(R.string.backup_sync_firestore_error, it)
+                    } ?: context.getString(R.string.backup_failed_please_try_again)
+                }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.clearFirestoreSyncError()
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (uiState.backupSettings.autoBackupEnabled && !context.isUriPersisted(uiState.backupSettings.path.toUri())) {
             viewModel.setBackupSettings(BackupSettings())
@@ -244,6 +259,14 @@ fun BackupScreen(
                 showProgress = uiState.isJsonBackupInProgress,
             ) {
                 viewModel.backupToJson()
+            }
+            SubtleHorizontalDivider()
+            CircularProgressListItem(
+                title = stringResource(R.string.backup_sync_with_firestore),
+                enabled = enabled,
+                showProgress = uiState.isSyncingWithFirestore,
+            ) {
+                viewModel.syncWithFirestore()
             }
         }
     }

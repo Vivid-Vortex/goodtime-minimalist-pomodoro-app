@@ -28,4 +28,7 @@
     <string name="backup_restore_completed_successfully">Restore completed successfully</string>
     <string name="backup_restore_failed_please_try_again">Restore failed. Please try again</string>
     <string name="backup_auto_backup">Auto backup</string>
+    <string name="backup_sync_with_firestore">Save to cloud</string>
+    <string name="backup_sync_firestore_success">Successfully synced with cloud</string>
+    <string name="backup_sync_firestore_error">Sync failed: %s</string>
 </resources>

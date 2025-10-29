@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "280298807639",
+    "project_id": "timesheetkotlin",
+    "storage_bucket": "timesheetkotlin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:280298807639:android:351b84363382c311655e12",
+        "android_client_info": {
+          "package_name": "com.deepak.timesheet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqLG-0VF8CmAHpV_yD7hP7G7XAd2V0ASY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

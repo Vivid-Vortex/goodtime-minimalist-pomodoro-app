@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.mikepenz.aboutlibraries)
+    alias(libs.plugins.gms)
 }
 
 android {
@@ -131,6 +132,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
 
     implementation(libs.work.runtime.ktx)
+    implementation(libs.firebase.firestore)
 
     "googleImplementation"(libs.billing.ktx)
     "googleImplementation"(libs.app.update.ktx)

@@ -42,7 +42,7 @@ actual val viewModelModule: Module =
         viewModelOf(::AddEditLabelViewModel)
         viewModelOf(::SettingsViewModel)
         viewModelOf(::TimerProfileViewModel)
-        viewModel { BackupViewModel(get(), get(), get(named(IO_SCOPE))) }
+        viewModel { BackupViewModel(get(), get(), get(), get(named(IO_SCOPE))) }
         viewModelOf(::StatisticsViewModel)
         viewModelOf(::StatisticsHistoryViewModel)
     }
