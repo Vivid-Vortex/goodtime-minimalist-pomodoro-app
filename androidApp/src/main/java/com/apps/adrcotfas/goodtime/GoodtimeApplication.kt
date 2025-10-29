@@ -48,6 +48,7 @@ import com.apps.adrcotfas.goodtime.di.IO_SCOPE
 import com.apps.adrcotfas.goodtime.di.WORKER_SCOPE
 import com.apps.adrcotfas.goodtime.di.coreModule
 import com.apps.adrcotfas.goodtime.di.coroutineScopeModule
+import com.apps.adrcotfas.goodtime.di.firestoreModule
 import com.apps.adrcotfas.goodtime.di.getWith
 import com.apps.adrcotfas.goodtime.di.localDataModule
 import com.apps.adrcotfas.goodtime.di.mainModule
@@ -196,6 +197,7 @@ class GoodtimeApplication :
                 timerManagerModule,
                 viewModelModule,
                 mainModule,
+                firestoreModule,
             )
             workManagerFactory()
         }

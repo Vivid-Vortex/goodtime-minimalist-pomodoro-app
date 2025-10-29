@@ -139,3 +139,113 @@ Entire json structre:
       "entertainment": "1 hour Netflix"
     }
   }
+	
+New Json structure:
+ {
+    "id": "30-10-2025",
+    "createdAt": 1730332800000,
+    "formData": {
+      "entryDate": 1730332800000,
+
+      "tagSnapshot": {
+        "avdhanaMode": "AV",
+        "wcmn": "WCMN",
+        "work3": "W3",
+        "work4": "W4",
+        "work2": "W2",
+        "work5": "W5",
+        "ltg": "LTG",
+        "timeWasted": "TW",
+        "essentials": "ESS",
+        "finance": "FIN",
+        "others": "OTH",
+        "work1Main": "W1M",
+        "work1Misc": "W1X",
+        "projectManagement": "PM",
+        "learning": "LRN",
+        "meditation": "MED",
+        "exercise": "EXE"
+      },
+
+      "intoxNo": "N/A",
+      "mbtNo": "N/A",
+      "topPriorityTime": "",
+      "topPriorityThinking": "N/A",
+      "playedFirstThingComesToMindGame": false,
+
+      "thinking": true,
+      "issue": "NONE",
+      "issueOtherText": "",
+
+      "onTimeSleep": false,
+      "mpvOfSleep": false,
+      "wakedUpAt4Am": false,
+      "selfAndSurroundingVastu": false,
+
+      "twentyMinsLearning": false,
+      "thirtyMinsMeditation": false,
+      "sixtyMinsExercise": false,
+
+      "overallHealthStatus": 1,
+
+      "phase2Sleep": false,
+      "minimum270Min": false,
+      "dayProductivity": "PRODUCTIVE",
+      "timePocketFollowed": false,
+      "youtubeTimeUtilizerDocFollowed": false,
+
+      "wastedMoreThan15Mins": false,
+      "approxWastedMinutes": 0,
+      "activity1": "",
+      "activity2": "",
+      "activity3": "",
+      "activity4": "",
+      "activity5": "",
+
+      "pomodoroFollowed": false,
+      "sprint": 6,
+
+      "avdhanaMode": "",
+      "work1ToWork4Ikigai": "",
+      "work3Udemy": "",
+      "work4TechWebsite": "",
+      "work2Youtube": "",
+      "work5OnlineSale": "",
+      "ltgLongTermGoal": "",
+      "timeWasted": "",
+      "spentOnEssentials": "",
+      "finance": "",
+      "others": "",
+
+      "work1Main": "",
+      "work1Misc": "",
+      "projectManagement": "",
+
+      "learning": "",
+      "meditation": "",
+      "exercise": "",
+
+      "mitsCompletedWithin270To360Mins": false,
+      "total": "",
+      "completed270MinsBeforeSixPm": false,
+      "ableToCompleteDaysMits": false,
+
+      "carpeMomentum1440FollowedToday": false,
+      "timePocketFollowedToday": false,
+      "productivityPointsSuccessDocFollowed": false,
+      "anchorPoints": false,
+
+      "sitStraightFor2Sprints": false,
+      "didEverythingTimeBound": false,
+      "followed4To4Policy": false,
+      "ateBreakfastDistractionFree": false,
+      "satOnTimeAfterDWT3": false,
+
+      "relaxationAfter2Sprints": "",
+      "sleepPhase1": "",
+      "sleepPhase2": "",
+      "pppw": "",
+      "tppw": "",
+      "entertainment": ""
+    }
+  }

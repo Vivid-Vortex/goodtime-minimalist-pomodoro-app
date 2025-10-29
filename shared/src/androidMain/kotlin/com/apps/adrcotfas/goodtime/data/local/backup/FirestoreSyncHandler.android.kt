@@ -15,13 +15,11 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package com.apps.adrcotfas.goodtime.data.firestore
+package com.apps.adrcotfas.goodtime.data.local.backup
 
 import android.util.Log
-import com.apps.adrcotfas.goodtime.data.local.LabelDao
+import com.apps.adrcotfas.goodtime.data.local.LocalSession
 import com.apps.adrcotfas.goodtime.data.local.SessionDao
-import com.apps.adrcotfas.goodtime.data.local.TimerProfileDao
-import com.apps.adrcotfas.goodtime.data.model.Session
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.first
@@ -30,26 +28,16 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-sealed class FirestoreSyncResult {
-    object Success : FirestoreSyncResult()
-
-    data class Error(
-        val message: String,
-    ) : FirestoreSyncResult()
-}
-
-class FirestoreManager(
+actual class FirestoreSyncHandler(
     private val sessionDao: SessionDao,
-    private val labelDao: LabelDao,
-    private val timerProfileDao: TimerProfileDao,
 ) {
     private val db = Firebase.firestore
 
     companion object {
-        private const val TAG = "FirestoreManager"
+        private const val TAG = "FirestoreSyncHandler"
     }
 
-    suspend fun syncData(): FirestoreSyncResult =
+    actual suspend fun syncData(): FirestoreSyncResult =
         try {
             val sessions = sessionDao.selectAll().first()
 
@@ -68,7 +56,7 @@ class FirestoreManager(
             FirestoreSyncResult.Error(e.message ?: "Unknown error")
         }
 
-    suspend fun saveSessionToTimesheet(session: Session): FirestoreSyncResult {
+    private suspend fun saveSessionToTimesheet(session: LocalSession): FirestoreSyncResult {
         return try {
             // Convert timestamp to DD-MM-YYYY format
             val instant = Instant.fromEpochMilliseconds(session.timestamp)
@@ -100,11 +88,11 @@ class FirestoreManager(
                 val fieldName =
                     tagSnapshot.entries
                         .find {
-                            it.value == session.label
+                            it.value == session.labelName
                         }?.key as? String
 
                 if (fieldName == null) {
-                    return FirestoreSyncResult.Error("No tag with name ${session.label} found in database")
+                    return FirestoreSyncResult.Error("No tag with name ${session.labelName} found in database")
                 }
 
                 // Update the field in formData
@@ -114,7 +102,7 @@ class FirestoreManager(
                 documentRef.update("formData.$fieldName", newValue.toString()).await()
                 Log.d(TAG, "Updated $fieldName with value $newValue for date $documentId")
             } else {
-                // Document doesn't exist, create it with the full structure
+                // Document doesn't exist, create it with the full structure (New Json structure from CLAUDE.md)
                 val createdAt = System.currentTimeMillis()
                 val entryDate = instant.toEpochMilliseconds()
 
@@ -145,72 +133,72 @@ class FirestoreManager(
                                         "meditation" to "MED",
                                         "exercise" to "EXE",
                                     ),
-                                "intoxNo" to "5",
-                                "mbtNo" to "3",
-                                "topPriorityTime" to "30",
-                                "topPriorityThinking" to "Yes",
-                                "playedFirstThingComesToMindGame" to true,
+                                "intoxNo" to "N/A",
+                                "mbtNo" to "N/A",
+                                "topPriorityTime" to "",
+                                "topPriorityThinking" to "N/A",
+                                "playedFirstThingComesToMindGame" to false,
                                 "thinking" to true,
                                 "issue" to "NONE",
                                 "issueOtherText" to "",
-                                "onTimeSleep" to true,
-                                "mpvOfSleep" to true,
-                                "wakedUpAt4Am" to true,
-                                "selfAndSurroundingVastu" to true,
-                                "twentyMinsLearning" to true,
-                                "thirtyMinsMeditation" to true,
-                                "sixtyMinsExercise" to true,
-                                "overallHealthStatus" to 4,
+                                "onTimeSleep" to false,
+                                "mpvOfSleep" to false,
+                                "wakedUpAt4Am" to false,
+                                "selfAndSurroundingVastu" to false,
+                                "twentyMinsLearning" to false,
+                                "thirtyMinsMeditation" to false,
+                                "sixtyMinsExercise" to false,
+                                "overallHealthStatus" to 1,
                                 "phase2Sleep" to false,
-                                "minimum270Min" to true,
+                                "minimum270Min" to false,
                                 "dayProductivity" to "PRODUCTIVE",
-                                "timePocketFollowed" to true,
-                                "youtubeTimeUtilizerDocFollowed" to true,
-                                "wastedMoreThan15Mins" to true,
-                                "approxWastedMinutes" to 45,
-                                "activity1" to "Social Media",
-                                "activity2" to "YouTube",
+                                "timePocketFollowed" to false,
+                                "youtubeTimeUtilizerDocFollowed" to false,
+                                "wastedMoreThan15Mins" to false,
+                                "approxWastedMinutes" to 0,
+                                "activity1" to "",
+                                "activity2" to "",
                                 "activity3" to "",
                                 "activity4" to "",
                                 "activity5" to "",
-                                "pomodoroFollowed" to true,
-                                "sprint" to 8,
-                                "avdhanaMode" to "60",
-                                "work1ToWork4Ikigai" to "120",
-                                "work3Udemy" to "30",
-                                "work4TechWebsite" to "45",
-                                "work2Youtube" to "20",
-                                "work5OnlineSale" to "15",
-                                "ltgLongTermGoal" to "90",
-                                "timeWasted" to "30",
-                                "spentOnEssentials" to "45",
-                                "finance" to "20",
-                                "others" to "10",
-                                "work1Main" to "180",
-                                "work1Misc" to "60",
-                                "projectManagement" to "40",
-                                "learning" to "20",
-                                "meditation" to "30",
-                                "exercise" to "60",
-                                "mitsCompletedWithin270To360Mins" to true,
-                                "total" to "475",
-                                "completed270MinsBeforeSixPm" to true,
-                                "ableToCompleteDaysMits" to true,
-                                "carpeMomentum1440FollowedToday" to true,
-                                "timePocketFollowedToday" to true,
-                                "productivityPointsSuccessDocFollowed" to true,
-                                "anchorPoints" to true,
-                                "sitStraightFor2Sprints" to true,
-                                "didEverythingTimeBound" to true,
-                                "followed4To4Policy" to true,
-                                "ateBreakfastDistractionFree" to true,
-                                "satOnTimeAfterDWT3" to true,
-                                "relaxationAfter2Sprints" to "15 mins after every 2 sprints",
-                                "sleepPhase1" to "7 hours night sleep",
-                                "sleepPhase2" to "1 hour afternoon nap",
-                                "pppw" to "Weekly planning session",
-                                "tppw" to "Time tracking review",
-                                "entertainment" to "1 hour Netflix",
+                                "pomodoroFollowed" to false,
+                                "sprint" to 6,
+                                "avdhanaMode" to "",
+                                "work1ToWork4Ikigai" to "",
+                                "work3Udemy" to "",
+                                "work4TechWebsite" to "",
+                                "work2Youtube" to "",
+                                "work5OnlineSale" to "",
+                                "ltgLongTermGoal" to "",
+                                "timeWasted" to "",
+                                "spentOnEssentials" to "",
+                                "finance" to "",
+                                "others" to "",
+                                "work1Main" to "",
+                                "work1Misc" to "",
+                                "projectManagement" to "",
+                                "learning" to "",
+                                "meditation" to "",
+                                "exercise" to "",
+                                "mitsCompletedWithin270To360Mins" to false,
+                                "total" to "",
+                                "completed270MinsBeforeSixPm" to false,
+                                "ableToCompleteDaysMits" to false,
+                                "carpeMomentum1440FollowedToday" to false,
+                                "timePocketFollowedToday" to false,
+                                "productivityPointsSuccessDocFollowed" to false,
+                                "anchorPoints" to false,
+                                "sitStraightFor2Sprints" to false,
+                                "didEverythingTimeBound" to false,
+                                "followed4To4Policy" to false,
+                                "ateBreakfastDistractionFree" to false,
+                                "satOnTimeAfterDWT3" to false,
+                                "relaxationAfter2Sprints" to "",
+                                "sleepPhase1" to "",
+                                "sleepPhase2" to "",
+                                "pppw" to "",
+                                "tppw" to "",
+                                "entertainment" to "",
                             ),
                     )
 
@@ -220,11 +208,11 @@ class FirestoreManager(
                     tagSnapshot
                         ?.entries
                         ?.find {
-                            it.value == session.label
+                            it.value == session.labelName
                         }?.key as? String
 
                 if (fieldName == null) {
-                    return FirestoreSyncResult.Error("No tag with name ${session.label} found in database")
+                    return FirestoreSyncResult.Error("No tag with name ${session.labelName} found in database")
                 }
 
                 // Set the duration for this session

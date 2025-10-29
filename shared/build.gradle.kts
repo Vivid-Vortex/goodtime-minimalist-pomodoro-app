@@ -81,6 +81,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)
             implementation(libs.koin.android)
+            implementation(libs.firebase.firestore)
         }
         androidUnitTest.dependencies {
             implementation(libs.bundles.shared.androidTest)

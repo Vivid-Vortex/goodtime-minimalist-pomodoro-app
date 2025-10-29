@@ -27,7 +27,6 @@ import co.touchlab.kermit.platformLogWriter
 import com.apps.adrcotfas.goodtime.bl.FinishedSessionsHandler
 import com.apps.adrcotfas.goodtime.bl.TimeProvider
 import com.apps.adrcotfas.goodtime.bl.createTimeProvider
-import com.apps.adrcotfas.goodtime.data.firestore.FirestoreManager
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepositoryImpl
 import com.apps.adrcotfas.goodtime.data.local.ProductivityDatabase
@@ -77,7 +76,13 @@ fun insertKoin(
             timerManagerModule,
             viewModelModule,
             mainModule,
+            firestoreModule,
         )
+    }
+
+val firestoreModule =
+    module {
+        platformFirestoreModule()
     }
 
 expect fun isDebug(): Boolean
@@ -140,11 +145,9 @@ val coreModule =
                 getWith("BackupManager"),
             )
         }
-
-        single<FirestoreManager> {
-            FirestoreManager(get(), get(), get())
-        }
     }
+
+expect fun Module.platformFirestoreModule()
 
 internal const val SETTINGS_NAME = "productivity_settings.preferences"
 internal const val SETTINGS_FILE_NAME = SETTINGS_NAME + "_pb"

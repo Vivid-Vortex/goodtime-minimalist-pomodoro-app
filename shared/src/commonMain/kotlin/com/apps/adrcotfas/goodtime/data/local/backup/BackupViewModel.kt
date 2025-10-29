@@ -19,7 +19,6 @@ package com.apps.adrcotfas.goodtime.data.local.backup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.apps.adrcotfas.goodtime.data.firestore.FirestoreManager
 import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
@@ -46,10 +45,22 @@ data class BackupUiState(
     val backupSettings: BackupSettings = BackupSettings(),
 )
 
+expect class FirestoreSyncHandler {
+    suspend fun syncData(): FirestoreSyncResult
+}
+
+sealed class FirestoreSyncResult {
+    object Success : FirestoreSyncResult()
+
+    data class Error(
+        val message: String,
+    ) : FirestoreSyncResult()
+}
+
 class BackupViewModel(
     private val backupManager: BackupManager,
     private val settingsRepository: SettingsRepository,
-    private val firestoreManager: FirestoreManager,
+    private val firestoreSyncHandler: FirestoreSyncHandler?,
     private val coroutineScope: CoroutineScope,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -131,13 +142,13 @@ class BackupViewModel(
     fun syncWithFirestore() {
         coroutineScope.launch {
             _uiState.update { it.copy(isSyncingWithFirestore = true) }
-            val result = firestoreManager.syncData()
+            val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
             _uiState.update {
                 it.copy(
                     isSyncingWithFirestore = false,
-                    firestoreSyncResult = result is com.apps.adrcotfas.goodtime.data.firestore.FirestoreSyncResult.Success,
+                    firestoreSyncResult = result is FirestoreSyncResult.Success,
                     firestoreSyncError =
-                        if (result is com.apps.adrcotfas.goodtime.data.firestore.FirestoreSyncResult.Error) {
+                        if (result is FirestoreSyncResult.Error) {
                             result.message
                         } else {
                             null

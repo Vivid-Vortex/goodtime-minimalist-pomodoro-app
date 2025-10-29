@@ -6,7 +6,8 @@
       "Bash(adb devices:*)",
       "Bash(./gradlew:*)",
       "Bash(cat:*)",
-      "Bash(adb:*)"
+      "Bash(adb:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []
