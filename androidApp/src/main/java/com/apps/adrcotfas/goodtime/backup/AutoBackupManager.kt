@@ -64,18 +64,20 @@ class AutoBackupManager(
     }
 
     private fun handleBackupSettingsChange(backupSettings: BackupSettings) {
-        logger.i { "Backup settings changed: autoBackupEnabled=${backupSettings.autoBackupEnabled}, path=${backupSettings.path}" }
+        logger.i {
+            "Backup settings changed: autoBackupEnabled=${backupSettings.autoBackupEnabled}, path=${backupSettings.path}, frequencyDays=${backupSettings.backupFrequencyDays}"
+        }
 
         if (backupSettings.autoBackupEnabled && backupSettings.path.isNotBlank()) {
-            scheduleBackup()
-            logger.i { "Auto backup scheduled with path: ${backupSettings.path}" }
+            scheduleBackup(backupSettings.backupFrequencyDays)
+            logger.i { "Auto backup scheduled with path: ${backupSettings.path}, frequency: ${backupSettings.backupFrequencyDays} days" }
         } else {
             cancelBackup()
             logger.i { "Auto backup canceled" }
         }
     }
 
-    private fun scheduleBackup() {
+    private fun scheduleBackup(frequencyDays: Int) {
         val constraints =
             Constraints
                 .Builder()
@@ -84,7 +86,7 @@ class AutoBackupManager(
 
         val backupWorkRequest =
             PeriodicWorkRequestBuilder<AutoBackupWorker>(
-                repeatInterval = 1,
+                repeatInterval = frequencyDays.toLong(),
                 repeatIntervalTimeUnit = TimeUnit.DAYS,
             ).setInitialDelay(5, TimeUnit.MINUTES)
                 .setConstraints(constraints)
@@ -93,7 +95,7 @@ class AutoBackupManager(
 
         workManager.enqueueUniquePeriodicWork(
             AutoBackupWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.REPLACE, // Changed to REPLACE to update frequency
             backupWorkRequest,
         )
     }

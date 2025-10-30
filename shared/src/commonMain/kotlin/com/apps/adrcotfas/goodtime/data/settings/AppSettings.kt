@@ -126,4 +126,5 @@ data class SoundData(
 data class BackupSettings(
     val autoBackupEnabled: Boolean = false,
     val path: String = "",
+    val backupFrequencyDays: Int = 1, // 1 = daily, 7 = weekly, 30 = monthly
 )

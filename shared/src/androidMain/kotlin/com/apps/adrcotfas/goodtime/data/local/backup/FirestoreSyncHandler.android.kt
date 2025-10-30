@@ -96,12 +96,20 @@ actual class FirestoreSyncHandler(
                 }
 
                 // Update the field in formData
-                // Convert duration from milliseconds to minutes
-                val durationInMinutes = (session.duration / 60000).toInt()
-                val currentValue = formData[fieldName] as? String ?: "0"
-                val newValue = (currentValue.toIntOrNull() ?: 0) + durationInMinutes
+                // Duration is already in minutes, just use it directly
+                val durationInMinutes = session.duration.toInt()
 
-                documentRef.update("formData.$fieldName", newValue.toString()).await()
+                // Get current value - could be string or number in Firestore
+                val currentValue =
+                    when (val value = formData[fieldName]) {
+                        is String -> value.toIntOrNull() ?: 0
+                        is Number -> value.toInt()
+                        else -> 0
+                    }
+                val newValue = currentValue + durationInMinutes
+
+                // Store as integer for Log Hours fields
+                documentRef.update("formData.$fieldName", newValue).await()
                 Log.d(TAG, "Updated $fieldName with value $newValue for date $documentId")
             } else {
                 // Document doesn't exist, create it with the full structure (New Json structure from CLAUDE.md)
@@ -217,10 +225,11 @@ actual class FirestoreSyncHandler(
                     return FirestoreSyncResult.Error("No tag with name ${session.labelName} found in database")
                 }
 
-                // Set the duration for this session (convert from milliseconds to minutes)
-                val durationInMinutes = (session.duration / 60000).toInt()
+                // Set the duration for this session (duration is already in minutes)
+                // Store as integer for Log Hours fields
+                val durationInMinutes = session.duration.toInt()
                 @Suppress("UNCHECKED_CAST")
-                (newDocument["formData"] as HashMap<String, Any>)[fieldName] = durationInMinutes.toString()
+                (newDocument["formData"] as HashMap<String, Any>)[fieldName] = durationInMinutes
 
                 documentRef.set(newDocument).await()
                 Log.d(TAG, "Created new document with ID: $documentId and set $fieldName to $durationInMinutes minutes")

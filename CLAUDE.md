@@ -256,4 +256,10 @@ Section 2:
 First check why app name not changed form Goodtime to Pomodoro Auto.
 Why the app is crashing when I am pressing Save to cloud button after instlling in the device.
 ---
+Section 3:
+I tested the app with 1 mins duration saved locally in the app for tag W1M but when I clicked on the save to cloud section, then in the database corresponding data key in thish case is work1Main for W1M which is correct but saved wrong data as 0 in cloud which should be 1 as per the local duratin. 
+Make sure we a all the time in the cloud db json under Log Hours should be saved in minutes, say 60, 500, 720 etc. anything but in minutes.
+Kindly modiy auto back to do the manual schedulling back up which is decidedand set by user.
+Keep the same icon but change it's color to mix of pink and voilet.
 
+---
