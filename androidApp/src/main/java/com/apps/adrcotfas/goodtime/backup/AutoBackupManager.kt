@@ -21,10 +21,11 @@ import android.content.Context
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import co.touchlab.kermit.Logger
-import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
+import com.apps.adrcotfas.goodtime.data.settings.CloudBackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +36,8 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 /**
- * Manager for scheduling and canceling auto backup operations.
- * It observes the BackupSettings from SettingsRepository and schedules or cancels
+ * Manager for scheduling and canceling auto cloud backup operations.
+ * It observes the CloudBackupSettings from SettingsRepository and schedules or cancels
  * the backup work accordingly.
  */
 class AutoBackupManager(
@@ -49,45 +50,45 @@ class AutoBackupManager(
 
     init {
         logger.i { "AutoBackupManager initialized" }
-        observeBackupSettings()
+        observeCloudBackupSettings()
     }
 
-    private fun observeBackupSettings() {
+    private fun observeCloudBackupSettings() {
         scope.launch {
             settingsRepository.settings
-                .map { it.backupSettings }
+                .map { it.cloudBackupSettings }
                 .distinctUntilChanged()
-                .collect { backupSettings ->
-                    handleBackupSettingsChange(backupSettings)
+                .collect { cloudBackupSettings ->
+                    handleCloudBackupSettingsChange(cloudBackupSettings)
                 }
         }
     }
 
-    private fun handleBackupSettingsChange(backupSettings: BackupSettings) {
+    private fun handleCloudBackupSettingsChange(cloudBackupSettings: CloudBackupSettings) {
         logger.i {
-            "Backup settings changed: autoBackupEnabled=${backupSettings.autoBackupEnabled}, path=${backupSettings.path}, frequencyDays=${backupSettings.backupFrequencyDays}"
+            "Cloud backup settings changed: autoCloudBackupEnabled=${cloudBackupSettings.autoCloudBackupEnabled}, frequency=${cloudBackupSettings.cloudBackupFrequency}"
         }
 
-        if (backupSettings.autoBackupEnabled && backupSettings.path.isNotBlank()) {
-            scheduleBackup(backupSettings.backupFrequencyDays)
-            logger.i { "Auto backup scheduled with path: ${backupSettings.path}, frequency: ${backupSettings.backupFrequencyDays} days" }
+        if (cloudBackupSettings.autoCloudBackupEnabled) {
+            scheduleCloudBackup(cloudBackupSettings.cloudBackupFrequency.hours)
+            logger.i { "Auto cloud backup scheduled with frequency: ${cloudBackupSettings.cloudBackupFrequency}" }
         } else {
-            cancelBackup()
-            logger.i { "Auto backup canceled" }
+            cancelCloudBackup()
+            logger.i { "Auto cloud backup canceled" }
         }
     }
 
-    private fun scheduleBackup(frequencyDays: Int) {
+    private fun scheduleCloudBackup(frequencyHours: Int) {
         val constraints =
             Constraints
                 .Builder()
-                .setRequiresCharging(true)
+                .setRequiredNetworkType(NetworkType.CONNECTED) // Requires internet for cloud sync
                 .build()
 
         val backupWorkRequest =
             PeriodicWorkRequestBuilder<AutoBackupWorker>(
-                repeatInterval = frequencyDays.toLong(),
-                repeatIntervalTimeUnit = TimeUnit.DAYS,
+                repeatInterval = frequencyHours.toLong(),
+                repeatIntervalTimeUnit = TimeUnit.HOURS,
             ).setInitialDelay(5, TimeUnit.MINUTES)
                 .setConstraints(constraints)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
@@ -95,13 +96,13 @@ class AutoBackupManager(
 
         workManager.enqueueUniquePeriodicWork(
             AutoBackupWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE, // Changed to REPLACE to update frequency
+            ExistingPeriodicWorkPolicy.REPLACE,
             backupWorkRequest,
         )
     }
 
-    private fun cancelBackup() {
-        logger.i { "Auto backup canceled" }
+    private fun cancelCloudBackup() {
+        logger.i { "Auto cloud backup canceled" }
         workManager.cancelUniqueWork(AutoBackupWorker.WORK_NAME)
     }
 }

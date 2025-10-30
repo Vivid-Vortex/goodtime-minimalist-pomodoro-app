@@ -18,88 +18,61 @@
 package com.apps.adrcotfas.goodtime.backup
 
 import android.content.Context
-import androidx.core.net.toUri
-import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import co.touchlab.kermit.Logger
-import com.apps.adrcotfas.goodtime.data.local.backup.BackupManager
+import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncHandler
+import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult
 import com.apps.adrcotfas.goodtime.data.settings.AppSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.flow.first
 import org.koin.core.component.KoinComponent
-import java.io.FileInputStream
+import org.koin.core.component.inject
 
 /**
- * WorkManager worker that performs the auto backup operation.
- * It retrieves the backup path from settings and calls BackupManager to perform the backup.
+ * WorkManager worker that performs auto cloud backup operation.
+ * It syncs all sessions to Firestore cloud storage on a scheduled basis.
  */
 class AutoBackupWorker(
     private val context: Context,
-    private val backupManager: BackupManager,
     private val settingsRepository: SettingsRepository,
     private val logger: Logger,
-    private val dbPath: String,
     params: WorkerParameters,
 ) : CoroutineWorker(context, params),
     KoinComponent {
+    private val firestoreSyncHandler: FirestoreSyncHandler by inject()
+
     override suspend fun doWork(): Result {
-        logger.i { "Starting auto backup worker" }
+        logger.i { "Starting auto cloud backup worker" }
 
         try {
             val settings: AppSettings = settingsRepository.settings.first()
-            val backupPath = settings.backupSettings.path
 
-            if (!settings.backupSettings.autoBackupEnabled || backupPath.isBlank()) {
-                logger.w { "Auto backup is disabled or path is invalid, skipping backup" }
+            if (!settings.cloudBackupSettings.autoCloudBackupEnabled) {
+                logger.w { "Auto cloud backup is disabled, skipping backup" }
                 return Result.failure()
             }
 
-            backupManager.checkpointDatabase()
-            val fileName = backupManager.generateBackupFileName(DB_AUTO_BACKUP_PREFIX)
+            // Sync all data to Firestore
+            val result = firestoreSyncHandler.syncData()
 
-            val backupDirUri = backupPath.toUri()
-            val backupDir = DocumentFile.fromTreeUri(context, backupDirUri)
-            if (backupDir == null || !backupDir.isDirectory) {
-                logger.w { "Backup directory is invalid" }
-                // the directory was probably deleted
-                return Result.failure()
-            }
-
-            backupDir.findFile(fileName)?.delete()
-
-            val backupFile = backupDir.createFile("application/octet-stream", fileName)
-            if (backupFile == null) {
-                logger.w { "Failed to create backup file" }
-                return Result.failure()
-            }
-
-            FileInputStream(dbPath).use { input ->
-                context.contentResolver.openOutputStream(backupFile.uri)?.use { output ->
-                    input.copyTo(output)
-                } ?: run {
-                    logger.w { "Failed to open output stream for backup file" }
-                    return Result.failure()
+            return when (result) {
+                is FirestoreSyncResult.Success -> {
+                    logger.i { "Auto cloud backup completed successfully" }
+                    Result.success()
+                }
+                is FirestoreSyncResult.Error -> {
+                    logger.e { "Auto cloud backup failed: ${result.message}" }
+                    Result.retry()
                 }
             }
-
-            backupDir
-                .listFiles()
-                .filter { it.isFile && it.name?.startsWith(DB_AUTO_BACKUP_PREFIX) == true }
-                .sortedByDescending { it.lastModified() }
-                .drop(7)
-                .forEach { it.delete() }
-
-            logger.i { "Auto backup completed successfully" }
-            return Result.success()
         } catch (e: Exception) {
-            logger.e(e) { "Auto backup failed" }
-            return Result.failure()
+            logger.e(e) { "Auto cloud backup failed with exception" }
+            return Result.retry()
         }
     }
 
     companion object {
-        const val WORK_NAME = "auto_backup_work"
-        private const val DB_AUTO_BACKUP_PREFIX = "GT-AutoBackup-"
+        const val WORK_NAME = "auto_cloud_backup_work"
     }
 }

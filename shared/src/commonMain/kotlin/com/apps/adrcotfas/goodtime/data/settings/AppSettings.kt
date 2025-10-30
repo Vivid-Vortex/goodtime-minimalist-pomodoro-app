@@ -57,6 +57,7 @@ data class AppSettings(
     val showOnboarding: Boolean = true,
     val showTutorial: Boolean = true,
     val backupSettings: BackupSettings = BackupSettings(),
+    val cloudBackupSettings: CloudBackupSettings = CloudBackupSettings(),
     /** The version code of the last dismissed update, or 0 if no update has been dismissed */
     val lastDismissedUpdateVersionCode: Long = 0,
 )
@@ -128,3 +129,20 @@ data class BackupSettings(
     val path: String = "",
     val backupFrequencyDays: Int = 1, // 1 = daily, 7 = weekly, 30 = monthly
 )
+
+@Serializable
+data class CloudBackupSettings(
+    val autoCloudBackupEnabled: Boolean = false,
+    val cloudBackupFrequency: CloudBackupFrequency = CloudBackupFrequency.DAILY,
+)
+
+@Serializable
+enum class CloudBackupFrequency(
+    val hours: Int,
+) {
+    HOURLY(1),
+    EVERY_4_HOURS(4),
+    EVERY_12_HOURS(12),
+    DAILY(24),
+    WEEKLY(168), // 7 * 24
+}

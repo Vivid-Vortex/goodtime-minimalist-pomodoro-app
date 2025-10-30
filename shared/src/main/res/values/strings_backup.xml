@@ -31,4 +31,11 @@
     <string name="backup_sync_with_firestore">Save to cloud</string>
     <string name="backup_sync_firestore_success">Successfully synced with cloud</string>
     <string name="backup_sync_firestore_error">Sync failed: %s</string>
+    <string name="backup_auto_cloud_backup">Auto cloud backup</string>
+    <string name="backup_cloud_backup_frequency">Backup frequency</string>
+    <string name="backup_frequency_hourly">Hourly</string>
+    <string name="backup_frequency_every_4_hours">Every 4 hours</string>
+    <string name="backup_frequency_every_12_hours">Every 12 hours</string>
+    <string name="backup_frequency_daily">Daily</string>
+    <string name="backup_frequency_weekly">Weekly</string>
 </resources>

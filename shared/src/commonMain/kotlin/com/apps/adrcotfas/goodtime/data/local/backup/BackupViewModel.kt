@@ -20,6 +20,7 @@ package com.apps.adrcotfas.goodtime.data.local.backup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
+import com.apps.adrcotfas.goodtime.data.settings.CloudBackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,7 @@ data class BackupUiState(
     val firestoreSyncResult: Boolean? = null,
     val firestoreSyncError: String? = null,
     val backupSettings: BackupSettings = BackupSettings(),
+    val cloudBackupSettings: CloudBackupSettings = CloudBackupSettings(),
 )
 
 expect class FirestoreSyncHandler {
@@ -73,13 +75,16 @@ class BackupViewModel(
         viewModelScope.launch {
             settingsRepository.settings
                 .distinctUntilChanged { old, new ->
-                    old.isPro == new.isPro && old.backupSettings == new.backupSettings
+                    old.isPro == new.isPro &&
+                        old.backupSettings == new.backupSettings &&
+                        old.cloudBackupSettings == new.cloudBackupSettings
                 }.collect { settings ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             isPro = settings.isPro,
                             backupSettings = settings.backupSettings,
+                            cloudBackupSettings = settings.cloudBackupSettings,
                         )
                     }
                 }
@@ -178,6 +183,12 @@ class BackupViewModel(
     fun setBackupSettings(settings: BackupSettings) {
         coroutineScope.launch {
             settingsRepository.setBackupSettings(settings)
+        }
+    }
+
+    fun setCloudBackupSettings(settings: CloudBackupSettings) {
+        coroutineScope.launch {
+            settingsRepository.setCloudBackupSettings(settings)
         }
     }
 }

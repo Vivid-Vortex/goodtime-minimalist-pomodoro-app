@@ -85,5 +85,7 @@ interface SettingsRepository {
 
     suspend fun setBackupSettings(backupSettings: BackupSettings)
 
+    suspend fun setCloudBackupSettings(cloudBackupSettings: CloudBackupSettings)
+
     suspend fun setLastDismissedUpdateVersionCode(versionCode: Long)
 }

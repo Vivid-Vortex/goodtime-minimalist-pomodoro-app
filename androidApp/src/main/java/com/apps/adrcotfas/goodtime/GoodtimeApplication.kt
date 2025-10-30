@@ -43,7 +43,6 @@ import com.apps.adrcotfas.goodtime.data.backup.ActivityResultLauncherManager
 import com.apps.adrcotfas.goodtime.data.backup.AndroidBackupPrompter
 import com.apps.adrcotfas.goodtime.data.local.backup.BackupPrompter
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
-import com.apps.adrcotfas.goodtime.di.DB_PATH_KEY
 import com.apps.adrcotfas.goodtime.di.IO_SCOPE
 import com.apps.adrcotfas.goodtime.di.WORKER_SCOPE
 import com.apps.adrcotfas.goodtime.di.coreModule
@@ -184,8 +183,6 @@ class GoodtimeApplication :
                             get(),
                             get(),
                             getWith("AutoBackupWorker"),
-                            get<String>(named(DB_PATH_KEY)),
-                            get(),
                         )
                     }
                 },

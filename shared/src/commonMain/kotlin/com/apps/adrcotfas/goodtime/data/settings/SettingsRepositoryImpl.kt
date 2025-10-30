@@ -70,6 +70,7 @@ class SettingsRepositoryImpl(
         val showOnboardingKey = booleanPreferencesKey("showOnboardingKey")
         val showTutorialKey = booleanPreferencesKey("showTutorialKey")
         val backupSettingsKey = stringPreferencesKey("backupSettingsKey")
+        val cloudBackupSettingsKey = stringPreferencesKey("cloudBackupSettingsKey")
         val lastDismissedUpdateVersionCodeKey = longPreferencesKey("lastDismissedUpdateVersionCodeKey")
     }
 
@@ -160,6 +161,10 @@ class SettingsRepositoryImpl(
                         it[Keys.backupSettingsKey]?.let { b ->
                             json.decodeFromString<BackupSettings>(b)
                         } ?: BackupSettings(),
+                    cloudBackupSettings =
+                        it[Keys.cloudBackupSettingsKey]?.let { c ->
+                            json.decodeFromString<CloudBackupSettings>(c)
+                        } ?: CloudBackupSettings(),
                     lastDismissedUpdateVersionCode = it[Keys.lastDismissedUpdateVersionCodeKey] ?: default.lastDismissedUpdateVersionCode,
                 )
             }.catch {
@@ -314,6 +319,12 @@ class SettingsRepositoryImpl(
     override suspend fun setBackupSettings(backupSettings: BackupSettings) {
         dataStore.edit {
             it[Keys.backupSettingsKey] = json.encodeToString(backupSettings)
+        }
+    }
+
+    override suspend fun setCloudBackupSettings(cloudBackupSettings: CloudBackupSettings) {
+        dataStore.edit {
+            it[Keys.cloudBackupSettingsKey] = json.encodeToString(cloudBackupSettings)
         }
     }
 
