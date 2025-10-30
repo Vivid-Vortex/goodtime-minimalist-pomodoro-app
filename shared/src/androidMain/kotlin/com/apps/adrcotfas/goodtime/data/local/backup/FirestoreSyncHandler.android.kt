@@ -96,8 +96,10 @@ actual class FirestoreSyncHandler(
                 }
 
                 // Update the field in formData
+                // Convert duration from milliseconds to minutes
+                val durationInMinutes = (session.duration / 60000).toInt()
                 val currentValue = formData[fieldName] as? String ?: "0"
-                val newValue = (currentValue.toIntOrNull() ?: 0) + session.duration.toInt()
+                val newValue = (currentValue.toIntOrNull() ?: 0) + durationInMinutes
 
                 documentRef.update("formData.$fieldName", newValue.toString()).await()
                 Log.d(TAG, "Updated $fieldName with value $newValue for date $documentId")
@@ -215,12 +217,13 @@ actual class FirestoreSyncHandler(
                     return FirestoreSyncResult.Error("No tag with name ${session.labelName} found in database")
                 }
 
-                // Set the duration for this session
+                // Set the duration for this session (convert from milliseconds to minutes)
+                val durationInMinutes = (session.duration / 60000).toInt()
                 @Suppress("UNCHECKED_CAST")
-                (newDocument["formData"] as HashMap<String, Any>)[fieldName] = session.duration.toString()
+                (newDocument["formData"] as HashMap<String, Any>)[fieldName] = durationInMinutes.toString()
 
                 documentRef.set(newDocument).await()
-                Log.d(TAG, "Created new document with ID: $documentId and set $fieldName to ${session.duration}")
+                Log.d(TAG, "Created new document with ID: $documentId and set $fieldName to $durationInMinutes minutes")
             }
 
             FirestoreSyncResult.Success

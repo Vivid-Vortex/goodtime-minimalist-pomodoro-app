@@ -249,3 +249,11 @@ New Json structure:
       "entertainment": ""
     }
   }
+	
+---
+Section 2:
+
+First check why app name not changed form Goodtime to Pomodoro Auto.
+Why the app is crashing when I am pressing Save to cloud button after instlling in the device.
+---
+
