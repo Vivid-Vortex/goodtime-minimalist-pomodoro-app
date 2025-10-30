@@ -255,11 +255,158 @@ Section 2:
 
 First check why app name not changed form Goodtime to Pomodoro Auto.
 Why the app is crashing when I am pressing Save to cloud button after instlling in the device.
----
+--- 
 Section 3:
 I tested the app with 1 mins duration saved locally in the app for tag W1M but when I clicked on the save to cloud section, then in the database corresponding data key in thish case is work1Main for W1M which is correct but saved wrong data as 0 in cloud which should be 1 as per the local duratin. 
 Make sure we a all the time in the cloud db json under Log Hours should be saved in minutes, say 60, 500, 720 etc. anything but in minutes.
 Kindly modiy auto back to do the manual schedulling back up which is decidedand set by user.
 Keep the same icon but change it's color to mix of pink and voilet.
 
+---  Pending
+Section 4:
+work1Main is still geting saved in the cloud db as "0" even though I am seeing W1M has 1 as the value in the app.
+
+Make sure only these fields get saved in the json to firestore db as int (and other as String as before section 3 changes and I think boolen was boolena only before section 3 so keep that as is) and not string and correct why wrong data is being saved.
+
+with fields 
+"avdhanaMode": 0,
+"work1ToWork4Ikigai": 0,
+"work3Udemy": 0,
+"work4TechWebsite": 0,
+"work2Youtube": 0,
+"work5OnlineSale": 0,
+"ltgLongTermGoal": 0,
+"timeWasted": 0,
+"spentOnEssentials": 0,
+"finance": 0,
+"others": 0
+"work1Main": 0,
+"work1Misc": 0,
+"projectManagement": 0
+"learning": 0,
+"meditation": 0,
+"exercise": 0
+
+So that the whole json would look like:
+
+New Json structure-v2:
+{
+  "id": "30-10-2025",
+  "createdAt": 1730332800000,
+  "formData": {
+    "entryDate": 1730332800000,
+    "tagSnapshot": {
+      "avdhanaMode": "AV",
+      "wcmn": "WCMN",
+      "work3": "W3",
+      "work4": "W4",
+      "work2": "W2",
+      "work5": "W5",
+      "ltg": "LTG",
+      "timeWasted": "TW",
+      "essentials": "ESS",
+      "finance": "FIN",
+      "others": "OTH",
+      "work1Main": "W1M",
+      "work1Misc": "W1X",
+      "projectManagement": "PM",
+      "learning": "LRN",
+      "meditation": "MED",
+      "exercise": "EXE"
+    },
+
+    "intoxNo": "N/A",
+    "mbtNo": "N/A",
+    "topPriorityTime": "",
+    "topPriorityThinking": "N/A",
+    "playedFirstThingComesToMindGame": false,
+
+    "thinking": true,
+    "issue": "NONE",
+    "issueOtherText": "",
+
+    "onTimeSleep": false,
+    "mpvOfSleep": false,
+    "wakedUpAt4Am": false,
+    "selfAndSurroundingVastu": false,
+
+    "twentyMinsLearning": false,
+    "thirtyMinsMeditation": false,
+    "sixtyMinsExercise": false,
+
+    "overallHealthStatus": 1,
+
+    "phase2Sleep": false,
+    "minimum270Min": false,
+    "dayProductivity": "PRODUCTIVE",
+    "timePocketFollowed": false,
+    "youtubeTimeUtilizerDocFollowed": false,
+
+    "wastedMoreThan15Mins": false,
+    "approxWastedMinutes": 0,
+    "activity1": "",
+    "activity2": "",
+    "activity3": "",
+    "activity4": "",
+    "activity5": "",
+
+    "pomodoroFollowed": false,
+    "sprint": 6,
+
+    "avdhanaMode": 0,
+    "work1ToWork4Ikigai": 0,
+    "work3Udemy": 0,
+    "work4TechWebsite": 0,
+    "work2Youtube": 0,
+    "work5OnlineSale": 0,
+    "ltgLongTermGoal": 0,
+    "timeWasted": 0,
+    "spentOnEssentials": 0,
+    "finance": 0,
+    "others": 0,
+
+    "work1Main": 0,
+    "work1Misc": 0,
+    "projectManagement": 0,
+
+    "learning": 0,
+    "meditation": 0,
+    "exercise": 0,
+
+    "mitsCompletedWithin270To360Mins": false,
+    "total": "",
+    "completed270MinsBeforeSixPm": false,
+    "ableToCompleteDaysMits": false,
+
+    "carpeMomentum1440FollowedToday": false,
+    "timePocketFollowedToday": false,
+    "productivityPointsSuccessDocFollowed": false,
+    "anchorPoints": false,
+
+    "sitStraightFor2Sprints": false,
+    "didEverythingTimeBound": false,
+    "followed4To4Policy": false,
+    "ateBreakfastDistractionFree": false,
+    "satOnTimeAfterDWT3": false,
+
+    "relaxationAfter2Sprints": "",
+    "sleepPhase1": "",
+    "sleepPhase2": "",
+    "pppw": "",
+    "tppw": "",
+    "entertainment": ""
+  }
+}
+
+
+In the firestore db json structure, You have to find the tags under all the values of tagSnapshot,
+then when matched take the key of that value and find that key outside tagSnapshot. And then update
+the tag value in minutes in the app to that particualr value.
+
+Say in order to update the current value of 1 under tag W1M locally,
+W1M -> work1Main (under tagSnapshot) -> work1Main (outsie tagSnapshot) should be updated with in this case 1 because for W1M value for that day or today is 1.
+
+form the json and then push it to cloud. 
+
+And make sure that only one entry is crated for one date say 30-10-2025 no matter how many times user create/updates the data. Say If 30-10-2025 is already there then update it else form the json (as per New Json structure-v2) and push it.
 ---

@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,6 +72,7 @@ import compose.icons.evaicons.outline.ColorPalette
 import compose.icons.evaicons.outline.Heart
 import compose.icons.evaicons.outline.PieChart
 import compose.icons.evaicons.outline.Sync
+import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 
 @Composable
@@ -84,8 +86,19 @@ fun ProScreen(
     val isPro by billing.isPro.collectAsStateWithLifecycle(false)
     val isPending by billing.purchasePending.collectAsStateWithLifecycle(false)
 
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(isPending, isPro) {
         if (isPending || isPro) {
+            onNavigateBack()
+        }
+    }
+
+    // Add timeout to prevent infinite loading when billing is not available
+    LaunchedEffect(Unit) {
+        delay(5000) // Wait 5 seconds for billing to load
+        if (productDetails == null) {
+            // Billing not available, navigate back
             onNavigateBack()
         }
     }
