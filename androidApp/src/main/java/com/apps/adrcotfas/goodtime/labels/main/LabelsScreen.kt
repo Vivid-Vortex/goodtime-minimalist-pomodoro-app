@@ -125,11 +125,8 @@ fun LabelsScreen(
                     modifier = Modifier.size(72.dp),
                     shape = CircleShape,
                     onClick = {
-                        if (uiState.isPro) {
-                            onNavigateToLabel(AddEditLabelDest(name = ""))
-                        } else {
-                            onNavigateToPro()
-                        }
+                        // Personal app - no Pro check needed
+                        onNavigateToLabel(AddEditLabelDest(name = ""))
                     },
                 ) {
                     Icon(EvaIcons.Outline.Plus, stringResource(R.string.labels_add_label))
