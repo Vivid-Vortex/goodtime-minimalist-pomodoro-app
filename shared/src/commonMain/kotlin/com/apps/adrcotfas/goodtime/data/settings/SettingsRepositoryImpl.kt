@@ -86,7 +86,7 @@ class SettingsRepositoryImpl(
             }.map {
                 val default = AppSettings()
                 AppSettings(
-                    isPro = it[Keys.isProKey] ?: default.isPro,
+                    isPro = true, // Always Pro for personal app
                     timeProfilesInitialized =
                         it[Keys.timerProfilesInitializedKey]
                             ?: default.timeProfilesInitialized,
