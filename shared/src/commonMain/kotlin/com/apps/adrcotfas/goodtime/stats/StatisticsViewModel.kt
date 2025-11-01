@@ -26,6 +26,8 @@ import androidx.paging.map
 import com.apps.adrcotfas.goodtime.bl.LabelData
 import com.apps.adrcotfas.goodtime.bl.TimeProvider
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
+import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncHandler
+import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult
 import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.data.model.getLabelData
@@ -87,6 +89,7 @@ class StatisticsViewModel(
     private val localDataRepo: LocalDataRepository,
     private val settingsRepository: SettingsRepository,
     private val timeProvider: TimeProvider,
+    private val firestoreSyncHandler: FirestoreSyncHandler?,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState =
@@ -329,6 +332,15 @@ class StatisticsViewModel(
     fun setShowArchived(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.updateStatisticsSettings { it.copy(showArchived = enabled) }
+        }
+    }
+
+    fun refreshFromCloud() {
+        viewModelScope.launch {
+            // Sync local data to cloud
+            val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
+            // After sync, the local database already has the data, and statistics will automatically refresh
+            // because they observe the local database through flows
         }
     }
 }

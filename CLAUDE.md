@@ -410,3 +410,15 @@ form the json and then push it to cloud.
 
 And make sure that only one entry is crated for one date say 30-10-2025 no matter how many times user create/updates the data. Say If 30-10-2025 is already there then update it else form the json (as per New Json structure-v2) and push it.
 ---
+Section 5:
+
+1. If for one given date let's say more than 1 tag with same string say W1M is there, then add the minutes of those tags and then save it to work1Main in the json.
+
+2. Also, I am still not seeing the auto back under Backup and restore changed to do the schedulling of pushing the data to cloud.
+
+3. Kindly add refresh functinality under Statistics section of the app.
+
+4. Make sure that Statistics section pulls the lastest data from cloud either through app refresh by user or at the time of app restart.
+
+---
+

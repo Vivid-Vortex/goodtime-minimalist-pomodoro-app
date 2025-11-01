@@ -43,7 +43,7 @@ actual val viewModelModule: Module =
         viewModelOf(::SettingsViewModel)
         viewModelOf(::TimerProfileViewModel)
         viewModel { BackupViewModel(get(), get(), get(), get(named(IO_SCOPE))) }
-        viewModelOf(::StatisticsViewModel)
+        viewModel { StatisticsViewModel(get(), get(), get(), get()) }
         viewModelOf(::StatisticsHistoryViewModel)
     }
 actual val mainModule: Module =

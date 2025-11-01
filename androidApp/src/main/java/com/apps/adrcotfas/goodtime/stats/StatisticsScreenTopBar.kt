@@ -63,6 +63,7 @@ fun StatisticsScreenTopBar(
     onCancel: () -> Unit,
     onDeleteClick: () -> Unit,
     onSelectAll: () -> Unit,
+    onRefreshFromCloud: () -> Unit,
     showSelectionUi: Boolean,
     selectionCount: Int,
     showSeparator: Boolean,
@@ -182,6 +183,18 @@ fun StatisticsScreenTopBar(
                                     },
                                     onClick = {
                                         onSetShowArchived(!showArchived)
+                                        dropDownMenuExpanded = false
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            modifier = paddingModifier,
+                                            text = stringResource(R.string.stats_refresh_from_cloud),
+                                        )
+                                    },
+                                    onClick = {
+                                        onRefreshFromCloud()
                                         dropDownMenuExpanded = false
                                     },
                                 )

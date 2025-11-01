@@ -127,6 +127,7 @@ fun StatisticsScreen(
                 onCancel = { viewModel.clearShowSelectionUi() },
                 onDeleteClick = { showDeleteConfirmationDialog = true },
                 onSelectAll = { viewModel.selectAllSessions(sessionsPagingItems.itemCount) },
+                onRefreshFromCloud = { viewModel.refreshFromCloud() },
                 showSelectionUi = uiState.showSelectionUi,
                 selectionCount = uiState.selectionCount,
                 showSeparator = uiState.showSelectionUi && historyListState.canScrollBackward,
