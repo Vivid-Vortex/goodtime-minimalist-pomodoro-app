@@ -48,6 +48,7 @@
     <application
         android:name=".GoodtimeApplication"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/default_launcher_name"
         android:supportsRtl="true"
