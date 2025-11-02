@@ -22,6 +22,6 @@ import org.koin.core.module.Module
 
 actual fun Module.platformFirestoreModule() {
     single<FirestoreSyncHandler> {
-        FirestoreSyncHandler(get())
+        FirestoreSyncHandler(get(), get())
     }
 }

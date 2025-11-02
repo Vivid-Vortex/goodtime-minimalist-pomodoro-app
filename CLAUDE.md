@@ -421,4 +421,15 @@ Section 5:
 4. Make sure that Statistics section pulls the lastest data from cloud either through app refresh by user or at the time of app restart.
 
 ---
+Section 6.
+There will be two new section as below:
+Create a new collection in db named as pomodoro_app_history. This should populate the data from every device the app is running one with the device name to show which device history is that. But the collection should be same. collectoin_id should be same as timesheet_entries as date format.
+
+App History Section: This should populate the current data as shown in Timelien section under staticstis but in addition it should also fetch the data from db and show it along with the device name as badge to indicate which device it is from. You can give device name to indentify. Also, we should not use this section to calculate total or for analytics section. This is just for history.
+
+Timeline Section: This should show the aggregated data for each label and should be used for analytics in statics section such as graph etc. For every lable only one data should be there for each date. Even if it is calculated from device or coming from cloud db.
+If coming from cloud db, then overwirte this for every lable and don't add it for each date. Use this section for analytics purpose on the device such as or showing graph etc. 
+
+Keep saving the new data from history section and add it to the cloud section before pushing tot he db. But only new data should be add to the one on cloud. Say if cloud is havin 276 or W1M and agin user ran 6 mins in the device, then add only 6 minutes to 276 and total 282 should be saved to db. Handle this for differnt device as the app would run on differnet device with same db.
+---
 

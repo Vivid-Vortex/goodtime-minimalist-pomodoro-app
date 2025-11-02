@@ -78,6 +78,7 @@ import org.koin.androidx.compose.koinViewModel
 
 private enum class TabType {
     Overview,
+    AppHistory,
     Timeline,
 }
 
@@ -142,6 +143,7 @@ fun StatisticsScreen(
         val titles =
             listOf(
                 stringResource(R.string.stats_overview),
+                stringResource(R.string.stats_app_history),
                 stringResource(R.string.stats_timeline),
             )
 
@@ -189,8 +191,8 @@ fun StatisticsScreen(
                                 historyChartViewModel = historyViewModel,
                             )
 
-                        TabType.Timeline -> {
-                            TimelineTab(
+                        TabType.AppHistory -> {
+                            AppHistoryTab(
                                 listState = historyListState,
                                 sessions = sessionsPagingItems,
                                 isSelectAllEnabled = uiState.isSelectAllEnabled,
@@ -207,6 +209,13 @@ fun StatisticsScreen(
                                 onLongClick = {
                                     viewModel.toggleSessionIsSelected(it.id)
                                 },
+                            )
+                        }
+
+                        TabType.Timeline -> {
+                            AggregatedTimelineTab(
+                                aggregatedSessions = uiState.aggregatedSessions,
+                                labels = uiState.labels,
                             )
                         }
                     }

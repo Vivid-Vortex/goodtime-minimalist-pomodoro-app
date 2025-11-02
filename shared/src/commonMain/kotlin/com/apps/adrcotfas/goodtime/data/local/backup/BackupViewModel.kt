@@ -49,6 +49,8 @@ data class BackupUiState(
 
 expect class FirestoreSyncHandler {
     suspend fun syncData(): FirestoreSyncResult
+
+    suspend fun fetchFromCloud(): FirestoreSyncResult
 }
 
 sealed class FirestoreSyncResult {

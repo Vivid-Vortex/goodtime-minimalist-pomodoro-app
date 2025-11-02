@@ -19,6 +19,7 @@
 <resources>
     <string name="stats_title">Statistics</string>
     <string name="stats_overview">Overview</string>
+    <string name="stats_app_history">App History</string>
     <string name="stats_timeline">Timeline</string>
     <string name="stats_today">Today</string>
     <string name="stats_week">Week %1$s</string>

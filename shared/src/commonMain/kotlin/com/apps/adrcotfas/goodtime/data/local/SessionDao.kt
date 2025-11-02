@@ -55,6 +55,12 @@ interface SessionDao {
         ids: List<Long>,
     )
 
+    @Query("UPDATE localSession SET notes = :newNotes WHERE id = :id")
+    suspend fun updateNotes(
+        id: Long,
+        newNotes: String,
+    )
+
     @Query(
         """
         UPDATE localSession SET labelName = :newLabel

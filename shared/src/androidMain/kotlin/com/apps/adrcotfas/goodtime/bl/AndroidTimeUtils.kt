@@ -32,6 +32,18 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 object AndroidTimeUtils {
+    fun Long.formatToPrettyDate(
+        context: Context,
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        val instant = Instant.fromEpochMilliseconds(this)
+        val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+
+        return dateTime.date.toJavaLocalDate().format(
+            DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale),
+        )
+    }
+
     fun Long.formatToPrettyDateAndTime(
         context: Context,
         locale: Locale = Locale.getDefault(),

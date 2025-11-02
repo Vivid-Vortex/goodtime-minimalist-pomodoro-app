@@ -51,6 +51,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
 
+data class AggregatedSession(
+    val date: Long, // normalized date (start of day)
+    val label: String,
+    val totalDuration: Long, // total minutes for this label on this date
+)
+
 data class StatisticsUiState(
     val isLoading: Boolean = true,
     val isPro: Boolean = false,
@@ -72,6 +78,7 @@ data class StatisticsUiState(
     val workDayStart: Int = 0,
     val statisticsSettings: StatisticsSettings = StatisticsSettings(),
     val statisticsData: StatisticsData = StatisticsData(),
+    val aggregatedSessions: List<AggregatedSession> = emptyList(),
 ) {
     val showSelectionUi: Boolean
         get() = selectedSessions.isNotEmpty() || isSelectAllEnabled
@@ -170,6 +177,44 @@ class StatisticsViewModel(
                     _uiState.update { it.copy(statisticsData = data, isLoading = false) }
                 }
         }
+
+        viewModelScope.launch {
+            uiState
+                .map { it.selectedLabels }
+                .distinctUntilChanged()
+                .flatMapLatest { selectedLabels ->
+                    localDataRepo
+                        .selectSessionsByLabels(selectedLabels)
+                        .map { sessions ->
+                            withContext(Dispatchers.Default) {
+                                computeAggregatedSessions(sessions)
+                            }
+                        }
+                }.collect { aggregatedSessions ->
+                    _uiState.update { it.copy(aggregatedSessions = aggregatedSessions) }
+                }
+        }
+    }
+
+    private fun computeAggregatedSessions(sessions: List<Session>): List<AggregatedSession> {
+        // Group by date (normalize to start of day) and label
+        val grouped =
+            sessions.groupBy { session ->
+                val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+                Pair(normalizedDate, session.label)
+            }
+
+        return grouped
+            .map { (key, sessionsForKey) ->
+                val (date, label) = key
+                val totalDuration = sessionsForKey.sumOf { it.duration }
+
+                AggregatedSession(
+                    date = date,
+                    label = label,
+                    totalDuration = totalDuration,
+                )
+            }.sortedByDescending { it.date }
     }
 
     fun setSelectedLabels(selectedLabels: List<String>) {
@@ -337,9 +382,13 @@ class StatisticsViewModel(
 
     fun refreshFromCloud() {
         viewModelScope.launch {
-            // Sync local data to cloud
-            val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
-            // After sync, the local database already has the data, and statistics will automatically refresh
+            // First, push any local unsynced data to cloud
+            firestoreSyncHandler?.syncData()
+
+            // Then, fetch data from cloud and merge into local database
+            val result = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+
+            // After fetch, the local database will have cloud data, and statistics will automatically refresh
             // because they observe the local database through flows
         }
     }
