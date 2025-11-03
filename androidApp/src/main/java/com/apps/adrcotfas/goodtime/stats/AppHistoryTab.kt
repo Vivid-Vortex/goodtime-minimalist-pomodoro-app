@@ -168,6 +168,7 @@ fun AppHistoryTab(
                     onClick = { onClick(session) },
                     onLongClick = { onLongClick(session) },
                     showDeviceBadge = true,
+                    currentDeviceName = currentDeviceName,
                 )
             }
         }
@@ -195,7 +196,8 @@ fun AppHistoryTab(
                         isSelected = isSelected,
                         onClick = { onClick(session) },
                         onLongClick = { onLongClick(session) },
-                        showDeviceBadge = false,
+                        showDeviceBadge = true, // Show device badge for all sessions
+                        currentDeviceName = currentDeviceName,
                     )
                 }
             }
@@ -213,12 +215,16 @@ fun AppHistoryListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     showDeviceBadge: Boolean = false,
+    currentDeviceName: String = "",
 ) {
-    val isSyncedFromCloud = session.notes.contains("Synced from cloud", ignoreCase = true)
+    // Check if session is from cloud (has deviceName from another device)
+    val isFromOtherDevice = session.deviceName.isNotEmpty() && session.deviceName != currentDeviceName
+    val isFromCloud = session.notes.contains("cloud_synced_at:", ignoreCase = true)
+
     val containerColor =
         when {
             isSelected -> MaterialTheme.colorScheme.secondaryContainer
-            isSyncedFromCloud -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            isFromOtherDevice -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             else -> MaterialTheme.colorScheme.surface
         }
 
@@ -274,12 +280,22 @@ fun AppHistoryListItem(
                         maxLines = 1,
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    if (showDeviceBadge && session.deviceName.isNotEmpty()) {
+                    if (showDeviceBadge) {
+                        val displayDeviceName =
+                            if (session.deviceName.isEmpty()) currentDeviceName else session.deviceName
+                        val chipColor =
+                            if (isFromOtherDevice) {
+                                // Different color for cloud-synced sessions from other devices
+                                MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+                            } else {
+                                // Default color for local device
+                                MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+                            }
                         SuggestionChip(
                             onClick = { },
                             label = {
                                 Text(
-                                    text = session.deviceName,
+                                    text = displayDeviceName,
                                     style = MaterialTheme.typography.labelSmall,
                                     maxLines = 1,
                                     softWrap = false,
@@ -288,8 +304,8 @@ fun AppHistoryListItem(
                             },
                             colors =
                                 SuggestionChipDefaults.suggestionChipColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor = chipColor.first,
+                                    labelColor = chipColor.second,
                                 ),
                         )
                     }
