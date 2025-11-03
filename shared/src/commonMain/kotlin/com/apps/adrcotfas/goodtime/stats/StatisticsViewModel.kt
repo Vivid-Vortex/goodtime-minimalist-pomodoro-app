@@ -250,8 +250,13 @@ class StatisticsViewModel(
             }
         }
 
-        // DO NOT auto-fetch on initialization
-        // User must manually press refresh button or "Save to cloud"
+        // Auto-fetch cloud data on initialization so Timeline reflects cloud state
+        // Timeline should show: cloud data (from timesheet_entries) + unsynced local data
+        viewModelScope.launch {
+            co.touchlab.kermit.Logger
+                .d { "Auto-fetching cloud data on initialization" }
+            refreshFromCloud()
+        }
     }
 
     private fun computeTimelineData(allSessions: List<Session>) {
@@ -259,15 +264,16 @@ class StatisticsViewModel(
         co.touchlab.kermit.Logger
             .d { "computeTimelineData: cloudData size=${cloudData.size}, allSessions size=${allSessions.size}" }
 
-        // Get unsynced local sessions only (those without cloud sync marker)
+        // Separate synced and unsynced sessions
         val unsyncedSessions =
             allSessions.filter {
                 !it.notes.contains("cloud_synced_at:", ignoreCase = true)
             }
+
         co.touchlab.kermit.Logger
             .d { "computeTimelineData: unsyncedSessions size=${unsyncedSessions.size}" }
 
-        // Aggregate unsynced sessions by date and label
+        // Aggregate unsynced local sessions by date and label
         val unsyncedAggregated =
             unsyncedSessions
                 .groupBy { session ->
@@ -277,18 +283,18 @@ class StatisticsViewModel(
                     sessions.sumOf { it.duration }
                 }
 
-        // Merge cloud + unsynced local
+        // Timeline = Cloud data (from all devices) + unsynced local sessions (new data)
         val mergedData = mutableMapOf<Pair<Long, String>, Long>()
 
-        // Add cloud data
-        cloudData.forEach { (key, duration) ->
-            val parts = key.split("_")
+        // Start with cloud data (source of truth, includes data from all devices)
+        cloudData.forEach { (cloudKey, cloudDuration) ->
+            val parts = cloudKey.split("_")
             val timestamp = parts[0].toLong()
             val label = parts.drop(1).joinToString("_")
-            mergedData[Pair(timestamp, label)] = duration
+            mergedData[Pair(timestamp, label)] = cloudDuration
         }
 
-        // Add unsynced local (on top of cloud)
+        // Add unsynced local sessions (new data not yet in cloud)
         unsyncedAggregated.forEach { (key, duration) ->
             val currentValue = mergedData[key] ?: 0
             mergedData[key] = currentValue + duration
@@ -305,6 +311,9 @@ class StatisticsViewModel(
                         totalDuration = duration,
                     )
                 }.sortedByDescending { it.date }
+
+        co.touchlab.kermit.Logger
+            .d { "computeTimelineData: Final timeline entries=${timeline.size}" }
 
         _uiState.update { it.copy(aggregatedSessions = timeline) }
     }

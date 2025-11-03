@@ -178,23 +178,24 @@ class BackupViewModel(
         coroutineScope.launch {
             _uiState.update { it.copy(isSyncingWithFirestore = true) }
 
-            // IMPORTANT: Fetch cloud data FIRST to populate StatisticsViewModel state
-            // This prevents Timeline from disappearing when sessions get marked as synced
-            val existingCloudData = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
-            if (existingCloudData is FirestoreSyncResult.CloudData) {
-                _cloudDataRefreshEvents.emit(existingCloudData)
-            }
-
-            // Now sync new data to cloud (marks sessions as synced)
+            // Sync new data to cloud (marks sessions as synced)
             val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
 
-            // Fetch again after sync to get the newly synced data
-            if (result is FirestoreSyncResult.Success || result is FirestoreSyncResult.CloudData) {
-                val fetchResult = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+            // ALWAYS fetch cloud data after sync attempt (even if sync failed)
+            // This ensures Timeline is updated with the latest cloud state
+            val fetchResult = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+            if (fetchResult is FirestoreSyncResult.CloudData) {
+                co.touchlab.kermit.Logger
+                    .d { "syncWithFirestore: Emitting cloud data with ${fetchResult.aggregatedData.size} entries" }
                 _cloudDataRefreshEvents.emit(fetchResult)
+                co.touchlab.kermit.Logger
+                    .d { "syncWithFirestore: Cloud data emitted" }
+            } else {
+                co.touchlab.kermit.Logger
+                    .e { "syncWithFirestore: Failed to fetch cloud data - $fetchResult" }
             }
 
-            // IMPORTANT: Only set isSyncingWithFirestore = false AFTER final fetch
+            // IMPORTANT: Only set isSyncingWithFirestore = false AFTER fetch completes
             // This keeps Timeline blocked during the entire sync process
             _uiState.update {
                 it.copy(
@@ -208,6 +209,8 @@ class BackupViewModel(
                         },
                 )
             }
+            co.touchlab.kermit.Logger
+                .d { "syncWithFirestore: Sync complete, isSyncingWithFirestore = false" }
         }
     }
 
