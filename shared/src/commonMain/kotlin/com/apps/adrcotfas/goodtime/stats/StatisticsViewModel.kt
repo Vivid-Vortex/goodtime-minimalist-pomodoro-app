@@ -108,9 +108,6 @@ class StatisticsViewModel(
             .onStart { loadData() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatisticsUiState())
 
-    // Flag to prevent Timeline updates during cloud sync
-    private var isSyncing = false
-
     val pagedSessions: Flow<PagingData<Session>> =
         uiState
             .distinctUntilChanged { old, new ->
@@ -211,19 +208,9 @@ class StatisticsViewModel(
         // Timeline: Combine cloud data + unsynced local sessions
         viewModelScope.launch {
             localDataRepo.selectAllSessions().collect { allSessions ->
-                // Skip Timeline updates during cloud sync to prevent flickering
-                if (!isSyncing) {
-                    computeTimelineData(allSessions)
-                }
-            }
-        }
-
-        // Observe BackupViewModel sync state to block Timeline updates during sync
-        viewModelScope.launch {
-            backupViewModel.uiState.collect { backupState ->
-                isSyncing = backupState.isSyncingWithFirestore
-                co.touchlab.kermit.Logger
-                    .d { "BackupViewModel sync state changed: isSyncing=$isSyncing" }
+                // Always recompute Timeline when local sessions change
+                // This ensures Timeline is always up-to-date
+                computeTimelineData(allSessions)
             }
         }
 
@@ -264,18 +251,9 @@ class StatisticsViewModel(
         co.touchlab.kermit.Logger
             .d { "computeTimelineData: cloudData size=${cloudData.size}, allSessions size=${allSessions.size}" }
 
-        // Separate synced and unsynced sessions
-        val unsyncedSessions =
-            allSessions.filter {
-                !it.notes.contains("cloud_synced_at:", ignoreCase = true)
-            }
-
-        co.touchlab.kermit.Logger
-            .d { "computeTimelineData: unsyncedSessions size=${unsyncedSessions.size}" }
-
-        // Aggregate unsynced local sessions by date and label
-        val unsyncedAggregated =
-            unsyncedSessions
+        // Aggregate ALL local sessions by date and label (synced and unsynced)
+        val localAggregated =
+            allSessions
                 .groupBy { session ->
                     val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
                     Pair(normalizedDate, session.label)
@@ -283,21 +261,29 @@ class StatisticsViewModel(
                     sessions.sumOf { it.duration }
                 }
 
-        // Timeline = Cloud data (from all devices) + unsynced local sessions (new data)
+        co.touchlab.kermit.Logger
+            .d { "computeTimelineData: localAggregated entries=${localAggregated.size}" }
+
+        // Timeline = ALL local data (this device) + cloud data from other devices only
         val mergedData = mutableMapOf<Pair<Long, String>, Long>()
 
-        // Start with cloud data (source of truth, includes data from all devices)
+        // Start with ALL local data (this is the source of truth for this device)
+        localAggregated.forEach { (key, duration) ->
+            mergedData[key] = duration
+        }
+
+        // Add cloud data ONLY for date/label combinations not in local data
+        // (this is data from other devices)
         cloudData.forEach { (cloudKey, cloudDuration) ->
             val parts = cloudKey.split("_")
             val timestamp = parts[0].toLong()
             val label = parts.drop(1).joinToString("_")
-            mergedData[Pair(timestamp, label)] = cloudDuration
-        }
+            val key = Pair(timestamp, label)
 
-        // Add unsynced local sessions (new data not yet in cloud)
-        unsyncedAggregated.forEach { (key, duration) ->
-            val currentValue = mergedData[key] ?: 0
-            mergedData[key] = currentValue + duration
+            // Only add if not in local data (means it's from another device)
+            if (!mergedData.containsKey(key)) {
+                mergedData[key] = cloudDuration
+            }
         }
 
         // Convert to AggregatedSession list
