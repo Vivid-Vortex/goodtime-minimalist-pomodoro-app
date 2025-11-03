@@ -177,7 +177,25 @@ class BackupViewModel(
     fun syncWithFirestore() {
         coroutineScope.launch {
             _uiState.update { it.copy(isSyncingWithFirestore = true) }
+
+            // IMPORTANT: Fetch cloud data FIRST to populate StatisticsViewModel state
+            // This prevents Timeline from disappearing when sessions get marked as synced
+            val existingCloudData = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+            if (existingCloudData is FirestoreSyncResult.CloudData) {
+                _cloudDataRefreshEvents.emit(existingCloudData)
+            }
+
+            // Now sync new data to cloud (marks sessions as synced)
             val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
+
+            // Fetch again after sync to get the newly synced data
+            if (result is FirestoreSyncResult.Success || result is FirestoreSyncResult.CloudData) {
+                val fetchResult = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+                _cloudDataRefreshEvents.emit(fetchResult)
+            }
+
+            // IMPORTANT: Only set isSyncingWithFirestore = false AFTER final fetch
+            // This keeps Timeline blocked during the entire sync process
             _uiState.update {
                 it.copy(
                     isSyncingWithFirestore = false,
@@ -189,12 +207,6 @@ class BackupViewModel(
                             null
                         },
                 )
-            }
-
-            // After successful sync, fetch from cloud and notify StatisticsViewModel
-            if (result is FirestoreSyncResult.Success || result is FirestoreSyncResult.CloudData) {
-                val fetchResult = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
-                _cloudDataRefreshEvents.emit(fetchResult)
             }
         }
     }

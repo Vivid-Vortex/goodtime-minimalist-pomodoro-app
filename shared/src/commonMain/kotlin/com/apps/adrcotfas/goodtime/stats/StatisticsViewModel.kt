@@ -108,6 +108,9 @@ class StatisticsViewModel(
             .onStart { loadData() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatisticsUiState())
 
+    // Flag to prevent Timeline updates during cloud sync
+    private var isSyncing = false
+
     val pagedSessions: Flow<PagingData<Session>> =
         uiState
             .distinctUntilChanged { old, new ->
@@ -208,7 +211,19 @@ class StatisticsViewModel(
         // Timeline: Combine cloud data + unsynced local sessions
         viewModelScope.launch {
             localDataRepo.selectAllSessions().collect { allSessions ->
-                computeTimelineData(allSessions)
+                // Skip Timeline updates during cloud sync to prevent flickering
+                if (!isSyncing) {
+                    computeTimelineData(allSessions)
+                }
+            }
+        }
+
+        // Observe BackupViewModel sync state to block Timeline updates during sync
+        viewModelScope.launch {
+            backupViewModel.uiState.collect { backupState ->
+                isSyncing = backupState.isSyncingWithFirestore
+                co.touchlab.kermit.Logger
+                    .d { "BackupViewModel sync state changed: isSyncing=$isSyncing" }
             }
         }
 
@@ -218,6 +233,7 @@ class StatisticsViewModel(
                 if (result is com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult.CloudData) {
                     co.touchlab.kermit.Logger
                         .d { "Received cloud refresh event: ${result.aggregatedData.size} entries" }
+
                     _uiState.update {
                         it.copy(
                             cloudAggregatedData = result.aggregatedData,
@@ -226,7 +242,8 @@ class StatisticsViewModel(
                     }
                     co.touchlab.kermit.Logger
                         .d { "Updated cloudAggregatedData in state: ${_uiState.value.cloudAggregatedData.size} entries" }
-                    // Trigger recomputation with current sessions
+
+                    // Always trigger recomputation with current sessions
                     val allSessions = localDataRepo.selectAllSessions().first()
                     computeTimelineData(allSessions)
                 }
