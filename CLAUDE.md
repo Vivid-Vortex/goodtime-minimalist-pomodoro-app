@@ -432,4 +432,32 @@ If coming from cloud db, then overwirte this for every lable and don't add it fo
 
 Keep saving the new data from history section and add it to the cloud section before pushing tot he db. But only new data should be add to the one on cloud. Say if cloud is havin 276 or W1M and agin user ran 6 mins in the device, then add only 6 minutes to 276 and total 282 should be saved to db. Handle this for differnt device as the app would run on differnet device with same db.
 ---
+Section 7:
 
+ Step 1: Update Timeline to compute cloud totals + unsynced local sessions:
+The app Timeline section is not calculating the time for each date correctly. It shoudl mimick whatever is present
+  in cloud db "at the time of pulling the data from cloud". At the time of pushing the data, if at all any new timer
+  data present in the app history section, then only it should add those extra minutes for that particular tag, for
+  that particualr date to total in corresponding date and tag in Timeline and then while pusing the data to cloud db,
+  it should replace the new updated data with the new one.
+
+Remember app history is just for showing local device history, plus it shoud also pull the data from the cloud app
+history collection (and push it to as well) and show the app history including the device name on it coz every app
+history section should have a deivce name attached to it aloing with other key detials such as current format
+timestamp. The timeline is the one which is aggregating the data inteligently and it should show the data right away
+ alongside app history.
+---
+Section 8:
+Fetch device name
+
+---
+Section 9:
+It is not pushing the data correctly - In th App history section there are 2 LTG for 1 min each and 1 min w1x and 1min w1m1 for 3 Nov. But when in the timelien section only w1m and w1x data for 1 min is shwowing. It is pushing the data to cloud also it seems like direclty from app history, whihc should be the case. It should first aggregate the data correctly as per above section 7 and then push the data correctly to cloud.
+
+It is not fetching the data correctly from cloud db as I can see ltg has 2 and w1m and w1x has 1 each for 3 Nov but in the app timeline it is only showing for w1m and w1x as 1 min each.
+
+Device name showing vertically in app history.
+Duplicate entry: Data was pull nd pushed from the same device, then why synced_to_cloud is showing "This device" whereas there is a duplicate entry for each tag but without synced_to_cloud and also in that device name is showoing as actual device name.
+If the data is being from the same device then it should not show synced_to_cloud/synced_from_cloud. Only for other device ran data,
+shoudl show synced_from_whatever device name. And no need of synced_to_cloud.
+---

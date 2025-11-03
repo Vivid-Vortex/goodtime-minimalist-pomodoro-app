@@ -61,6 +61,10 @@ class AutoBackupWorker(
                     logger.i { "Auto cloud backup completed successfully" }
                     Result.success()
                 }
+                is FirestoreSyncResult.CloudData -> {
+                    logger.i { "Auto cloud backup completed successfully" }
+                    Result.success()
+                }
                 is FirestoreSyncResult.Error -> {
                     logger.e { "Auto cloud backup failed: ${result.message}" }
                     Result.retry()

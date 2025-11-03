@@ -28,6 +28,7 @@ data class Session(
     val notes: String,
     val isWork: Boolean,
     val isArchived: Boolean,
+    val deviceName: String = "", // Device name for cloud-synced sessions
 ) {
     companion object {
         fun create(

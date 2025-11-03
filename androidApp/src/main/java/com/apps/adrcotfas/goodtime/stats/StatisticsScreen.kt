@@ -195,6 +195,7 @@ fun StatisticsScreen(
                             AppHistoryTab(
                                 listState = historyListState,
                                 sessions = sessionsPagingItems,
+                                cloudAppHistorySessions = uiState.cloudAppHistorySessions,
                                 isSelectAllEnabled = uiState.isSelectAllEnabled,
                                 selectedSessions = uiState.selectedSessions,
                                 unselectedSessions = uiState.unselectedSessions,

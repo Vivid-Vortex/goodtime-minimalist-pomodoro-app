@@ -104,14 +104,13 @@ fun AggregatedTimelineTab(
                 items = sessionsForDate,
                 key = { "${it.date}_${it.label}" },
             ) { session ->
-                val colorIndex = labels.firstOrNull { it.name == session.label }?.colorIndex
+                // Use label's color if exists locally, otherwise use default color (0)
+                val colorIndex = labels.firstOrNull { it.name == session.label }?.colorIndex ?: 0L
 
-                colorIndex?.let {
-                    AggregatedListItem(
-                        session = session,
-                        colorIndex = it,
-                    )
-                }
+                AggregatedListItem(
+                    session = session,
+                    colorIndex = colorIndex,
+                )
             }
         }
     }

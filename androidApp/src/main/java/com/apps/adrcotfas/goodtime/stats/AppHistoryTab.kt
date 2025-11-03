@@ -17,6 +17,7 @@
  */
 package com.apps.adrcotfas.goodtime.stats
 
+import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -34,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +55,7 @@ import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import com.apps.adrcotfas.goodtime.bl.AndroidTimeUtils.formatToPrettyDateAndTime
 import com.apps.adrcotfas.goodtime.bl.LabelData
+import com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession
 import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.shared.R
@@ -63,6 +67,7 @@ import com.apps.adrcotfas.goodtime.shared.R as SharedR
 @Composable
 fun AppHistoryTab(
     sessions: LazyPagingItems<Session>,
+    cloudAppHistorySessions: List<CloudAppHistorySession>,
     isSelectAllEnabled: Boolean,
     selectedSessions: List<Long>,
     unselectedSessions: List<Long>,
@@ -71,14 +76,39 @@ fun AppHistoryTab(
     onLongClick: (Session) -> Unit,
     listState: LazyListState,
 ) {
-    LaunchedEffect(sessions.itemCount) {
+    // Get current device name
+    val currentDeviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+
+    // Filter out cloud sessions from the same device to avoid duplicates
+    // Only show cloud sessions from OTHER devices
+    val cloudSessions =
+        cloudAppHistorySessions
+            .filter { it.deviceName != currentDeviceName }
+            .sortedByDescending { it.timestamp }
+            .map { cloudSession ->
+                Session(
+                    id = cloudSession.id,
+                    timestamp = cloudSession.timestamp,
+                    duration = cloudSession.duration,
+                    interruptions = 0,
+                    label = cloudSession.label,
+                    notes = cloudSession.notes,
+                    isWork = true,
+                    isArchived = false,
+                    deviceName = cloudSession.deviceName,
+                )
+            }
+
+    val totalCount = cloudSessions.size + sessions.itemCount
+
+    LaunchedEffect(totalCount) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect {
                 listState.animateScrollToItem(0)
             }
     }
 
-    if (sessions.itemCount == 0) {
+    if (totalCount == 0) {
         Column(
             modifier =
                 Modifier
@@ -110,9 +140,36 @@ fun AppHistoryTab(
                 .fillMaxSize(),
         state = listState,
     ) {
+        // Display cloud sessions first
+        items(
+            count = cloudSessions.size,
+            key = { index -> "cloud_${cloudSessions[index].id}" },
+        ) { index ->
+            val session = cloudSessions[index]
+            val isSelected =
+                selectedSessions.contains(session.id) ||
+                    isSelectAllEnabled &&
+                    !unselectedSessions.contains(session.id)
+
+            val colorIndex =
+                labels.firstOrNull { it.name == session.label }?.colorIndex
+            colorIndex?.let {
+                AppHistoryListItem(
+                    modifier = Modifier.animateItem(),
+                    session = session,
+                    colorIndex = it,
+                    isSelected = isSelected,
+                    onClick = { onClick(session) },
+                    onLongClick = { onLongClick(session) },
+                    showDeviceBadge = true,
+                )
+            }
+        }
+
+        // Then display local sessions
         items(
             count = sessions.itemCount,
-            key = sessions.itemKey { it.id },
+            key = sessions.itemKey { "local_${it.id}" },
             contentType = sessions.itemContentType { "sessions" },
         ) { index ->
             val session = sessions[index]
@@ -122,7 +179,6 @@ fun AppHistoryTab(
                         isSelectAllEnabled &&
                         !unselectedSessions.contains(session.id)
 
-                // might be null at the moment of toggling "show archived"
                 val colorIndex =
                     labels.firstOrNull { it.name == session.label }?.colorIndex
                 colorIndex?.let {
@@ -133,6 +189,7 @@ fun AppHistoryTab(
                         isSelected = isSelected,
                         onClick = { onClick(session) },
                         onLongClick = { onLongClick(session) },
+                        showDeviceBadge = false,
                     )
                 }
             }
@@ -149,6 +206,7 @@ fun AppHistoryListItem(
     colorIndex: Long,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    showDeviceBadge: Boolean = false,
 ) {
     val isSyncedFromCloud = session.notes.contains("Synced from cloud", ignoreCase = true)
     val containerColor =
@@ -201,14 +259,43 @@ fun AppHistoryListItem(
             Column {
                 val context = LocalContext.current
                 val (date, time) = session.timestamp.formatToPrettyDateAndTime(context)
-                Text(
-                    text = "$date $time",
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                if (session.notes.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Text(
-                        text = session.notes,
+                        text = "$date $time",
+                        maxLines = 1,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    if (showDeviceBadge && session.deviceName.isNotEmpty()) {
+                        SuggestionChip(
+                            onClick = { },
+                            label = {
+                                Text(
+                                    text = session.deviceName,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            colors =
+                                SuggestionChipDefaults.suggestionChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ),
+                        )
+                    }
+                }
+                // Filter out the sync marker from notes display
+                val displayNotes =
+                    session.notes
+                        .replace(Regex("\\[cloud_synced_at:\\d+\\]"), "")
+                        .trim()
+                if (displayNotes.isNotEmpty()) {
+                    Text(
+                        text = displayNotes,
                         maxLines = 1,
                         style =
                             MaterialTheme.typography.bodySmall.copy(

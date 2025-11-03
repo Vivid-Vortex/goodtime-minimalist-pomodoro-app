@@ -79,6 +79,9 @@ data class StatisticsUiState(
     val statisticsSettings: StatisticsSettings = StatisticsSettings(),
     val statisticsData: StatisticsData = StatisticsData(),
     val aggregatedSessions: List<AggregatedSession> = emptyList(),
+    val cloudAggregatedData: Map<String, Long> = emptyMap(), // Cloud totals: "timestamp_label" -> duration
+    // Cloud app history sessions from all devices
+    val cloudAppHistorySessions: List<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession> = emptyList(),
 ) {
     val showSelectionUi: Boolean
         get() = selectedSessions.isNotEmpty() || isSelectAllEnabled
@@ -178,43 +181,66 @@ class StatisticsViewModel(
                 }
         }
 
+        // Timeline: Combine cloud data + unsynced local sessions
         viewModelScope.launch {
-            uiState
-                .map { it.selectedLabels }
-                .distinctUntilChanged()
-                .flatMapLatest { selectedLabels ->
-                    localDataRepo
-                        .selectSessionsByLabels(selectedLabels)
-                        .map { sessions ->
-                            withContext(Dispatchers.Default) {
-                                computeAggregatedSessions(sessions)
-                            }
-                        }
-                }.collect { aggregatedSessions ->
-                    _uiState.update { it.copy(aggregatedSessions = aggregatedSessions) }
-                }
+            localDataRepo.selectAllSessions().collect { allSessions ->
+                computeTimelineData(allSessions)
+            }
         }
+
+        // DO NOT auto-fetch on initialization
+        // User must manually press refresh button or "Save to cloud"
     }
 
-    private fun computeAggregatedSessions(sessions: List<Session>): List<AggregatedSession> {
-        // Group by date (normalize to start of day) and label
-        val grouped =
-            sessions.groupBy { session ->
-                val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
-                Pair(normalizedDate, session.label)
+    private fun computeTimelineData(allSessions: List<Session>) {
+        val cloudData = _uiState.value.cloudAggregatedData
+
+        // Get unsynced local sessions only (those without cloud sync marker)
+        val unsyncedSessions =
+            allSessions.filter {
+                !it.notes.contains("cloud_synced_at:", ignoreCase = true)
             }
 
-        return grouped
-            .map { (key, sessionsForKey) ->
-                val (date, label) = key
-                val totalDuration = sessionsForKey.sumOf { it.duration }
+        // Aggregate unsynced sessions by date and label
+        val unsyncedAggregated =
+            unsyncedSessions
+                .groupBy { session ->
+                    val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+                    Pair(normalizedDate, session.label)
+                }.mapValues { (_, sessions) ->
+                    sessions.sumOf { it.duration }
+                }
 
-                AggregatedSession(
-                    date = date,
-                    label = label,
-                    totalDuration = totalDuration,
-                )
-            }.sortedByDescending { it.date }
+        // Merge cloud + unsynced local
+        val mergedData = mutableMapOf<Pair<Long, String>, Long>()
+
+        // Add cloud data
+        cloudData.forEach { (key, duration) ->
+            val parts = key.split("_")
+            val timestamp = parts[0].toLong()
+            val label = parts.drop(1).joinToString("_")
+            mergedData[Pair(timestamp, label)] = duration
+        }
+
+        // Add unsynced local (on top of cloud)
+        unsyncedAggregated.forEach { (key, duration) ->
+            val currentValue = mergedData[key] ?: 0
+            mergedData[key] = currentValue + duration
+        }
+
+        // Convert to AggregatedSession list
+        val timeline =
+            mergedData
+                .map { (key, duration) ->
+                    val (timestamp, label) = key
+                    AggregatedSession(
+                        date = timestamp,
+                        label = label,
+                        totalDuration = duration,
+                    )
+                }.sortedByDescending { it.date }
+
+        _uiState.update { it.copy(aggregatedSessions = timeline) }
     }
 
     fun setSelectedLabels(selectedLabels: List<String>) {
@@ -382,14 +408,22 @@ class StatisticsViewModel(
 
     fun refreshFromCloud() {
         viewModelScope.launch {
-            // First, push any local unsynced data to cloud
-            firestoreSyncHandler?.syncData()
-
-            // Then, fetch data from cloud and merge into local database
+            // Only fetch data from cloud, don't auto-push
+            // User must explicitly use "Save to cloud" button to push data
             val result = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
 
-            // After fetch, the local database will have cloud data, and statistics will automatically refresh
-            // because they observe the local database through flows
+            // Store cloud data and trigger Timeline recomputation
+            if (result is FirestoreSyncResult.CloudData) {
+                _uiState.update {
+                    it.copy(
+                        cloudAggregatedData = result.aggregatedData,
+                        cloudAppHistorySessions = result.appHistorySessions,
+                    )
+                }
+                // Trigger recomputation with current sessions
+                val allSessions = localDataRepo.selectAllSessions().first()
+                computeTimelineData(allSessions)
+            }
         }
     }
 }

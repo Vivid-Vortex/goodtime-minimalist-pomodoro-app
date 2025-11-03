@@ -53,8 +53,29 @@ expect class FirestoreSyncHandler {
     suspend fun fetchFromCloud(): FirestoreSyncResult
 }
 
+data class CloudAggregatedEntry(
+    val timestamp: Long, // Start of day
+    val label: String,
+    val duration: Long, // Total minutes from cloud
+)
+
+data class CloudAppHistorySession(
+    val id: Long,
+    val timestamp: Long,
+    val duration: Long,
+    val label: String,
+    val notes: String,
+    val deviceName: String,
+    val syncedAt: Long,
+)
+
 sealed class FirestoreSyncResult {
     object Success : FirestoreSyncResult()
+
+    data class CloudData(
+        val aggregatedData: Map<String, Long>, // Timeline: "timestamp_label" -> duration
+        val appHistorySessions: List<CloudAppHistorySession> = emptyList(), // App History: raw sessions from all devices
+    ) : FirestoreSyncResult()
 
     data class Error(
         val message: String,

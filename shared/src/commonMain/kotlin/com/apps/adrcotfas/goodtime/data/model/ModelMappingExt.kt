@@ -82,6 +82,7 @@ fun LocalSession.toExternal() =
         notes = notes,
         isWork = isWork,
         isArchived = isArchived,
+        deviceName = "", // Local sessions don't have device name, will be set to "This Device" in UI
     )
 
 fun LocalTimerProfile.toExternal(): TimerProfile =

@@ -47,10 +47,10 @@ actual class FirestoreSyncHandler(
         return try {
             val allSessions = sessionDao.selectAll().first()
 
-            // Filter only unsynced sessions (those without "synced_to_cloud" in notes)
+            // Filter only unsynced sessions (those without "cloud_synced_at" in notes)
             val unsyncedSessions =
                 allSessions.filter {
-                    !it.notes.contains("synced_to_cloud", ignoreCase = true)
+                    !it.notes.contains("cloud_synced_at:", ignoreCase = true)
                 }
 
             if (unsyncedSessions.isEmpty()) {
@@ -78,7 +78,7 @@ actual class FirestoreSyncHandler(
                 if (historyResult is FirestoreSyncResult.Error) {
                     Log.w(TAG, "Failed to save to app history ${session.id}: ${historyResult.message}")
                 } else {
-                    // Mark session as synced by updating its notes
+                    // Mark session as synced by adding a hidden timestamp marker
                     markSessionAsSynced(session)
                 }
             }
@@ -113,11 +113,13 @@ actual class FirestoreSyncHandler(
 
     private suspend fun markSessionAsSynced(session: LocalSession) {
         try {
+            // Add hidden timestamp marker that won't be displayed to user
+            val syncMarker = "[cloud_synced_at:${System.currentTimeMillis()}]"
             val updatedNotes =
                 if (session.notes.isEmpty()) {
-                    "synced_to_cloud"
+                    syncMarker
                 } else {
-                    "${session.notes} | synced_to_cloud"
+                    "${session.notes} $syncMarker"
                 }
             sessionDao.updateNotes(session.id, updatedNotes)
         } catch (e: Exception) {
@@ -318,17 +320,18 @@ actual class FirestoreSyncHandler(
 
     actual suspend fun fetchFromCloud(): FirestoreSyncResult {
         return try {
-            Log.d(TAG, "Fetching data from cloud...")
+            Log.d(TAG, "Fetching aggregated data from cloud (Timeline data)...")
 
             val collectionRef = db.collection(COLLECTION_TIMESHEET)
             val querySnapshot = collectionRef.get().await()
 
             if (querySnapshot.isEmpty) {
                 Log.d(TAG, "No cloud data found")
-                return FirestoreSyncResult.Success
+                return FirestoreSyncResult.CloudData(emptyMap())
             }
 
-            var totalSessionsCreated = 0
+            // Store cloud aggregated data: Map<"timestamp_label", duration>
+            val cloudAggregatedData = mutableMapOf<String, Long>()
 
             for (document in querySnapshot.documents) {
                 try {
@@ -349,36 +352,37 @@ actual class FirestoreSyncHandler(
                     val formData = document.get("formData") as? Map<*, *> ?: continue
                     val tagSnapshot = formData["tagSnapshot"] as? Map<*, *> ?: continue
 
-                    // Create a reverse mapping: field name -> tag code
-                    val fieldToTagMap =
-                        tagSnapshot.entries.associate {
-                            it.key.toString() to it.value.toString()
-                        }
-
-                    // List of duration fields to check
-                    val durationFields =
-                        listOf(
-                            "avdhanaMode",
-                            "work1ToWork4Ikigai",
-                            "work3Udemy",
-                            "work4TechWebsite",
-                            "work2Youtube",
-                            "work5OnlineSale",
-                            "ltgLongTermGoal",
-                            "timeWasted",
-                            "spentOnEssentials",
-                            "finance",
-                            "others",
-                            "work1Main",
-                            "work1Misc",
-                            "projectManagement",
-                            "learning",
-                            "meditation",
-                            "exercise",
+                    // Mapping from tagSnapshot keys to outer field names
+                    val tagSnapshotKeyToFieldName =
+                        mapOf(
+                            "avdhanaMode" to "avdhanaMode",
+                            "wcmn" to "work1ToWork4Ikigai",
+                            "work3" to "work3Udemy",
+                            "work4" to "work4TechWebsite",
+                            "work2" to "work2Youtube",
+                            "work5" to "work5OnlineSale",
+                            "ltg" to "ltgLongTermGoal",
+                            "timeWasted" to "timeWasted",
+                            "essentials" to "spentOnEssentials",
+                            "finance" to "finance",
+                            "others" to "others",
+                            "work1Main" to "work1Main",
+                            "work1Misc" to "work1Misc",
+                            "projectManagement" to "projectManagement",
+                            "learning" to "learning",
+                            "meditation" to "meditation",
+                            "exercise" to "exercise",
                         )
 
-                    // Process each duration field
-                    for (fieldName in durationFields) {
+                    // Process each tagSnapshot entry
+                    for ((tagSnapshotKey, tagValue) in tagSnapshot) {
+                        val tagKey = tagSnapshotKey.toString()
+                        val tagCode = tagValue.toString()
+
+                        // Get the corresponding outer field name
+                        val fieldName = tagSnapshotKeyToFieldName[tagKey] ?: continue
+
+                        // Get duration value from outer field
                         val durationValue =
                             when (val value = formData[fieldName]) {
                                 is Number -> value.toInt()
@@ -387,44 +391,10 @@ actual class FirestoreSyncHandler(
                             }
 
                         if (durationValue > 0) {
-                            val tagCode = fieldToTagMap[fieldName] ?: continue
-
-                            // IMPORTANT: Only create sessions for tags that exist locally
-                            val labelExists = labelDao.selectByName(tagCode).first() != null
-                            if (!labelExists) {
-                                Log.d(TAG, "Skipping session for $tagCode - label not found locally")
-                                continue
-                            }
-
-                            // Check if this session already exists from cloud
-                            // We'll use a unique combination of date + label + duration + "Synced from cloud" to detect duplicates
-                            val existingSessions = sessionDao.selectAll().first()
-                            val alreadyExists =
-                                existingSessions.any { session ->
-                                    session.timestamp == timestamp &&
-                                        session.labelName == tagCode &&
-                                        session.duration == durationValue.toLong() &&
-                                        session.notes.contains("Synced from cloud", ignoreCase = true)
-                                }
-
-                            if (!alreadyExists) {
-                                // Create new session from cloud data
-                                val newSession =
-                                    LocalSession(
-                                        id = System.currentTimeMillis() + totalSessionsCreated, // Generate unique ID
-                                        timestamp = timestamp,
-                                        duration = durationValue.toLong(),
-                                        labelName = tagCode,
-                                        isWork = true,
-                                        interruptions = 0,
-                                        notes = "Synced from cloud",
-                                        isArchived = false,
-                                    )
-
-                                sessionDao.insert(newSession)
-                                totalSessionsCreated++
-                                Log.d(TAG, "Created session for $tagCode with $durationValue mins on $dateKey")
-                            }
+                            // Store cloud data with key: "timestamp_label"
+                            val key = "${timestamp}_$tagCode"
+                            cloudAggregatedData[key] = durationValue.toLong()
+                            Log.d(TAG, "Fetched from cloud: $tagCode = $durationValue mins on $dateKey (field: $fieldName)")
                         }
                     }
                 } catch (e: Exception) {
@@ -433,13 +403,68 @@ actual class FirestoreSyncHandler(
                 }
             }
 
-            Log.d(TAG, "Successfully fetched from cloud. Created $totalSessionsCreated sessions")
-            FirestoreSyncResult.Success
+            Log.d(TAG, "Successfully fetched ${cloudAggregatedData.size} entries from cloud for Timeline")
+
+            // Also fetch app history from pomodoro_app_history collection
+            val appHistorySessions = fetchAppHistoryFromCloud()
+
+            FirestoreSyncResult.CloudData(
+                aggregatedData = cloudAggregatedData,
+                appHistorySessions = appHistorySessions,
+            )
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching from cloud", e)
             FirestoreSyncResult.Error(e.message ?: "Unknown error")
         }
     }
+
+    private suspend fun fetchAppHistoryFromCloud(): List<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession> =
+        try {
+            Log.d(TAG, "Fetching app history from pomodoro_app_history...")
+
+            val appHistoryCollection = db.collection(COLLECTION_APP_HISTORY)
+            val querySnapshot = appHistoryCollection.get().await()
+
+            val sessions = mutableListOf<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession>()
+
+            for (document in querySnapshot.documents) {
+                try {
+                    val sessionsArray = document.get("sessions") as? List<*> ?: continue
+
+                    for (sessionData in sessionsArray) {
+                        val sessionMap = sessionData as? Map<*, *> ?: continue
+
+                        val id = (sessionMap["id"] as? Number)?.toLong() ?: continue
+                        val timestamp = (sessionMap["timestamp"] as? Number)?.toLong() ?: continue
+                        val duration = (sessionMap["duration"] as? Number)?.toLong() ?: 0
+                        val label = sessionMap["label"] as? String ?: continue
+                        val notes = sessionMap["notes"] as? String ?: ""
+                        val deviceName = sessionMap["deviceName"] as? String ?: "Unknown Device"
+                        val syncedAt = (sessionMap["syncedAt"] as? Number)?.toLong() ?: timestamp
+
+                        sessions.add(
+                            com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession(
+                                id = id,
+                                timestamp = timestamp,
+                                duration = duration,
+                                label = label,
+                                notes = notes,
+                                deviceName = deviceName,
+                                syncedAt = syncedAt,
+                            ),
+                        )
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error processing app history document ${document.id}", e)
+                }
+            }
+
+            Log.d(TAG, "Fetched ${sessions.size} app history sessions from cloud")
+            sessions
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching app history from cloud", e)
+            emptyList()
+        }
 
     private suspend fun saveSessionToAppHistory(session: LocalSession): FirestoreSyncResult =
         try {
