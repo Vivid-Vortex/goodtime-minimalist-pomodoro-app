@@ -249,7 +249,9 @@ New Json structure:
       "entertainment": ""
     }
   }
-	
+
+mapping the tag to actual fields:	
+W1M (inside tagsnapshot) -> work1Main(inside tagsnapshot) -> work1Main(outside tagsnapshot)
 ---
 Section 2:
 

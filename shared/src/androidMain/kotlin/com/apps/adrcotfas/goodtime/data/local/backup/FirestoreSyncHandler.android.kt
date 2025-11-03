@@ -352,26 +352,27 @@ actual class FirestoreSyncHandler(
                     val formData = document.get("formData") as? Map<*, *> ?: continue
                     val tagSnapshot = formData["tagSnapshot"] as? Map<*, *> ?: continue
 
-                    // Mapping from tagSnapshot keys to outer field names
-                    val tagSnapshotKeyToFieldName =
+                    // Mapping from tagSnapshot keys to outer field names (CLAUDE.md structure)
+                    // First try long names, fallback to short names for third-party app compatibility
+                    val tagSnapshotKeyToFieldNames =
                         mapOf(
-                            "avdhanaMode" to "avdhanaMode",
-                            "wcmn" to "work1ToWork4Ikigai",
-                            "work3" to "work3Udemy",
-                            "work4" to "work4TechWebsite",
-                            "work2" to "work2Youtube",
-                            "work5" to "work5OnlineSale",
-                            "ltg" to "ltgLongTermGoal",
-                            "timeWasted" to "timeWasted",
-                            "essentials" to "spentOnEssentials",
-                            "finance" to "finance",
-                            "others" to "others",
-                            "work1Main" to "work1Main",
-                            "work1Misc" to "work1Misc",
-                            "projectManagement" to "projectManagement",
-                            "learning" to "learning",
-                            "meditation" to "meditation",
-                            "exercise" to "exercise",
+                            "avdhanaMode" to listOf("avdhanaMode"),
+                            "wcmn" to listOf("work1ToWork4Ikigai", "wcmn"),
+                            "work3" to listOf("work3Udemy", "work3"),
+                            "work4" to listOf("work4TechWebsite", "work4"),
+                            "work2" to listOf("work2Youtube", "work2"),
+                            "work5" to listOf("work5OnlineSale", "work5"),
+                            "ltg" to listOf("ltgLongTermGoal", "ltg"),
+                            "timeWasted" to listOf("timeWasted"),
+                            "essentials" to listOf("spentOnEssentials", "essentials"),
+                            "finance" to listOf("finance"),
+                            "others" to listOf("others"),
+                            "work1Main" to listOf("work1Main"),
+                            "work1Misc" to listOf("work1Misc"),
+                            "projectManagement" to listOf("projectManagement"),
+                            "learning" to listOf("learning"),
+                            "meditation" to listOf("meditation"),
+                            "exercise" to listOf("exercise"),
                         )
 
                     // Process each tagSnapshot entry
@@ -379,22 +380,45 @@ actual class FirestoreSyncHandler(
                         val tagKey = tagSnapshotKey.toString()
                         val tagCode = tagValue.toString()
 
-                        // Get the corresponding outer field name
-                        val fieldName = tagSnapshotKeyToFieldName[tagKey] ?: continue
+                        // Get possible field names (try long name first, then short name)
+                        val possibleFieldNames = tagSnapshotKeyToFieldNames[tagKey]
 
-                        // Get duration value from outer field
-                        val durationValue =
-                            when (val value = formData[fieldName]) {
-                                is Number -> value.toInt()
-                                is String -> value.toIntOrNull() ?: 0
-                                else -> 0
+                        if (possibleFieldNames == null) {
+                            Log.d(TAG, "No mapping found for tagSnapshot key: $tagKey (tagCode: $tagCode)")
+                            continue
+                        }
+
+                        // Try each possible field name until we find one with data
+                        var durationValue = 0
+                        var usedFieldName = ""
+
+                        for (fieldName in possibleFieldNames) {
+                            val rawValue = formData[fieldName]
+                            if (rawValue != null) {
+                                durationValue =
+                                    when (rawValue) {
+                                        is Number -> rawValue.toInt()
+                                        is String -> rawValue.toIntOrNull() ?: 0
+                                        else -> 0
+                                    }
+                                if (durationValue > 0) {
+                                    usedFieldName = fieldName
+                                    Log.d(
+                                        TAG,
+                                        "Processing: tagKey=$tagKey, tagCode=$tagCode, fieldName=$fieldName, rawValue=$rawValue (${rawValue.javaClass.simpleName})",
+                                    )
+                                    break
+                                }
                             }
+                        }
 
                         if (durationValue > 0) {
                             // Store cloud data with key: "timestamp_label"
                             val key = "${timestamp}_$tagCode"
                             cloudAggregatedData[key] = durationValue.toLong()
-                            Log.d(TAG, "Fetched from cloud: $tagCode = $durationValue mins on $dateKey (field: $fieldName)")
+                            Log.d(TAG, "✓ Fetched from cloud: $tagCode = $durationValue mins on $dateKey (field: $usedFieldName)")
+                        } else {
+                            Log.d(TAG, "✗ Skipping $tagCode: duration=$durationValue (tried fields: $possibleFieldNames)")
                         }
                     }
                 } catch (e: Exception) {

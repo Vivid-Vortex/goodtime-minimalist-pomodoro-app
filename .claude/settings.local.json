@@ -9,7 +9,8 @@
       "Bash(adb:*)",
       "Bash(tee:*)",
       "Bash(timeout 120 adb wait-for-device shell:*)",
-      "Bash(emulator:*)"
+      "Bash(emulator:*)",
+      "Bash(timeout 30 adb logcat:*)"
     ],
     "deny": [],
     "ask": []
