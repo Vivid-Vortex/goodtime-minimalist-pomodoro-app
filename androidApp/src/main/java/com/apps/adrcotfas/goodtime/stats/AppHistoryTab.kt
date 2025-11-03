@@ -18,6 +18,7 @@
 package com.apps.adrcotfas.goodtime.stats
 
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -78,6 +79,11 @@ fun AppHistoryTab(
 ) {
     // Get current device name
     val currentDeviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+    Log.d("AppHistoryTab", "Current device: '$currentDeviceName'")
+    Log.d("AppHistoryTab", "Total cloud sessions: ${cloudAppHistorySessions.size}")
+    cloudAppHistorySessions.forEach {
+        Log.d("AppHistoryTab", "Cloud session device: '${it.deviceName}' - Match: ${it.deviceName == currentDeviceName}")
+    }
 
     // Filter out cloud sessions from the same device to avoid duplicates
     // Only show cloud sessions from OTHER devices

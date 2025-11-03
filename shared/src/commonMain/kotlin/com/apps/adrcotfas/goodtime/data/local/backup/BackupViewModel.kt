@@ -23,8 +23,11 @@ import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.CloudBackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
@@ -93,6 +96,10 @@ class BackupViewModel(
         _uiState
             .onStart { loadData() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BackupUiState())
+
+    // Emit cloud data refresh events for StatisticsViewModel to observe
+    private val _cloudDataRefreshEvents = MutableSharedFlow<FirestoreSyncResult>()
+    val cloudDataRefreshEvents: SharedFlow<FirestoreSyncResult> = _cloudDataRefreshEvents.asSharedFlow()
 
     private fun loadData() {
         viewModelScope.launch {
@@ -174,7 +181,7 @@ class BackupViewModel(
             _uiState.update {
                 it.copy(
                     isSyncingWithFirestore = false,
-                    firestoreSyncResult = result is FirestoreSyncResult.Success,
+                    firestoreSyncResult = result is FirestoreSyncResult.Success || result is FirestoreSyncResult.CloudData,
                     firestoreSyncError =
                         if (result is FirestoreSyncResult.Error) {
                             result.message
@@ -182,6 +189,12 @@ class BackupViewModel(
                             null
                         },
                 )
+            }
+
+            // After successful sync, fetch from cloud and notify StatisticsViewModel
+            if (result is FirestoreSyncResult.Success || result is FirestoreSyncResult.CloudData) {
+                val fetchResult = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
+                _cloudDataRefreshEvents.emit(fetchResult)
             }
         }
     }

@@ -100,6 +100,7 @@ class StatisticsViewModel(
     private val settingsRepository: SettingsRepository,
     private val timeProvider: TimeProvider,
     private val firestoreSyncHandler: FirestoreSyncHandler?,
+    private val backupViewModel: com.apps.adrcotfas.goodtime.data.local.backup.BackupViewModel,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState =
@@ -159,24 +160,47 @@ class StatisticsViewModel(
                 }
         }
 
+        // Statistics: Use Timeline aggregated data instead of raw App History
         viewModelScope.launch {
             uiState
-                .map { it.selectedLabels }
+                .map { Pair(it.selectedLabels, it.aggregatedSessions) }
                 .distinctUntilChanged()
-                .flatMapLatest { selectedLabels ->
+                .collect { (selectedLabels, aggregatedSessions) ->
                     _uiState.update { it.copy(isLoading = true) }
-                    localDataRepo
-                        .selectSessionsByLabels(selectedLabels)
-                        .map { sessions ->
-                            withContext(Dispatchers.Default) {
-                                computeStatisticsData(
-                                    sessions = sessions,
-                                    firstDayOfWeek = uiState.value.firstDayOfWeek,
-                                    secondOfDay = uiState.value.workDayStart,
-                                )
-                            }
+
+                    val data =
+                        withContext(Dispatchers.Default) {
+                            // Filter aggregated sessions by selected labels
+                            val filteredSessions =
+                                if (selectedLabels.isEmpty()) {
+                                    aggregatedSessions
+                                } else {
+                                    aggregatedSessions.filter { it.label in selectedLabels }
+                                }
+
+                            // Convert aggregated sessions to Session format for statistics computation
+                            val sessions =
+                                filteredSessions.map { aggSession ->
+                                    Session(
+                                        id = aggSession.date + aggSession.label.hashCode(),
+                                        timestamp = aggSession.date,
+                                        duration = aggSession.totalDuration,
+                                        interruptions = 0,
+                                        label = aggSession.label,
+                                        notes = "",
+                                        isWork = true,
+                                        isArchived = false,
+                                        deviceName = "",
+                                    )
+                                }
+
+                            computeStatisticsData(
+                                sessions = sessions,
+                                firstDayOfWeek = uiState.value.firstDayOfWeek,
+                                secondOfDay = uiState.value.workDayStart,
+                            )
                         }
-                }.collect { data ->
+
                     _uiState.update { it.copy(statisticsData = data, isLoading = false) }
                 }
         }
@@ -188,18 +212,43 @@ class StatisticsViewModel(
             }
         }
 
+        // Observe cloud data refresh events from BackupViewModel (after "Save to cloud")
+        viewModelScope.launch {
+            backupViewModel.cloudDataRefreshEvents.collect { result ->
+                if (result is com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult.CloudData) {
+                    co.touchlab.kermit.Logger
+                        .d { "Received cloud refresh event: ${result.aggregatedData.size} entries" }
+                    _uiState.update {
+                        it.copy(
+                            cloudAggregatedData = result.aggregatedData,
+                            cloudAppHistorySessions = result.appHistorySessions,
+                        )
+                    }
+                    co.touchlab.kermit.Logger
+                        .d { "Updated cloudAggregatedData in state: ${_uiState.value.cloudAggregatedData.size} entries" }
+                    // Trigger recomputation with current sessions
+                    val allSessions = localDataRepo.selectAllSessions().first()
+                    computeTimelineData(allSessions)
+                }
+            }
+        }
+
         // DO NOT auto-fetch on initialization
         // User must manually press refresh button or "Save to cloud"
     }
 
     private fun computeTimelineData(allSessions: List<Session>) {
         val cloudData = _uiState.value.cloudAggregatedData
+        co.touchlab.kermit.Logger
+            .d { "computeTimelineData: cloudData size=${cloudData.size}, allSessions size=${allSessions.size}" }
 
         // Get unsynced local sessions only (those without cloud sync marker)
         val unsyncedSessions =
             allSessions.filter {
                 !it.notes.contains("cloud_synced_at:", ignoreCase = true)
             }
+        co.touchlab.kermit.Logger
+            .d { "computeTimelineData: unsyncedSessions size=${unsyncedSessions.size}" }
 
         // Aggregate unsynced sessions by date and label
         val unsyncedAggregated =
@@ -408,21 +457,30 @@ class StatisticsViewModel(
 
     fun refreshFromCloud() {
         viewModelScope.launch {
+            co.touchlab.kermit.Logger
+                .d { "refreshFromCloud() called" }
             // Only fetch data from cloud, don't auto-push
             // User must explicitly use "Save to cloud" button to push data
             val result = firestoreSyncHandler?.fetchFromCloud() ?: FirestoreSyncResult.Error("Firebase not available")
 
             // Store cloud data and trigger Timeline recomputation
             if (result is FirestoreSyncResult.CloudData) {
+                co.touchlab.kermit.Logger
+                    .d { "refreshFromCloud: Got CloudData with ${result.aggregatedData.size} entries" }
                 _uiState.update {
                     it.copy(
                         cloudAggregatedData = result.aggregatedData,
                         cloudAppHistorySessions = result.appHistorySessions,
                     )
                 }
+                co.touchlab.kermit.Logger
+                    .d { "refreshFromCloud: Updated state, cloudAggregatedData size=${_uiState.value.cloudAggregatedData.size}" }
                 // Trigger recomputation with current sessions
                 val allSessions = localDataRepo.selectAllSessions().first()
                 computeTimelineData(allSessions)
+            } else {
+                co.touchlab.kermit.Logger
+                    .e { "refreshFromCloud: Failed - $result" }
             }
         }
     }
