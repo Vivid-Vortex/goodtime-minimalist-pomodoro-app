@@ -36,8 +36,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -271,44 +269,30 @@ fun AppHistoryListItem(
             Column {
                 val context = LocalContext.current
                 val (date, time) = session.timestamp.formatToPrettyDateAndTime(context)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+                // Timestamp
+                Text(
+                    text = "$date $time",
+                    maxLines = 1,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                // Device name below timestamp
+                if (showDeviceBadge) {
+                    val displayDeviceName =
+                        if (session.deviceName.isEmpty()) currentDeviceName else session.deviceName
                     Text(
-                        text = "$date $time",
-                        maxLines = 1,
-                        style = MaterialTheme.typography.bodySmall,
+                        text = displayDeviceName,
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                color =
+                                    if (isFromOtherDevice) {
+                                        MaterialTheme.colorScheme.tertiary
+                                    } else {
+                                        MaterialTheme.colorScheme.primary
+                                    },
+                            ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    if (showDeviceBadge) {
-                        val displayDeviceName =
-                            if (session.deviceName.isEmpty()) currentDeviceName else session.deviceName
-                        val chipColor =
-                            if (isFromOtherDevice) {
-                                // Different color for cloud-synced sessions from other devices
-                                MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
-                            } else {
-                                // Default color for local device
-                                MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-                            }
-                        SuggestionChip(
-                            onClick = { },
-                            label = {
-                                Text(
-                                    text = displayDeviceName,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            colors =
-                                SuggestionChipDefaults.suggestionChipColors(
-                                    containerColor = chipColor.first,
-                                    labelColor = chipColor.second,
-                                ),
-                        )
-                    }
                 }
                 // Filter out the sync marker from notes display
                 val displayNotes =
