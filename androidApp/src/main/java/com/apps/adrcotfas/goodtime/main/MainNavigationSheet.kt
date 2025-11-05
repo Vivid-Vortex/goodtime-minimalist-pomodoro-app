@@ -31,6 +31,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -93,6 +94,10 @@ fun MainNavigationSheet(
                 navController.navigate(StatsDest)
                 onHideSheet()
             },
+            navigateToLocalData = {
+                navController.navigate(LocalDataDest)
+                onHideSheet()
+            },
             navigateToSettings = {
                 navController.navigate(SettingsDest)
                 onHideSheet()
@@ -123,6 +128,7 @@ fun MainNavigationSheetContent(
     onNotificationPermissionGranted: (Boolean) -> Unit,
     navigateToLabels: () -> Unit,
     navigateToStats: () -> Unit,
+    navigateToLocalData: () -> Unit,
     navigateToSettings: () -> Unit,
     navigateToBackup: () -> Unit,
     navigateToAbout: () -> Unit,
@@ -184,6 +190,16 @@ fun MainNavigationSheetContent(
                 )
             },
             onClick = navigateToStats,
+        )
+        IconTextButton(
+            title = stringResource(R.string.local_data_title),
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.Storage,
+                    contentDescription = stringResource(R.string.local_data_title),
+                )
+            },
+            onClick = navigateToLocalData,
         )
         IconTextButton(
             title = stringResource(R.string.backup_and_restore_title),

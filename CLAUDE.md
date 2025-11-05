@@ -498,3 +498,30 @@ B. It is not adding the local new data to timeline and only appearing on app his
 Other functionality working correct apprt from these two and so touch those.
 
 ---
+
+Section 12 (Not needed):
+
+Added to timeline badge is for local device only:
+At the time of pushing the data to app history in cloud, make sure you remove added to timeline: timestamp badge, so that when the device pull it,
+it would add those data to it's time and then mark it as added to timeline.
+Currently becuase of this I think when the device is pulling the data from cloud it is already marked as added to timeine therefore the new data is not getting added to timeline.
+
+---
+
+Sectoin 13:
+
+
+Create a new section like statistics under current statistics and give proper name
+device 1 added to app history then to timeline and pushed to cloud.
+device 2 added to app history then to timeline and pushed and added the new data to cloud. That mean say for given date if W1M is 10 in the cloud, then the new local data 20 for W1M should be added to 10 + 20,that will make W1M as 30 in the cloud.
+
+app_history -> timeline -> clouddb
+
+This should be the one way path to cloud. That means while pulling or refreshing the data from the cloud, none of the app history or timeline should be affected. In other words we should not have a refresh/pull functionality in this section.
+
+Also there isno need of overview tab on this page.
+
+Under  current statistics:
+rename the app history and timeline to "combined app history" and "combined timeline" respectively, which would pull all the app hisotry from the current app history collection and timeshee_entries collection. This path is only for pull/refresh functionality. The overview page shoudl use the "combined timeline" tab of this section.
+
+-----

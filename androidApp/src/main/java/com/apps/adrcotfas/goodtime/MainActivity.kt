@@ -63,6 +63,7 @@ import com.apps.adrcotfas.goodtime.main.BackupDest
 import com.apps.adrcotfas.goodtime.main.GoodtimeMainActivity
 import com.apps.adrcotfas.goodtime.main.LabelsDest
 import com.apps.adrcotfas.goodtime.main.LicensesDest
+import com.apps.adrcotfas.goodtime.main.LocalDataDest
 import com.apps.adrcotfas.goodtime.main.MainDest
 import com.apps.adrcotfas.goodtime.main.MainScreen
 import com.apps.adrcotfas.goodtime.main.NotificationSettingsDest
@@ -83,6 +84,7 @@ import com.apps.adrcotfas.goodtime.settings.backup.BackupScreen
 import com.apps.adrcotfas.goodtime.settings.notifications.NotificationsScreen
 import com.apps.adrcotfas.goodtime.settings.timerdurations.TimerProfileScreen
 import com.apps.adrcotfas.goodtime.settings.timerstyle.UserInterfaceScreen
+import com.apps.adrcotfas.goodtime.stats.LocalDataScreen
 import com.apps.adrcotfas.goodtime.stats.StatisticsScreen
 import com.apps.adrcotfas.goodtime.ui.ApplicationTheme
 import com.apps.adrcotfas.goodtime.ui.common.ObserveAsEvents
@@ -309,6 +311,11 @@ class MainActivity : GoodtimeMainActivity() {
                         }
                         composable<StatsDest> {
                             StatisticsScreen(
+                                onNavigateBack = navController::popBackStack2,
+                            )
+                        }
+                        composable<LocalDataDest> {
+                            LocalDataScreen(
                                 onNavigateBack = navController::popBackStack2,
                             )
                         }

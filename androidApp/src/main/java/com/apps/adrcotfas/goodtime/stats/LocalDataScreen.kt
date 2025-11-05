@@ -49,14 +49,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.apps.adrcotfas.goodtime.bl.isDefault
 import com.apps.adrcotfas.goodtime.common.installIsOlderThan10Days
 import com.apps.adrcotfas.goodtime.data.model.Label
-import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.shared.R
-import com.apps.adrcotfas.goodtime.stats.AggregatedSession
 import com.apps.adrcotfas.goodtime.ui.common.ConfirmationDialog
 import com.apps.adrcotfas.goodtime.ui.common.DatePickerDialog
 import com.apps.adrcotfas.goodtime.ui.common.DragHandle
@@ -68,7 +65,6 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Outline
 import compose.icons.evaicons.outline.Lock
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.Instant
@@ -80,15 +76,14 @@ import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.koin.androidx.compose.koinViewModel
 
-private enum class TabType {
-    Overview,
+private enum class LocalDataTabType {
     AppHistory,
     Timeline,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen(
+fun LocalDataScreen(
     onNavigateBack: () -> Unit,
     viewModel: StatisticsViewModel = koinViewModel(),
     historyViewModel: StatisticsHistoryViewModel = koinViewModel(),
@@ -98,8 +93,7 @@ fun StatisticsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val historyUiState by historyViewModel.uiState.collectAsStateWithLifecycle()
     val isLoadingHistoryChartData = historyUiState.isLoading
-    // Section 13: Statistics shows only cloud data, not local sessions
-    val sessionsPagingItems = flowOf(PagingData.empty<Session>()).collectAsLazyPagingItems()
+    val sessionsPagingItems = viewModel.pagedSessions.collectAsLazyPagingItems()
     val historyListState = rememberLazyListState()
 
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
@@ -133,8 +127,8 @@ fun StatisticsScreen(
                 onCancel = { viewModel.clearShowSelectionUi() },
                 onDeleteClick = { showDeleteConfirmationDialog = true },
                 onSelectAll = { viewModel.selectAllSessions(sessionsPagingItems.itemCount) },
-                onRefreshFromCloud = { viewModel.refreshFromCloud() }, // Section 13: Statistics pulls from cloud
-                onSaveToCloud = null, // Section 13: Statistics doesn't push to cloud
+                onRefreshFromCloud = null, // Section 13: Local Data doesn't pull from cloud
+                onSaveToCloud = { viewModel.pushToCloud() }, // Section 13: Local Data pushes to cloud
                 showSelectionUi = uiState.showSelectionUi,
                 selectionCount = uiState.selectionCount,
                 showSeparator = uiState.showSelectionUi && historyListState.canScrollBackward,
@@ -145,12 +139,11 @@ fun StatisticsScreen(
             )
         },
     ) { paddingValues ->
-        var type by rememberSaveable { mutableStateOf(TabType.Overview) }
+        var type by rememberSaveable { mutableStateOf(LocalDataTabType.AppHistory) }
         val titles =
             listOf(
-                stringResource(R.string.stats_overview),
-                stringResource(R.string.stats_app_history),
-                stringResource(R.string.stats_timeline),
+                stringResource(R.string.local_data_app_history),
+                stringResource(R.string.local_data_timeline),
             )
 
         Crossfade(isLoading) { isLoading ->
@@ -170,8 +163,8 @@ fun StatisticsScreen(
                         ) {
                             titles.forEachIndexed { index, title ->
                                 Tab(
-                                    selected = type == TabType.entries[index],
-                                    onClick = { type = TabType.entries[index] },
+                                    selected = type == LocalDataTabType.entries[index],
+                                    onClick = { type = LocalDataTabType.entries[index] },
                                     text = { Text(title) },
                                 )
                             }
@@ -179,29 +172,11 @@ fun StatisticsScreen(
                     }
 
                     when (type) {
-                        TabType.Overview ->
-                            OverviewTab(
-                                firstDayOfWeek = uiState.firstDayOfWeek,
-                                workDayStart = uiState.workDayStart,
-                                statisticsSettings = uiState.statisticsSettings,
-                                statisticsData = uiState.statisticsData,
-                                onChangeOverviewType = {
-                                    viewModel.setOverviewType(it)
-                                },
-                                onChangeOverviewDurationType = {
-                                    viewModel.setOverviewDurationType(it)
-                                },
-                                onChangePieChartOverviewType = {
-                                    viewModel.setPieChartViewType(it)
-                                },
-                                historyChartViewModel = historyViewModel,
-                            )
-
-                        TabType.AppHistory -> {
+                        LocalDataTabType.AppHistory -> {
                             AppHistoryTab(
                                 listState = historyListState,
                                 sessions = sessionsPagingItems,
-                                cloudAppHistorySessions = uiState.cloudAppHistorySessions,
+                                cloudAppHistorySessions = emptyList(), // Section 13: Local Data shows only local data
                                 isSelectAllEnabled = uiState.isSelectAllEnabled,
                                 selectedSessions = uiState.selectedSessions,
                                 unselectedSessions = uiState.unselectedSessions,
@@ -219,23 +194,9 @@ fun StatisticsScreen(
                             )
                         }
 
-                        TabType.Timeline -> {
-                            // Section 13: Statistics shows only cloud aggregated data
-                            val cloudAggregatedSessions =
-                                uiState.cloudAggregatedData
-                                    .map { (key, duration) ->
-                                        val parts = key.split("_", limit = 2)
-                                        val timestamp = parts[0].toLongOrNull() ?: 0L
-                                        val label = if (parts.size > 1) parts[1] else ""
-                                        AggregatedSession(
-                                            date = timestamp,
-                                            label = label,
-                                            totalDuration = duration,
-                                        )
-                                    }.sortedByDescending { it.date }
-
+                        LocalDataTabType.Timeline -> {
                             AggregatedTimelineTab(
-                                aggregatedSessions = cloudAggregatedSessions,
+                                aggregatedSessions = uiState.aggregatedSessions,
                                 labels = uiState.labels,
                             )
                         }

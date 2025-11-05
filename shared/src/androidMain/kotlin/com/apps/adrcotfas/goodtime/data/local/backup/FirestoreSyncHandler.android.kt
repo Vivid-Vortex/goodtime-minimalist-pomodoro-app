@@ -61,14 +61,28 @@ actual class FirestoreSyncHandler(
             Log.d(TAG, "Syncing ${unsyncedSessions.size} unsynced sessions")
 
             // Step 1: Save unsynced sessions to App History cloud (with device name)
+            // Track successfully synced sessions
+            val successfullySyncedSessions = mutableListOf<LocalSession>()
+            val failedSessions = mutableListOf<Pair<LocalSession, String>>()
+
             for (session in unsyncedSessions) {
                 val historyResult = saveSessionToAppHistory(session)
                 if (historyResult is FirestoreSyncResult.Error) {
                     Log.w(TAG, "Failed to save to app history ${session.id}: ${historyResult.message}")
+                    failedSessions.add(Pair(session, historyResult.message))
                 } else {
-                    // Mark session as synced
-                    markSessionAsSynced(session)
+                    successfullySyncedSessions.add(session)
                 }
+            }
+
+            // Step 1a: Mark all successfully synced sessions at once
+            Log.d(TAG, "Marking ${successfullySyncedSessions.size} sessions as synced")
+            for (session in successfullySyncedSessions) {
+                markSessionAsSynced(session)
+            }
+
+            if (failedSessions.isNotEmpty()) {
+                Log.w(TAG, "Failed to sync ${failedSessions.size} sessions - they will be retried next time")
             }
 
             // Step 2: Fetch ALL App History from cloud (all devices)
@@ -148,8 +162,10 @@ actual class FirestoreSyncHandler(
                     "${session.notes} $syncMarker"
                 }
             sessionDao.updateNotes(session.id, updatedNotes)
+            Log.d(TAG, "Marked session ${session.id} as synced to cloud")
         } catch (e: Exception) {
-            Log.e(TAG, "Error marking session as synced", e)
+            Log.e(TAG, "Error marking session ${session.id} as synced", e)
+            throw e // Re-throw to ensure we know about marking failures
         }
     }
 

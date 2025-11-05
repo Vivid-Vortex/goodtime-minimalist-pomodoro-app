@@ -525,4 +525,28 @@ class StatisticsViewModel(
             }
         }
     }
+
+    // Section 13: Push local data to cloud (for Local Data section)
+    fun pushToCloud() {
+        viewModelScope.launch {
+            co.touchlab.kermit.Logger
+                .d { "pushToCloud() called" }
+            val result = firestoreSyncHandler?.syncData() ?: FirestoreSyncResult.Error("Firebase not available")
+
+            when (result) {
+                is FirestoreSyncResult.Success -> {
+                    co.touchlab.kermit.Logger
+                        .d { "pushToCloud: Success" }
+                }
+                is FirestoreSyncResult.Error -> {
+                    co.touchlab.kermit.Logger
+                        .e { "pushToCloud: Failed - ${result.message}" }
+                }
+                else -> {
+                    co.touchlab.kermit.Logger
+                        .w { "pushToCloud: Unexpected result - $result" }
+                }
+            }
+        }
+    }
 }

@@ -63,7 +63,8 @@ fun StatisticsScreenTopBar(
     onCancel: () -> Unit,
     onDeleteClick: () -> Unit,
     onSelectAll: () -> Unit,
-    onRefreshFromCloud: () -> Unit,
+    onRefreshFromCloud: (() -> Unit)?, // Section 13: For Statistics (pull only)
+    onSaveToCloud: (() -> Unit)?, // Section 13: For Local Data (push only)
     showSelectionUi: Boolean,
     selectionCount: Int,
     showSeparator: Boolean,
@@ -186,18 +187,36 @@ fun StatisticsScreenTopBar(
                                         dropDownMenuExpanded = false
                                     },
                                 )
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            modifier = paddingModifier,
-                                            text = stringResource(R.string.stats_refresh_from_cloud),
-                                        )
-                                    },
-                                    onClick = {
-                                        onRefreshFromCloud()
-                                        dropDownMenuExpanded = false
-                                    },
-                                )
+                                // Section 13: Show refresh option for Statistics (pull only)
+                                onRefreshFromCloud?.let { refreshAction ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                modifier = paddingModifier,
+                                                text = stringResource(R.string.stats_refresh_from_cloud),
+                                            )
+                                        },
+                                        onClick = {
+                                            refreshAction()
+                                            dropDownMenuExpanded = false
+                                        },
+                                    )
+                                }
+                                // Section 13: Show save option for Local Data (push only)
+                                onSaveToCloud?.let { saveAction ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                modifier = paddingModifier,
+                                                text = stringResource(R.string.backup_sync_with_firestore),
+                                            )
+                                        },
+                                        onClick = {
+                                            saveAction()
+                                            dropDownMenuExpanded = false
+                                        },
+                                    )
+                                }
                             }
                         }
                     },
