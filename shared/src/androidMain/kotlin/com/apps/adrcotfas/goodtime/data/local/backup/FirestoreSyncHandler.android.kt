@@ -60,29 +60,55 @@ actual class FirestoreSyncHandler(
 
             Log.d(TAG, "Syncing ${unsyncedSessions.size} unsynced sessions")
 
-            // Aggregate unsynced sessions by date and label
-            val aggregated = aggregateSessionsByDateAndLabel(unsyncedSessions)
-
-            // Save aggregated data to timesheet
-            for ((key, totalDuration) in aggregated) {
-                val (date, label) = key
-                val timesheetResult = saveAggregatedToTimesheet(date, label, totalDuration)
-                if (timesheetResult is FirestoreSyncResult.Error) {
-                    Log.w(TAG, "Failed to sync aggregated data for $label on $date: ${timesheetResult.message}")
-                }
-            }
-
-            // Save each unsynced session to app history
+            // Step 1: Save unsynced sessions to App History cloud (with device name)
             for (session in unsyncedSessions) {
                 val historyResult = saveSessionToAppHistory(session)
                 if (historyResult is FirestoreSyncResult.Error) {
                     Log.w(TAG, "Failed to save to app history ${session.id}: ${historyResult.message}")
                 } else {
-                    // Mark session as synced by adding a hidden timestamp marker
+                    // Mark session as synced
                     markSessionAsSynced(session)
                 }
             }
 
+            // Step 2: Fetch ALL App History from cloud (all devices)
+            val cloudAppHistory = fetchAppHistoryFromCloud()
+
+            // Step 3: Aggregate ALL App History (local + cloud) by date/tag
+            val allAppHistory = mutableListOf<LocalSession>()
+            allAppHistory.addAll(allSessions)
+
+            // Convert cloud app history to local format for aggregation
+            cloudAppHistory.forEach { cloudSession ->
+                // Only add if not from this device (to avoid double-counting)
+                if (cloudSession.deviceName != deviceName) {
+                    allAppHistory.add(
+                        LocalSession(
+                            id = cloudSession.id,
+                            timestamp = cloudSession.timestamp,
+                            duration = cloudSession.duration,
+                            interruptions = 0,
+                            labelName = cloudSession.label,
+                            notes = cloudSession.notes,
+                            isWork = true,
+                            isArchived = false,
+                        ),
+                    )
+                }
+            }
+
+            val globalAggregated = aggregateSessionsByDateAndLabel(allAppHistory)
+
+            // Step 4: REPLACE timesheet_entries with global aggregated totals
+            for ((key, totalDuration) in globalAggregated) {
+                val (date, label) = key
+                val timesheetResult = replaceInTimesheet(date, label, totalDuration)
+                if (timesheetResult is FirestoreSyncResult.Error) {
+                    Log.w(TAG, "Failed to update timesheet for $label on $date: ${timesheetResult.message}")
+                }
+            }
+
+            Log.d(TAG, "Sync complete: updated ${globalAggregated.size} timesheet entries")
             FirestoreSyncResult.Success
         } catch (e: Exception) {
             Log.e(TAG, "Error syncing data", e)
@@ -127,10 +153,10 @@ actual class FirestoreSyncHandler(
         }
     }
 
-    private suspend fun saveAggregatedToTimesheet(
+    private suspend fun replaceInTimesheet(
         dateKey: String,
         label: String,
-        durationToAdd: Long,
+        totalDuration: Long,
     ): FirestoreSyncResult {
         return try {
             val collectionRef = db.collection(COLLECTION_TIMESHEET)
@@ -140,7 +166,7 @@ actual class FirestoreSyncHandler(
             val document = documentRef.get().await()
 
             if (document.exists()) {
-                // Document exists, update it
+                // Document exists, REPLACE the value
                 val formData = document.get("formData") as? Map<*, *>
                 val tagSnapshot = formData?.get("tagSnapshot") as? Map<*, *>
 
@@ -158,26 +184,20 @@ actual class FirestoreSyncHandler(
                     return FirestoreSyncResult.Error("No tag with name $label found in database")
                 }
 
-                // Get current value - could be string or number in Firestore
-                val currentValue =
-                    when (val value = formData[fieldName]) {
-                        is String -> value.toIntOrNull() ?: 0
-                        is Number -> value.toInt()
-                        else -> 0
-                    }
-                val newValue = currentValue + durationToAdd.toInt()
+                // REPLACE with total duration (not add)
+                val newValue = totalDuration.toInt()
 
                 // Store as integer for Log Hours fields
                 documentRef.update("formData.$fieldName", newValue).await()
-                Log.d(TAG, "Updated $fieldName with value $newValue for date $dateKey (added $durationToAdd minutes)")
+                Log.d(TAG, "Replaced $fieldName with value $newValue for date $dateKey (total duration)")
             } else {
-                // Document doesn't exist, create it with the aggregated data
-                createNewTimesheetDocument(dateKey, label, durationToAdd.toInt())
+                // Document doesn't exist, create it with the total duration
+                createNewTimesheetDocument(dateKey, label, totalDuration.toInt())
             }
 
             FirestoreSyncResult.Success
         } catch (e: Exception) {
-            Log.e(TAG, "Error saving aggregated data to timesheet", e)
+            Log.e(TAG, "Error replacing data in timesheet", e)
             FirestoreSyncResult.Error(e.message ?: "Unknown error")
         }
     }

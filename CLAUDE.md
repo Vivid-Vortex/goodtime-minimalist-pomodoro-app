@@ -463,3 +463,32 @@ Duplicate entry: Data was pull nd pushed from the same device, then why synced_t
 If the data is being from the same device then it should not show synced_to_cloud/synced_from_cloud. Only for other device ran data,
 shoudl show synced_from_whatever device name. And no need of synced_to_cloud.
 ---
+Section 10:
+Case 1: First time installed on the device 1:
+Tags: Say WCMN and W1M.
+
+State1:
+	Runtime: WCMN = 1 and W1M =2
+	App history will be having 2 entries  WCMN = 1 and W1M =2 for 4 Nov with it's timestamp
+	Timeline will have 2 entries as WCMN = 1 and W1M =2 for 4
+
+State2:
+	Runtime: WCMN = 2, W1M =3 and new tag introduced as LTG with runtime of 4.
+	App history will be having 5 entries, 3 from this run WCMN = 2, W1M =3 and LTG=4 for 4 Nov and 2 from previous.
+	Timeline will have 3 entries as WCMN = 3(added WCMN=1 for previous tag same date), W1M =5 (added W1M=2 for previous tag same date) and LTG=4 for 4 Nov.
+
+and so on.
+
+First the data should go to App history and then snsynced data to be added to Timeline and then from Timeline data should be saved to cloud.
+
+If at the same time device 2 also runs say the same case on it's device, then before setting anything to Timeline section locally device 2 first fetch the latest state of device 1 and only add any new entries to it's timeline and then save to cloud. Bascially it's like a git merge before to feature in pr before actual merge to main (here main branc you can think of as the cloud db).
+
+And at the time of save to cloud button press, the latest state will be pushed to the cloud.
+
+But in device 2, we should keep track of any changes and only during push or pull from cloud db, we should adjust these new changes and push the final result to cloud. That way we can reduce the read/write operations number to cloud and reduce cost as important to note in this logic is, at a time only one device this app will run and not on multiple devices.
+---
+
+
+
+
+---

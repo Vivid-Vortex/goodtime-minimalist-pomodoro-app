@@ -247,59 +247,27 @@ class StatisticsViewModel(
     }
 
     private fun computeTimelineData(allSessions: List<Session>) {
-        val cloudData = _uiState.value.cloudAggregatedData
         co.touchlab.kermit.Logger
-            .d { "computeTimelineData: cloudData size=${cloudData.size}, allSessions size=${allSessions.size}" }
+            .d { "computeTimelineData: allSessions size=${allSessions.size}" }
 
-        // Aggregate ALL local sessions by date and label (synced and unsynced)
-        val localAggregated =
+        // Section 10: Timeline = Aggregate ALL local App History by date/tag
+        // Simple: Sum all local sessions with same date and label
+        val timeline =
             allSessions
                 .groupBy { session ->
                     val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
                     Pair(normalizedDate, session.label)
-                }.mapValues { (_, sessions) ->
-                    sessions.sumOf { it.duration }
-                }
-
-        co.touchlab.kermit.Logger
-            .d { "computeTimelineData: localAggregated entries=${localAggregated.size}" }
-
-        // Timeline = ALL local data (this device) + cloud data from other devices only
-        val mergedData = mutableMapOf<Pair<Long, String>, Long>()
-
-        // Start with ALL local data (this is the source of truth for this device)
-        localAggregated.forEach { (key, duration) ->
-            mergedData[key] = duration
-        }
-
-        // Add cloud data ONLY for date/label combinations not in local data
-        // (this is data from other devices)
-        cloudData.forEach { (cloudKey, cloudDuration) ->
-            val parts = cloudKey.split("_")
-            val timestamp = parts[0].toLong()
-            val label = parts.drop(1).joinToString("_")
-            val key = Pair(timestamp, label)
-
-            // Only add if not in local data (means it's from another device)
-            if (!mergedData.containsKey(key)) {
-                mergedData[key] = cloudDuration
-            }
-        }
-
-        // Convert to AggregatedSession list
-        val timeline =
-            mergedData
-                .map { (key, duration) ->
+                }.map { (key, sessions) ->
                     val (timestamp, label) = key
                     AggregatedSession(
                         date = timestamp,
                         label = label,
-                        totalDuration = duration,
+                        totalDuration = sessions.sumOf { it.duration },
                     )
                 }.sortedByDescending { it.date }
 
         co.touchlab.kermit.Logger
-            .d { "computeTimelineData: Final timeline entries=${timeline.size}" }
+            .d { "computeTimelineData: Timeline entries=${timeline.size}" }
 
         _uiState.update { it.copy(aggregatedSessions = timeline) }
     }
