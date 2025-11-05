@@ -10,7 +10,9 @@
       "Bash(tee:*)",
       "Bash(timeout 120 adb wait-for-device shell:*)",
       "Bash(emulator:*)",
-      "Bash(timeout 30 adb logcat:*)"
+      "Bash(timeout 30 adb logcat:*)",
+      "Bash(.gradlew.bat installDebug)",
+      "Bash(gradlew.bat installDebug)"
     ],
     "deny": [],
     "ask": []

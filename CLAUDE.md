@@ -487,8 +487,14 @@ And at the time of save to cloud button press, the latest state will be pushed t
 
 But in device 2, we should keep track of any changes and only during push or pull from cloud db, we should adjust these new changes and push the final result to cloud. That way we can reduce the read/write operations number to cloud and reduce cost as important to note in this logic is, at a time only one device this app will run and not on multiple devices.
 ---
+Section 11:
+Once you have already added any new data from app history, assign a mini or micro small badge or special colors(whichever elegant) indicating that that data is already added to timeline. If at all any new app history is having a any tags not having this added badge should not be considered while adding to timeline for that tag. This way we can track added or not added data.
 
+Having said that, on device two, i am still seeing that
+A. It is automtically fetching/pulling cloud db data. Rather it should only pull when we press refresh from cloud and after pull immediatly add to the timeline tag for same date and mark it as added. That way next time it will not be picked as the candidate for addition.
 
+B. It is not adding the local new data to timeline and only appearing on app history. It shoudl add the local data immediatly to time and mark it as added in the form of badge or color as described in point A. And then send the lastest calculation to cloud at the time of push.
 
+Other functionality working correct apprt from these two and so touch those.
 
 ---

@@ -218,11 +218,14 @@ fun AppHistoryListItem(
     // Check if session is from cloud (has deviceName from another device)
     val isFromOtherDevice = session.deviceName.isNotEmpty() && session.deviceName != currentDeviceName
     val isFromCloud = session.notes.contains("cloud_synced_at:", ignoreCase = true)
+    // Section 11: Check if session has been added to Timeline
+    val isAddedToTimeline = session.notes.contains("added_to_timeline:", ignoreCase = true)
 
     val containerColor =
         when {
             isSelected -> MaterialTheme.colorScheme.secondaryContainer
             isFromOtherDevice -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            isAddedToTimeline -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
             else -> MaterialTheme.colorScheme.surface
         }
 

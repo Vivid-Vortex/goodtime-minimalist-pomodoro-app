@@ -237,32 +237,67 @@ class StatisticsViewModel(
             }
         }
 
-        // Auto-fetch cloud data on initialization so Timeline reflects cloud state
-        // Timeline should show: cloud data (from timesheet_entries) + unsynced local data
-        viewModelScope.launch {
-            co.touchlab.kermit.Logger
-                .d { "Auto-fetching cloud data on initialization" }
-            refreshFromCloud()
-        }
+        // Section 11: Don't auto-fetch on initialization
+        // Only fetch when user manually presses refresh
     }
 
     private fun computeTimelineData(allSessions: List<Session>) {
         co.touchlab.kermit.Logger
             .d { "computeTimelineData: allSessions size=${allSessions.size}" }
 
-        // Section 10: Timeline = Aggregate ALL local App History by date/tag
-        // Simple: Sum all local sessions with same date and label
-        val timeline =
-            allSessions
+        // Section 11: Filter sessions that are already added to Timeline
+        val sessionsNotAddedToTimeline =
+            allSessions.filter {
+                !it.notes.contains("added_to_timeline:", ignoreCase = true)
+            }
+
+        val sessionsAlreadyInTimeline =
+            allSessions.filter {
+                it.notes.contains("added_to_timeline:", ignoreCase = true)
+            }
+
+        co.touchlab.kermit.Logger
+            .d { "New sessions to add: ${sessionsNotAddedToTimeline.size}, Already in Timeline: ${sessionsAlreadyInTimeline.size}" }
+
+        // Compute Timeline from sessions already marked
+        val existingTimeline =
+            sessionsAlreadyInTimeline
                 .groupBy { session ->
                     val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
                     Pair(normalizedDate, session.label)
-                }.map { (key, sessions) ->
+                }.mapValues { (_, sessions) ->
+                    sessions.sumOf { it.duration }
+                }
+
+        // Add new sessions to Timeline
+        val newSessionsAggregate =
+            sessionsNotAddedToTimeline
+                .groupBy { session ->
+                    val normalizedDate = (session.timestamp / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000)
+                    Pair(normalizedDate, session.label)
+                }.mapValues { (_, sessions) ->
+                    sessions.sumOf { it.duration }
+                }
+
+        // Merge existing Timeline + new sessions
+        val mergedTimeline = mutableMapOf<Pair<Long, String>, Long>()
+        existingTimeline.forEach { (key, duration) ->
+            mergedTimeline[key] = duration
+        }
+        newSessionsAggregate.forEach { (key, duration) ->
+            val currentValue = mergedTimeline[key] ?: 0
+            mergedTimeline[key] = currentValue + duration
+        }
+
+        // Convert to AggregatedSession list
+        val timeline =
+            mergedTimeline
+                .map { (key, duration) ->
                     val (timestamp, label) = key
                     AggregatedSession(
                         date = timestamp,
                         label = label,
-                        totalDuration = sessions.sumOf { it.duration },
+                        totalDuration = duration,
                     )
                 }.sortedByDescending { it.date }
 
@@ -270,6 +305,32 @@ class StatisticsViewModel(
             .d { "computeTimelineData: Timeline entries=${timeline.size}" }
 
         _uiState.update { it.copy(aggregatedSessions = timeline) }
+
+        // Mark new sessions as added to Timeline
+        if (sessionsNotAddedToTimeline.isNotEmpty()) {
+            viewModelScope.launch {
+                markSessionsAsAddedToTimeline(sessionsNotAddedToTimeline)
+            }
+        }
+    }
+
+    private suspend fun markSessionsAsAddedToTimeline(sessions: List<Session>) {
+        sessions.forEach { session ->
+            try {
+                val timestamp =
+                    kotlinx.datetime.Clock.System
+                        .now()
+                        .toEpochMilliseconds()
+                val newNotes = "${session.notes} [added_to_timeline:$timestamp]"
+                val updatedSession = session.copy(notes = newNotes)
+                localDataRepo.updateSession(session.id, updatedSession)
+                co.touchlab.kermit.Logger
+                    .d { "Marked session ${session.id} as added to Timeline" }
+            } catch (e: Exception) {
+                co.touchlab.kermit.Logger
+                    .e { "Failed to mark session ${session.id}: ${e.message}" }
+            }
+        }
     }
 
     fun setSelectedLabels(selectedLabels: List<String>) {
