@@ -162,14 +162,31 @@ class StatisticsViewModel(
 
         // Section 13: Statistics should use cloud data only, not local data
         viewModelScope.launch {
+            co.touchlab.kermit.Logger
+                .d { "Overview flow: Starting to collect cloudAggregatedData" }
             uiState
-                .map { Pair(it.selectedLabels, it.cloudAggregatedData) }
-                .distinctUntilChanged()
+                .map { state ->
+                    co.touchlab.kermit.Logger
+                        .d { "Overview flow: Mapping state, cloudAggregatedData size=${state.cloudAggregatedData.size}" }
+                    Pair(state.selectedLabels, state.cloudAggregatedData)
+                }
+                // Section 13: Remove distinctUntilChanged to ensure flow always triggers
                 .collect { (selectedLabels, cloudAggregatedData) ->
+                    co.touchlab.kermit.Logger
+                        .d {
+                            "Overview flow: Collected cloudAggregatedData size=${cloudAggregatedData.size}, selectedLabels=${selectedLabels.size}"
+                        }
                     _uiState.update { it.copy(isLoading = true) }
 
                     val data =
                         withContext(Dispatchers.Default) {
+                            // Section 13: Return empty statistics if no cloud data
+                            if (cloudAggregatedData.isEmpty()) {
+                                co.touchlab.kermit.Logger
+                                    .d { "Overview flow: No cloud data, returning empty StatisticsData" }
+                                return@withContext StatisticsData()
+                            }
+
                             // Convert cloud aggregated data to AggregatedSession format
                             val cloudAggregatedSessions =
                                 cloudAggregatedData.map { (key, duration) ->
@@ -183,6 +200,9 @@ class StatisticsViewModel(
                                     )
                                 }
 
+                            co.touchlab.kermit.Logger
+                                .d { "Overview flow: Cloud aggregated sessions=${cloudAggregatedSessions.size}" }
+
                             // Filter aggregated sessions by selected labels
                             val filteredSessions =
                                 if (selectedLabels.isEmpty()) {
@@ -190,6 +210,9 @@ class StatisticsViewModel(
                                 } else {
                                     cloudAggregatedSessions.filter { it.label in selectedLabels }
                                 }
+
+                            co.touchlab.kermit.Logger
+                                .d { "Overview flow: Filtered sessions=${filteredSessions.size}" }
 
                             // Convert aggregated sessions to Session format for statistics computation
                             val sessions =
@@ -207,6 +230,9 @@ class StatisticsViewModel(
                                     )
                                 }
 
+                            co.touchlab.kermit.Logger
+                                .d { "Overview flow: Computing statistics from ${sessions.size} sessions (CLOUD DATA ONLY)" }
+
                             computeStatisticsData(
                                 sessions = sessions,
                                 firstDayOfWeek = uiState.value.firstDayOfWeek,
@@ -214,6 +240,8 @@ class StatisticsViewModel(
                             )
                         }
 
+                    co.touchlab.kermit.Logger
+                        .d { "Overview flow: Setting statisticsData - workTotal=${data.overviewData.workTotal}" }
                     _uiState.update { it.copy(statisticsData = data, isLoading = false) }
                 }
         }

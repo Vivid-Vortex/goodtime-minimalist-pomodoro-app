@@ -12,7 +12,12 @@
       "Bash(emulator:*)",
       "Bash(timeout 30 adb logcat:*)",
       "Bash(.gradlew.bat installDebug)",
-      "Bash(gradlew.bat installDebug)"
+      "Bash(gradlew.bat installDebug)",
+      "Bash(gradlew.bat clean:*)",
+      "Bash(\"./gradlew.bat\" clean)",
+      "Bash(\"./gradlew.bat\" :androidApp:installDebug)",
+      "Bash(\"./gradlew.bat\" :androidApp:installGoogleDebug)",
+      "Bash(timeout 10 adb logcat:*)"
     ],
     "deny": [],
     "ask": []
