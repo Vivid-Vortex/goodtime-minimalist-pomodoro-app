@@ -160,22 +160,35 @@ class StatisticsViewModel(
                 }
         }
 
-        // Statistics: Use Timeline aggregated data instead of raw App History
+        // Section 13: Statistics should use cloud data only, not local data
         viewModelScope.launch {
             uiState
-                .map { Pair(it.selectedLabels, it.aggregatedSessions) }
+                .map { Pair(it.selectedLabels, it.cloudAggregatedData) }
                 .distinctUntilChanged()
-                .collect { (selectedLabels, aggregatedSessions) ->
+                .collect { (selectedLabels, cloudAggregatedData) ->
                     _uiState.update { it.copy(isLoading = true) }
 
                     val data =
                         withContext(Dispatchers.Default) {
+                            // Convert cloud aggregated data to AggregatedSession format
+                            val cloudAggregatedSessions =
+                                cloudAggregatedData.map { (key, duration) ->
+                                    val parts = key.split("_", limit = 2)
+                                    val timestamp = parts[0].toLongOrNull() ?: 0L
+                                    val label = if (parts.size > 1) parts[1] else ""
+                                    AggregatedSession(
+                                        date = timestamp,
+                                        label = label,
+                                        totalDuration = duration,
+                                    )
+                                }
+
                             // Filter aggregated sessions by selected labels
                             val filteredSessions =
                                 if (selectedLabels.isEmpty()) {
-                                    aggregatedSessions
+                                    cloudAggregatedSessions
                                 } else {
-                                    aggregatedSessions.filter { it.label in selectedLabels }
+                                    cloudAggregatedSessions.filter { it.label in selectedLabels }
                                 }
 
                             // Convert aggregated sessions to Session format for statistics computation
@@ -306,12 +319,9 @@ class StatisticsViewModel(
 
         _uiState.update { it.copy(aggregatedSessions = timeline) }
 
-        // Mark new sessions as added to Timeline
-        if (sessionsNotAddedToTimeline.isNotEmpty()) {
-            viewModelScope.launch {
-                markSessionsAsAddedToTimeline(sessionsNotAddedToTimeline)
-            }
-        }
+        // Section 13: Don't mark sessions as "added to timeline" in Local Data section
+        // Only cloud sync should mark sessions as "synced to cloud"
+        // The timeline is just for display/aggregation purposes
     }
 
     private suspend fun markSessionsAsAddedToTimeline(sessions: List<Session>) {
