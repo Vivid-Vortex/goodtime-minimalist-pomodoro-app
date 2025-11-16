@@ -104,7 +104,11 @@ fun TimerProfileScreen(
                     timerProfile = label.timerProfile,
                     timerProfiles = uiState.timerProfiles,
                     onTimerProfileChange = { updated ->
-                        viewModel.updateTmpLabel(label.copy(timerProfile = updated))
+                        // Section 15: Don't reset profile name when changing settings
+                        viewModel.updateTmpLabel(
+                            label.copy(timerProfile = updated),
+                            resetProfile = false,
+                        )
                     },
                     onTimerProfileSelect = { selected ->
                         viewModel.updateTmpLabel(
@@ -187,6 +191,23 @@ fun TimerProfileScreen(
                         }
                     }
                 }
+
+                // Section 14: Save Profiles to Cloud button
+                if (uiState.timerProfiles.isNotEmpty()) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        FilledTonalButton(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { viewModel.saveProfilesToCloud() },
+                        ) {
+                            Text(stringResource(R.string.settings_save_profiles_to_cloud))
+                        }
+                    }
+                }
             }
         }
         if (showBreakBudgetInfoDialog) {
@@ -222,6 +243,10 @@ fun TimerProfileScreen(
                     if (uiState.timerProfiles.size <= 1) {
                         showTimerProfilesSheet = false
                     }
+                },
+                // Section 14: Add rename callback
+                onRename = { oldName, newName ->
+                    viewModel.renameTimerProfile(oldName, newName)
                 },
             )
         }

@@ -22,6 +22,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.apps.adrcotfas.goodtime.data.model.Label
 import kotlinx.coroutines.flow.Flow
 
@@ -41,6 +42,15 @@ interface TimerProfileDao {
 
     @Query("DELETE FROM localTimerProfile WHERE name = :name")
     suspend fun deleteByName(name: String)
+
+    @Query("UPDATE localTimerProfile SET name = :newName WHERE name = :oldName")
+    suspend fun renameProfile(
+        oldName: String,
+        newName: String,
+    )
+
+    @Update
+    suspend fun update(timerProfile: LocalTimerProfile)
 
     @Query("SELECT * FROM localTimerProfile WHERE name = :name")
     fun selectByName(name: String): Flow<LocalTimerProfile?>

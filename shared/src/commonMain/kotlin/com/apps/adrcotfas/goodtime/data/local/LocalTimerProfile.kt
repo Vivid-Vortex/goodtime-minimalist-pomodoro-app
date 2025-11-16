@@ -50,7 +50,10 @@ data class LocalTimerProfile(
     val workBreakRatio: Int,
 ) {
     companion object {
-        const val DEFAULT_PROFILE_NAME = "25/5"
+        // Section 15: Updated default profiles
+        const val DEFAULT_PROFILE_NAME = "72/5" // Section 15: Changed from 25/5 to 72/5
+        const val PROFILE_90_5_NAME = "90/5" // Section 15: New profile
+        const val PROFILE_25_5_NAME = "25/5" // Section 15: Keep as non-default
         const val PROFILE_50_10_NAME = "50/10"
         const val POMODORO_PROFILE_NAME = "Pomodoro"
         const val THIRD_TIME_PROFILE_NAME = "Third Time"

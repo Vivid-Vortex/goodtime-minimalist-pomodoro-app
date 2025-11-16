@@ -24,7 +24,7 @@ import androidx.room.RoomDatabaseConstructor
 
 @Database(
     entities = [LocalLabel::class, LocalSession::class, LocalTimerProfile::class],
-    version = 9,
+    version = 10, // Section 15: Updated for new timer profiles
     exportSchema = true,
 )
 @ConstructedBy(ProductivityDatabaseConstructor::class)

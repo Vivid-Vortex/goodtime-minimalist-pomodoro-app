@@ -305,6 +305,48 @@ val MIGRATION_8_9: Migration =
         }
     }
 
+// Section 15: Add new timer profiles (72/5 as default, 90/5, keep 25/5)
+val MIGRATION_9_10: Migration =
+    object : Migration(9, 10) {
+        override fun migrate(connection: SQLiteConnection) {
+            // Section 15: Update DEFAULT_PROFILE_NAME from 25/5 to 72/5
+            connection.execSQL(
+                """
+                UPDATE localTimerProfile
+                SET name = '${LocalTimerProfile.DEFAULT_PROFILE_NAME}',
+                    workDuration = 72,
+                    breakDuration = 5
+                WHERE name = '25/5';
+                """.trimIndent(),
+            )
+
+            // Section 15: Add 90/5 profile
+            connection.execSQL(
+                """
+                INSERT OR IGNORE INTO localTimerProfile (name, isCountdown, workDuration, isBreakEnabled, breakDuration, isLongBreakEnabled, longBreakDuration, sessionsBeforeLongBreak, workBreakRatio)
+                VALUES ('${LocalTimerProfile.PROFILE_90_5_NAME}', 1, 90, 1, 5, 0, 15, 4, 3);
+                """.trimIndent(),
+            )
+
+            // Section 15: Add 25/5 profile (non-default)
+            connection.execSQL(
+                """
+                INSERT OR IGNORE INTO localTimerProfile (name, isCountdown, workDuration, isBreakEnabled, breakDuration, isLongBreakEnabled, longBreakDuration, sessionsBeforeLongBreak, workBreakRatio)
+                VALUES ('${LocalTimerProfile.PROFILE_25_5_NAME}', 1, 25, 1, 5, 0, 15, 4, 3);
+                """.trimIndent(),
+            )
+
+            // Section 15: Update labels to use new default profile name
+            connection.execSQL(
+                """
+                UPDATE localLabel
+                SET timerProfileName = '${LocalTimerProfile.DEFAULT_PROFILE_NAME}'
+                WHERE timerProfileName = '25/5';
+                """.trimIndent(),
+            )
+        }
+    }
+
 val MIGRATIONS =
     arrayOf(
         MIGRATION_1_2,
@@ -315,4 +357,5 @@ val MIGRATIONS =
         MIGRATION_6_7,
         MIGRATION_7_8,
         MIGRATION_8_9,
+        MIGRATION_9_10,
     )

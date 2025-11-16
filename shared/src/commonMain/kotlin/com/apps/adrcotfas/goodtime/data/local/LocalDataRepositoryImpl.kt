@@ -298,6 +298,17 @@ internal class LocalDataRepositoryImpl(
         timerProfileDao.deleteByName(name)
     }
 
+    override suspend fun renameTimerProfile(
+        oldName: String,
+        newName: String,
+    ) {
+        timerProfileDao.renameProfile(oldName, newName)
+    }
+
+    override suspend fun updateTimerProfile(profile: TimerProfile) {
+        timerProfileDao.update(profile.toLocal())
+    }
+
     override suspend fun selectTimerProfile(name: String): Flow<TimerProfile?> = timerProfileDao.selectByName(name).map { it?.toExternal() }
 
     override suspend fun selectAllTimerProfiles(): Flow<List<TimerProfile>> =

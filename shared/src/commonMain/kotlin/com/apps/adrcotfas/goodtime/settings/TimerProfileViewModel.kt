@@ -20,6 +20,7 @@ package com.apps.adrcotfas.goodtime.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
+import com.apps.adrcotfas.goodtime.data.local.backup.TimerProfileFirestoreHandler
 import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.data.model.TimerProfile
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
@@ -44,6 +45,7 @@ data class TimerProfileUiState(
 class TimerProfileViewModel(
     private val repo: LocalDataRepository,
     private val settingsRepository: SettingsRepository,
+    private val firestoreHandler: TimerProfileFirestoreHandler? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(TimerProfileUiState())
     val uiState =
@@ -79,6 +81,10 @@ class TimerProfileViewModel(
     fun saveChanges(label: Label) {
         viewModelScope.launch {
             repo.updateDefaultLabel(label)
+            // Section 15: Also update the timer profile if it's a named profile
+            label.timerProfile.name?.let { profileName ->
+                repo.updateTimerProfile(label.timerProfile)
+            }
             _uiState.update {
                 it.copy(defaultLabel = label)
             }
@@ -129,6 +135,72 @@ class TimerProfileViewModel(
                 }
             }
             repo.deleteTimerProfile(name)
+        }
+    }
+
+    fun renameTimerProfile(
+        oldName: String,
+        newName: String,
+    ) {
+        viewModelScope.launch {
+            repo.renameTimerProfile(oldName, newName)
+            // Update tmpLabel if it was using the renamed profile
+            if (_uiState.value.tmpLabel.timerProfile.name == oldName) {
+                _uiState.update {
+                    it.copy(
+                        tmpLabel =
+                            it.tmpLabel.copy(
+                                timerProfile =
+                                    it.tmpLabel.timerProfile.copy(
+                                        name = newName,
+                                    ),
+                            ),
+                    )
+                }
+            }
+        }
+    }
+
+    fun updateTimerProfile(profile: TimerProfile) {
+        viewModelScope.launch {
+            repo.updateTimerProfile(profile)
+        }
+    }
+
+    fun saveProfilesToCloud() {
+        viewModelScope.launch {
+            val profiles = _uiState.value.timerProfiles
+            firestoreHandler?.saveProfilesToCloud(profiles)?.fold(
+                onSuccess = {
+                    co.touchlab.kermit.Logger
+                        .d { "Successfully saved ${profiles.size} profiles to Firestore" }
+                },
+                onFailure = { error ->
+                    co.touchlab.kermit.Logger
+                        .e { "Failed to save profiles to Firestore: ${error.message}" }
+                },
+            )
+        }
+    }
+
+    fun loadProfilesFromCloud() {
+        viewModelScope.launch {
+            firestoreHandler?.loadProfilesFromCloud()?.fold(
+                onSuccess = { cloudProfiles ->
+                    co.touchlab.kermit.Logger
+                        .d { "Successfully loaded ${cloudProfiles.size} profiles from Firestore" }
+                    // Merge cloud profiles with local profiles
+                    cloudProfiles.forEach { profile ->
+                        profile.name?.let { name ->
+                            repo.insertTimerProfile(profile)
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    co.touchlab.kermit.Logger
+                        .e { "Failed to load profiles from Firestore: ${error.message}" }
+                },
+            )
         }
     }
 }

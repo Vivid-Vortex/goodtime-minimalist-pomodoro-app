@@ -19,6 +19,7 @@ package com.apps.adrcotfas.goodtime
 
 import com.apps.adrcotfas.goodtime.billing.BillingAbstract
 import com.apps.adrcotfas.goodtime.billing.GoogleBilling
+import com.apps.adrcotfas.goodtime.data.local.backup.TimerProfileFirestoreHandler
 import com.apps.adrcotfas.goodtime.di.IO_SCOPE
 import com.apps.adrcotfas.goodtime.di.getWith
 import org.koin.core.qualifier.named
@@ -33,5 +34,10 @@ val flavorModule =
                 coroutineScope = get(named(IO_SCOPE)),
                 log = getWith("GoogleBilling"),
             )
+        }
+
+        // Section 14: Timer Profile Firestore Handler
+        single<TimerProfileFirestoreHandler> {
+            TimerProfileFirestoreHandler()
         }
     }

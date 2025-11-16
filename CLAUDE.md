@@ -525,3 +525,25 @@ Under  current statistics:
 rename the app history and timeline to "combined app history" and "combined timeline" respectively, which would pull all the app hisotry from the current app history collection and timeshee_entries collection. This path is only for pull/refresh functionality. The overview page shoudl use the "combined timeline" tab of this section.
 
 -----
+
+Section 14:
+
+- Whenever I open the app the selected tag dissapers.
+
+- Settings -> Timer Profile -> Currently there are 4 profiles as 25/5, 50/10 names with differen profile settings. But the problems is that when I am selecting any other disaperas. I want to rename a profile say 50/50 can be renamed to 72/5 and do other whatever changes in that profile should be saved to db and fetched from db. You may created a timer_profile document under gloabal_notes collection to save these settings. Alos user should be able to createa as many profile as possible.   Also add a save button in this tosave the data.
+
+Do not change anything else apart form these two. At the end open the  emulator for me to test.
+
+-----
+
+Section 15:
+
+Staticstics section not working properly.
+- Under Staticstics, Overview is working based on Local data section but in real it should work on Combined App History /and Comibined Timeline basis.
+- Data inside Combined App History /and Comibined Timeline is not persistent. These are disapering. In reality these two (Combined App History /and Comibined Timeline) should only perfom read operation from cloud whenever user preses Refresh from cloud and keep the data persistent locally until the user again presses refresh from cloud, in that case it should simply replace the old local data with the new one.
+
+-----
+Section 16:
+When I am changing focus time then it seems like the drop down under timer profile is changing to Cutomr. I want every profile to be saved into its own name say 72/5 showing under drop down and then Focus time will be 72,break time 5. Make 72/5 as the default one. Like wise user should be able to craet as many profile as possible, but initially you can keep 72/5(default), 90/5, 25/5. Then user should be able to add more. All data should be saved locally as well as to cloud.
+
+-----

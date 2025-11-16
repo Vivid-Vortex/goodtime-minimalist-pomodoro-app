@@ -128,6 +128,13 @@ interface LocalDataRepository {
 
     suspend fun deleteTimerProfile(name: String)
 
+    suspend fun renameTimerProfile(
+        oldName: String,
+        newName: String,
+    )
+
+    suspend fun updateTimerProfile(profile: TimerProfile)
+
     suspend fun selectTimerProfile(name: String): Flow<TimerProfile?>
 
     suspend fun selectAllTimerProfiles(): Flow<List<TimerProfile>>
