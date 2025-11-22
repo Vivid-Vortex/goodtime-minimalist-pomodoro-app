@@ -38,7 +38,9 @@ data class TimerProfile(
 ) {
     companion object {
         const val DEFAULT_PROFILE_NAME = "25/5"
-        const val DEFAULT_WORK_DURATION = 25
+
+        // Section 15: Changed default work duration from 25 to 72
+        const val DEFAULT_WORK_DURATION = 72
         const val DEFAULT_BREAK_DURATION = 5
         const val DEFAULT_LONG_BREAK_DURATION = 15
         const val DEFAULT_SESSIONS_BEFORE_LONG_BREAK = 4

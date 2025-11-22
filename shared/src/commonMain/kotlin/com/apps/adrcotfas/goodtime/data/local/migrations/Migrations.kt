@@ -309,18 +309,17 @@ val MIGRATION_8_9: Migration =
 val MIGRATION_9_10: Migration =
     object : Migration(9, 10) {
         override fun migrate(connection: SQLiteConnection) {
-            // Section 15: Update DEFAULT_PROFILE_NAME from 25/5 to 72/5
+            // Section 15: First, add the new profiles if they don't exist
+
+            // Add 72/5 profile (new default)
             connection.execSQL(
                 """
-                UPDATE localTimerProfile
-                SET name = '${LocalTimerProfile.DEFAULT_PROFILE_NAME}',
-                    workDuration = 72,
-                    breakDuration = 5
-                WHERE name = '25/5';
+                INSERT OR IGNORE INTO localTimerProfile (name, isCountdown, workDuration, isBreakEnabled, breakDuration, isLongBreakEnabled, longBreakDuration, sessionsBeforeLongBreak, workBreakRatio)
+                VALUES ('${LocalTimerProfile.DEFAULT_PROFILE_NAME}', 1, 72, 1, 5, 0, 15, 4, 3);
                 """.trimIndent(),
             )
 
-            // Section 15: Add 90/5 profile
+            // Add 90/5 profile
             connection.execSQL(
                 """
                 INSERT OR IGNORE INTO localTimerProfile (name, isCountdown, workDuration, isBreakEnabled, breakDuration, isLongBreakEnabled, longBreakDuration, sessionsBeforeLongBreak, workBreakRatio)
@@ -328,15 +327,7 @@ val MIGRATION_9_10: Migration =
                 """.trimIndent(),
             )
 
-            // Section 15: Add 25/5 profile (non-default)
-            connection.execSQL(
-                """
-                INSERT OR IGNORE INTO localTimerProfile (name, isCountdown, workDuration, isBreakEnabled, breakDuration, isLongBreakEnabled, longBreakDuration, sessionsBeforeLongBreak, workBreakRatio)
-                VALUES ('${LocalTimerProfile.PROFILE_25_5_NAME}', 1, 25, 1, 5, 0, 15, 4, 3);
-                """.trimIndent(),
-            )
-
-            // Section 15: Update labels to use new default profile name
+            // Section 15: Update labels that were using "25/5" to use new default "72/5"
             connection.execSQL(
                 """
                 UPDATE localLabel
@@ -344,6 +335,8 @@ val MIGRATION_9_10: Migration =
                 WHERE timerProfileName = '25/5';
                 """.trimIndent(),
             )
+
+            // Section 15: The existing "25/5" profile remains as-is (no need to modify)
         }
     }
 

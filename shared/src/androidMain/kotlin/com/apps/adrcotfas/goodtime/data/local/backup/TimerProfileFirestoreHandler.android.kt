@@ -43,31 +43,31 @@ actual class TimerProfileFirestoreHandler actual constructor() {
         try {
             Log.d(TAG, "Saving ${profiles.size} profiles to Firestore")
 
-            val profilesData =
-                profiles.map { profile ->
-                    mapOf(
-                        "name" to profile.name,
-                        "isCountdown" to profile.isCountdown,
-                        "workDuration" to profile.workDuration,
-                        "isBreakEnabled" to profile.isBreakEnabled,
-                        "breakDuration" to profile.breakDuration,
-                        "isLongBreakEnabled" to profile.isLongBreakEnabled,
-                        "longBreakDuration" to profile.longBreakDuration,
-                        "sessionsBeforeLongBreak" to profile.sessionsBeforeLongBreak,
-                        "workBreakRatio" to profile.workBreakRatio,
-                    )
-                }
+            // Use profile name as key in the document
+            val profilesData = mutableMapOf<String, Any>()
 
-            val data =
-                mapOf(
-                    "profiles" to profilesData,
-                    "lastUpdated" to System.currentTimeMillis(),
-                )
+            profiles.forEach { profile ->
+                profile.name?.let { name ->
+                    profilesData[name] =
+                        mapOf(
+                            "isCountdown" to profile.isCountdown,
+                            "workDuration" to profile.workDuration,
+                            "isBreakEnabled" to profile.isBreakEnabled,
+                            "breakDuration" to profile.breakDuration,
+                            "isLongBreakEnabled" to profile.isLongBreakEnabled,
+                            "longBreakDuration" to profile.longBreakDuration,
+                            "sessionsBeforeLongBreak" to profile.sessionsBeforeLongBreak,
+                            "workBreakRatio" to profile.workBreakRatio,
+                        )
+                }
+            }
+
+            profilesData["lastUpdated"] = System.currentTimeMillis()
 
             db
                 .collection(COLLECTION_GLOBAL_NOTES)
                 .document(DOCUMENT_TIMER_PROFILES)
-                .set(data)
+                .set(profilesData)
                 .await()
 
             Log.d(TAG, "Successfully saved profiles to Firestore")
@@ -96,28 +96,34 @@ actual class TimerProfileFirestoreHandler actual constructor() {
                 return Result.success(emptyList())
             }
 
-            @Suppress("UNCHECKED_CAST")
-            val profilesData = document.get("profiles") as? List<Map<String, Any>> ?: emptyList()
+            // Read all fields from document where key is profile name
+            val profiles = mutableListOf<TimerProfile>()
 
-            val profiles =
-                profilesData.mapNotNull { profileMap ->
-                    try {
+            document.data?.forEach { (key, value) ->
+                // Skip non-profile fields
+                if (key == "lastUpdated") return@forEach
+
+                @Suppress("UNCHECKED_CAST")
+                val profileData = value as? Map<String, Any> ?: return@forEach
+
+                try {
+                    val profile =
                         TimerProfile(
-                            name = profileMap["name"] as? String,
-                            isCountdown = profileMap["isCountdown"] as? Boolean ?: true,
-                            workDuration = (profileMap["workDuration"] as? Long)?.toInt() ?: 25,
-                            isBreakEnabled = profileMap["isBreakEnabled"] as? Boolean ?: true,
-                            breakDuration = (profileMap["breakDuration"] as? Long)?.toInt() ?: 5,
-                            isLongBreakEnabled = profileMap["isLongBreakEnabled"] as? Boolean ?: false,
-                            longBreakDuration = (profileMap["longBreakDuration"] as? Long)?.toInt() ?: 15,
-                            sessionsBeforeLongBreak = (profileMap["sessionsBeforeLongBreak"] as? Long)?.toInt() ?: 4,
-                            workBreakRatio = (profileMap["workBreakRatio"] as? Long)?.toInt() ?: 3,
+                            name = key, // Use the key as the profile name
+                            isCountdown = profileData["isCountdown"] as? Boolean ?: true,
+                            workDuration = (profileData["workDuration"] as? Long)?.toInt() ?: 72,
+                            isBreakEnabled = profileData["isBreakEnabled"] as? Boolean ?: true,
+                            breakDuration = (profileData["breakDuration"] as? Long)?.toInt() ?: 5,
+                            isLongBreakEnabled = profileData["isLongBreakEnabled"] as? Boolean ?: false,
+                            longBreakDuration = (profileData["longBreakDuration"] as? Long)?.toInt() ?: 15,
+                            sessionsBeforeLongBreak = (profileData["sessionsBeforeLongBreak"] as? Long)?.toInt() ?: 4,
+                            workBreakRatio = (profileData["workBreakRatio"] as? Long)?.toInt() ?: 3,
                         )
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse profile: $profileMap", e)
-                        null
-                    }
+                    profiles.add(profile)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse profile $key: $profileData", e)
                 }
+            }
 
             Log.d(TAG, "Successfully loaded ${profiles.size} profiles from Firestore")
             Result.success(profiles)

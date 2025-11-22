@@ -34,7 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -55,9 +54,6 @@ import com.apps.adrcotfas.goodtime.common.TimerProfileSettings
 import com.apps.adrcotfas.goodtime.settings.TimerProfileViewModel
 import com.apps.adrcotfas.goodtime.shared.R
 import com.apps.adrcotfas.goodtime.ui.common.TopBar
-import compose.icons.EvaIcons
-import compose.icons.evaicons.Outline
-import compose.icons.evaicons.outline.Lock
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,12 +112,8 @@ fun TimerProfileScreen(
                             resetProfile = false,
                         )
                     },
-                    onEditProfiles =
-                        if (uiState.isPro) {
-                            { showTimerProfilesSheet = true }
-                        } else {
-                            null
-                        },
+                    // Section 15: Allow all users to edit/rename/delete profiles
+                    onEditProfiles = { showTimerProfilesSheet = true },
                     onBreakBudgetInfo = { showBreakBudgetInfoDialog = true },
                 )
 
@@ -133,23 +125,23 @@ fun TimerProfileScreen(
                                 .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        val createProfileButtonTargetWeight =
-                            if (label.timerProfile.name == null) 1f else 0f
+                        // Section 15: Always show Create Profile button so users can create unlimited profiles
+                        val createProfileButtonTargetWeight = if (isDifferentFromDefault) 0.5f else 1f
                         val createProfileButtonAnimatedWeight by animateFloatAsState(
                             targetValue = createProfileButtonTargetWeight,
                             label = "createProfileButtonWeight",
                         )
 
-                        val saveButtonTargetWeight =
-                            if (isDifferentFromDefault) 1f else 0f
+                        val saveButtonTargetWeight = if (isDifferentFromDefault) 0.5f else 0f
                         val saveButtonAnimatedWeight by animateFloatAsState(
                             targetValue = saveButtonTargetWeight,
-                            label = "createProfileButtonWeight",
+                            label = "saveButtonWeight",
                         )
 
-                        if (createProfileButtonAnimatedWeight > 0.5f) {
+                        if (createProfileButtonAnimatedWeight > 0.1f) {
                             FilledTonalButton(
-                                enabled = uiState.isPro,
+                                // Section 15: Allow all users to create unlimited profiles
+                                enabled = true,
                                 modifier = Modifier.weight(createProfileButtonAnimatedWeight),
                                 colors =
                                     ButtonDefaults.filledTonalButtonColors().copy(
@@ -165,12 +157,7 @@ fun TimerProfileScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    if (!uiState.isPro) {
-                                        Icon(
-                                            EvaIcons.Outline.Lock,
-                                            contentDescription = null,
-                                        )
-                                    }
+                                    // Section 15: Removed lock icon - all users can create profiles
                                     Text(
                                         text = stringResource(R.string.settings_create_profile),
                                         maxLines = 1,
@@ -219,9 +206,10 @@ fun TimerProfileScreen(
             CreateTimerProfileDialog(
                 profileNames = uiState.timerProfiles.mapNotNull { it.name },
                 onConfirm = {
-                    val timerProfile = label.timerProfile.copy(name = it)
+                    // Section 15: Use current edited values (tmpLabel) not the selected profile
+                    val timerProfile = uiState.tmpLabel.timerProfile.copy(name = it)
                     viewModel.createTimerProfile(timerProfile)
-                    val newLabel = label.copy(timerProfile = timerProfile)
+                    val newLabel = uiState.tmpLabel.copy(timerProfile = timerProfile)
                     viewModel.updateTmpLabel(
                         newLabel = newLabel,
                         resetProfile = false,
