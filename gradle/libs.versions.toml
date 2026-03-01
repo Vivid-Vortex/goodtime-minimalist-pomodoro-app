@@ -5,7 +5,7 @@ android-minSdk = "26"
 android-compileSdk = "36"
 android-targetSdk = "36"
 
-agp = "8.7.3" # Update after this is fixed: https://issuetracker.google.com/issues/406641857
+agp = "8.13.1" # Update after this is fixed: https://issuetracker.google.com/issues/406641857
 appUpdateKtx = "2.1.0"
 billingKtx = "8.0.0"
 coreSplashscreen = "1.2.0-rc01"
