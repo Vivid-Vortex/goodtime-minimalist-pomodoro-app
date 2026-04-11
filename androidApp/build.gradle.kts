@@ -16,6 +16,15 @@ android {
         libs.versions.android.compileSdk
             .get()
             .toInt()
+
+    val versionPropsFile = rootProject.file("version.properties")
+    val versionProps =
+        java.util.Properties().apply {
+            if (versionPropsFile.exists()) load(versionPropsFile.inputStream())
+        }
+    val appVersionCode = versionProps.getProperty("VERSION_CODE", "345").toInt()
+    val appVersionName = versionProps.getProperty("VERSION_NAME", "3.0.14")
+
     defaultConfig {
         applicationId = packageName
         minSdk =
@@ -26,8 +35,8 @@ android {
             libs.versions.android.targetSdk
                 .get()
                 .toInt()
-        versionCode = 345
-        versionName = "3.0.14"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
     buildFeatures {
         compose = true
