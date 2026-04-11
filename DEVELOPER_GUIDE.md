@@ -1027,14 +1027,10 @@ Use this template when instructing an AI agent to make changes to this codebase.
 ## Task: [SHORT DESCRIPTION]
 
 ### Context
-This is a Kotlin Multiplatform Android app (Pomodoro Auto, forked from Goodtime).
-- Shared business logic: `shared/src/commonMain/`
-- Android-specific code: `shared/src/androidMain/` + `androidApp/src/main/`
-- UI: Jetpack Compose + Material 3
-- Local storage: Room (sessions/labels/profiles) + DataStore (settings)
-- Cloud storage: Firestore via FirestoreSyncHandler.android.kt
-- DI: Koin (modules in `shared/src/*/di/`)
-- Navigation: Compose Navigation with typed destinations
+This is a Kotlin Multiplatform Android app.
+- Tech stack: Jetpack Compose + Material 3 (UI), Room (sessions/labels/profiles), DataStore (settings), Firestore (cloud), Koin (DI), Compose Navigation with typed destinations
+- Read DEVELOPER_GUIDE.md Section 5 (Key File Map) to find the exact paths for every file mentioned below
+- Read DEVELOPER_GUIDE.md Section 3 (Layer-by-layer reference) to understand patterns before writing code
 
 ### What I want to add / change
 [DESCRIBE THE FEATURE IN PLAIN ENGLISH]
@@ -1056,23 +1052,23 @@ Examples:
 8. Do NOT modify gradle files unless explicitly asked
 
 ### Checklist of files to modify
-Based on DEVELOPER_GUIDE.md, the files for this change are:
+Look up exact paths in DEVELOPER_GUIDE.md Section 5. The files for this change are:
 
-[ ] shared/src/commonMain/…/data/settings/AppSettings.kt
-[ ] shared/src/commonMain/…/data/settings/SettingsRepository.kt
-[ ] shared/src/commonMain/…/data/settings/SettingsRepositoryImpl.kt
-[ ] shared/src/commonMain/…/data/local/Database.kt           (if Room change)
-[ ] shared/src/commonMain/…/data/local/LocalSession.kt       (if Room column)
-[ ] shared/src/commonMain/…/data/local/migrations/Migrations.kt  (if Room change)
-[ ] shared/src/androidMain/…/data/local/backup/FirestoreSyncHandler.android.kt  (if cloud field)
-[ ] shared/src/androidMain/…/di/ViewModelModule.android.kt   (if new ViewModel)
-[ ] shared/src/commonMain/…/di/AppModule.kt                  (if new Repository)
-[ ] androidApp/…/main/TimerViewModel.kt                      (if timer screen state changes)
-[ ] androidApp/…/settings/SettingsScreen.kt                  (if new setting UI)
-[ ] androidApp/…/settings/backup/BackupScreen.kt             (if backup UI change)
-[ ] androidApp/…/main/MainNavigationSheet.kt                 (if new screen in nav)
-[ ] androidApp/…/MainActivity.kt                             (if new NavHost destination)
-[ ] shared/src/main/res/values/strings_*.xml                 (always, for UI text)
+[ ] AppSettings.kt                       (if new setting)
+[ ] SettingsRepository.kt                (if new setting)
+[ ] SettingsRepositoryImpl.kt            (if new setting)
+[ ] Database.kt                          (if Room change)
+[ ] LocalSession.kt                      (if Room column)
+[ ] Migrations.kt                        (if Room change)
+[ ] FirestoreSyncHandler.android.kt      (if cloud field)
+[ ] ViewModelModule.android.kt           (if new ViewModel)
+[ ] AppModule.kt                         (if new Repository)
+[ ] TimerViewModel.kt                    (if timer screen state changes)
+[ ] SettingsScreen.kt                    (if new setting UI)
+[ ] BackupScreen.kt                      (if backup UI change)
+[ ] MainNavigationSheet.kt               (if new screen in nav)
+[ ] MainActivity.kt                      (if new NavHost destination)
+[ ] strings_*.xml                        (always, for UI text)
 
 ### Expected output
 - Show all file diffs
@@ -1090,11 +1086,12 @@ Based on DEVELOPER_GUIDE.md, the files for this change are:
 ```
 Only touch: AppSettings.kt, SettingsRepository.kt, SettingsRepositoryImpl.kt,
 the relevant ViewModel, the relevant screen, and strings_settings.xml.
+Look up exact paths in DEVELOPER_GUIDE.md Section 5.
 ```
 
 **For a Firestore schema change only:**
 ```
-Only touch FirestoreSyncHandler.android.kt.
+Only touch FirestoreSyncHandler.android.kt (path in DEVELOPER_GUIDE.md Section 5).
 Show the before/after of the JSON structure in a comment.
 Do not touch Room, DataStore, or UI files.
 ```
@@ -1103,7 +1100,7 @@ Do not touch Room, DataStore, or UI files.
 ```
 Create the screen Composable, ViewModel, and Koin registration.
 Wire navigation in MainNavigationSheet.kt and MainActivity.kt.
-The screen should follow the same pattern as BackupScreen.kt.
+Follow the same pattern as BackupScreen.kt (find its path in DEVELOPER_GUIDE.md Section 5).
 ```
 
 **For a Room migration:**
@@ -1203,12 +1200,10 @@ Copy this, fill in the `[brackets]`, and send to the agent.
 ## Bug Fix Task
 
 ### App context
-Kotlin Multiplatform Android app — Pomodoro Auto (forked from Goodtime).
-- Shared logic: `shared/src/commonMain/`
-- Android-specific: `shared/src/androidMain/` + `androidApp/src/main/`
-- UI: Jetpack Compose + Material 3
-- Storage: Room (sessions) + DataStore (settings) + Firestore (cloud)
-- DI: Koin | Navigation: Compose typed destinations
+Kotlin Multiplatform Android app.
+- Tech stack: Jetpack Compose + Material 3 (UI), Room (sessions), DataStore (settings), Firestore (cloud), Koin (DI), Compose Navigation with typed destinations
+- Read DEVELOPER_GUIDE.md Section 5 (Key File Map) for exact file paths
+- Read DEVELOPER_GUIDE.md Section 9.2 (Layer-Specific Diagnostic Hints) for the relevant layer
 
 ### Bug description
 **What I did:** [Describe the exact user action step by step]
