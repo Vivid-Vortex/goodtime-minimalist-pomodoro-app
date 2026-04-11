@@ -21,10 +21,13 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import co.touchlab.kermit.Logger
+import com.apps.adrcotfas.goodtime.bl.TimerManager
+import com.apps.adrcotfas.goodtime.bl.isActive
 import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncHandler
 import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult
 import com.apps.adrcotfas.goodtime.data.settings.AppSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -41,9 +44,10 @@ class AutoBackupWorker(
 ) : CoroutineWorker(context, params),
     KoinComponent {
     private val firestoreSyncHandler: FirestoreSyncHandler by inject()
+    private val timerManager: TimerManager by inject()
 
     override suspend fun doWork(): Result {
-        logger.i { "Starting auto cloud backup worker" }
+        logger.i { "Starting midnight auto cloud backup worker" }
 
         try {
             val settings: AppSettings = settingsRepository.settings.first()
@@ -51,6 +55,15 @@ class AutoBackupWorker(
             if (!settings.cloudBackupSettings.autoCloudBackupEnabled) {
                 logger.w { "Auto cloud backup is disabled, skipping backup" }
                 return Result.failure()
+            }
+
+            // If the timer is currently active, complete it first so the session is saved
+            val currentTimerState = timerManager.timerData.value
+            if (currentTimerState.state.isActive) {
+                logger.i { "Timer is active at midnight — completing current session before cloud push" }
+                timerManager.skip()
+                // Give the session time to persist to the local DB
+                delay(2000)
             }
 
             // Sync all data to Firestore

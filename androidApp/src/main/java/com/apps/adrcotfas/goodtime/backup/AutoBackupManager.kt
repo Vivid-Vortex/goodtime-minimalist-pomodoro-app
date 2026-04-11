@@ -33,6 +33,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 /**
@@ -66,30 +67,33 @@ class AutoBackupManager(
 
     private fun handleCloudBackupSettingsChange(cloudBackupSettings: CloudBackupSettings) {
         logger.i {
-            "Cloud backup settings changed: autoCloudBackupEnabled=${cloudBackupSettings.autoCloudBackupEnabled}, frequency=${cloudBackupSettings.cloudBackupFrequency}"
+            "Cloud backup settings changed: autoCloudBackupEnabled=${cloudBackupSettings.autoCloudBackupEnabled}"
         }
 
         if (cloudBackupSettings.autoCloudBackupEnabled) {
-            scheduleCloudBackup(cloudBackupSettings.cloudBackupFrequency.hours)
-            logger.i { "Auto cloud backup scheduled with frequency: ${cloudBackupSettings.cloudBackupFrequency}" }
+            scheduleCloudBackupAtMidnight()
+            logger.i { "Auto cloud backup scheduled daily at midnight" }
         } else {
             cancelCloudBackup()
             logger.i { "Auto cloud backup canceled" }
         }
     }
 
-    private fun scheduleCloudBackup(frequencyHours: Int) {
+    private fun scheduleCloudBackupAtMidnight() {
         val constraints =
             Constraints
                 .Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED) // Requires internet for cloud sync
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
+
+        val initialDelay = calculateMillisToNextMidnight()
+        logger.i { "Auto cloud backup initial delay: ${initialDelay / 1000 / 60} minutes until midnight" }
 
         val backupWorkRequest =
             PeriodicWorkRequestBuilder<AutoBackupWorker>(
-                repeatInterval = frequencyHours.toLong(),
+                repeatInterval = 24,
                 repeatIntervalTimeUnit = TimeUnit.HOURS,
-            ).setInitialDelay(5, TimeUnit.MINUTES)
+            ).setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
                 .setConstraints(constraints)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
                 .build()
@@ -99,6 +103,20 @@ class AutoBackupManager(
             ExistingPeriodicWorkPolicy.REPLACE,
             backupWorkRequest,
         )
+    }
+
+    /** Returns milliseconds until the next 12:00 AM (midnight). */
+    private fun calculateMillisToNextMidnight(): Long {
+        val now = Calendar.getInstance()
+        val midnight =
+            Calendar.getInstance().apply {
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+        return midnight.timeInMillis - now.timeInMillis
     }
 
     private fun cancelCloudBackup() {

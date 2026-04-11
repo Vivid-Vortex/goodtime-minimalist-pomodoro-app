@@ -91,6 +91,7 @@ data class TimerMainUiState(
     val startOfToday: Long = 0,
     val showTutorial: Boolean = false,
     val isPro: Boolean = false,
+    val autoStartBreak: Boolean = false,
 )
 
 class TimerViewModel(
@@ -134,7 +135,8 @@ class TimerViewModel(
                         old.uiSettings == new.uiSettings &&
                         old.isPro == new.isPro &&
                         old.showTutorial == new.showTutorial &&
-                        old.flashScreen == new.flashScreen
+                        old.flashScreen == new.flashScreen &&
+                        old.autoStartBreak == new.autoStartBreak
                 }.collect {
                     val settings = it
                     val uiSettings = settings.uiSettings
@@ -151,6 +153,7 @@ class TimerViewModel(
                             dndDuringWork = uiSettings.dndDuringWork,
                             isPro = settings.isPro,
                             showTutorial = settings.showTutorial,
+                            autoStartBreak = settings.autoStartBreak,
                         )
                     }
                 }
@@ -249,6 +252,12 @@ class TimerViewModel(
             _uiState.update {
                 it.copy(startOfToday = startOfToday)
             }
+        }
+    }
+
+    fun setAutoStartBreak(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepo.setAutoStartBreak(enabled)
         }
     }
 

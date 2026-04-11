@@ -267,6 +267,8 @@ fun MainScreen(
                         timerUiState = timerUiState,
                         timerStyle = timerStyle,
                         domainLabel = label,
+                        autoStartBreak = uiState.autoStartBreak,
+                        onToggleAutoStartBreak = { viewModel.setAutoStartBreak(!uiState.autoStartBreak) },
                         onStart = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             if (permissionState.shouldAskForAlarmPermission) {

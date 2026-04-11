@@ -32,6 +32,8 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,6 +94,8 @@ fun MainTimerView(
     timerUiState: TimerUiState,
     timerStyle: TimerStyleData,
     domainLabel: DomainLabel,
+    autoStartBreak: Boolean = false,
+    onToggleAutoStartBreak: (() -> Unit)? = null,
     onStart: () -> Unit,
     onToggle: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
@@ -150,7 +154,16 @@ fun MainTimerView(
                         .toDp() + 5.dp
                 ) * 2f
             }
-        Spacer(modifier = Modifier.height(imageSize))
+        if (onToggleAutoStartBreak != null) {
+            AutoStartBreakToggle(
+                modifier = Modifier.padding(top = 8.dp),
+                enabled = autoStartBreak,
+                color = if (isBreak) breakColor else labelColor,
+                onToggle = onToggleAutoStartBreak,
+            )
+        } else {
+            Spacer(modifier = Modifier.height(imageSize))
+        }
     }
 }
 
@@ -474,6 +487,46 @@ fun TimerTextView(
                 color = color,
             ),
     )
+}
+
+@Composable
+fun AutoStartBreakToggle(
+    modifier: Modifier = Modifier,
+    enabled: Boolean,
+    color: Color,
+    onToggle: () -> Unit,
+) {
+    val activeAlpha = 0.85f
+    val inactiveAlpha = 0.35f
+    val contentColor = color.copy(alpha = if (enabled) activeAlpha else inactiveAlpha)
+    val bgColor = color.copy(alpha = if (enabled) 0.15f else 0.05f)
+    val borderColor = color.copy(alpha = if (enabled) 0.45f else 0.15f)
+
+    Row(
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(bgColor)
+                .border(width = 0.5.dp, color = borderColor, shape = MaterialTheme.shapes.extraLarge)
+                .clickable(
+                    indication = null,
+                    interactionSource = null,
+                    onClick = onToggle,
+                ).padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        Image(
+            modifier = Modifier.size(12.dp),
+            colorFilter = ColorFilter.tint(contentColor),
+            painter = painterResource(Mr.drawable.ic_break),
+            contentDescription = null,
+        )
+        Text(
+            text = stringResource(R.string.settings_auto_start_break_title),
+            style = MaterialTheme.typography.labelSmall.copy(color = contentColor),
+        )
+    }
 }
 
 @Preview

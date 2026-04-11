@@ -48,11 +48,9 @@ import com.apps.adrcotfas.goodtime.common.takePersistableUriPermission
 import com.apps.adrcotfas.goodtime.data.backup.ActivityResultLauncherManager
 import com.apps.adrcotfas.goodtime.data.local.backup.BackupViewModel
 import com.apps.adrcotfas.goodtime.data.settings.BackupSettings
-import com.apps.adrcotfas.goodtime.data.settings.CloudBackupFrequency
 import com.apps.adrcotfas.goodtime.shared.R
 import com.apps.adrcotfas.goodtime.ui.common.ActionCard
 import com.apps.adrcotfas.goodtime.ui.common.CircularProgressListItem
-import com.apps.adrcotfas.goodtime.ui.common.DropdownMenuListItem
 import com.apps.adrcotfas.goodtime.ui.common.SubtleHorizontalDivider
 import com.apps.adrcotfas.goodtime.ui.common.SwitchListItem
 import com.apps.adrcotfas.goodtime.ui.common.TopBar
@@ -265,6 +263,7 @@ fun BackupScreen(
             SubtleHorizontalDivider()
             SwitchListItem(
                 title = stringResource(R.string.backup_auto_cloud_backup),
+                subtitle = stringResource(R.string.backup_auto_cloud_backup_subtitle),
                 checked = uiState.cloudBackupSettings.autoCloudBackupEnabled,
                 enabled = enabled,
                 onCheckedChange = { isEnabled ->
@@ -275,31 +274,6 @@ fun BackupScreen(
                     }
                 },
             )
-            if (uiState.cloudBackupSettings.autoCloudBackupEnabled) {
-                val frequencies = CloudBackupFrequency.entries
-                val frequencyLabels =
-                    listOf(
-                        stringResource(R.string.backup_frequency_hourly),
-                        stringResource(R.string.backup_frequency_every_4_hours),
-                        stringResource(R.string.backup_frequency_every_12_hours),
-                        stringResource(R.string.backup_frequency_daily),
-                        stringResource(R.string.backup_frequency_weekly),
-                    )
-                val currentFrequencyIndex = frequencies.indexOf(uiState.cloudBackupSettings.cloudBackupFrequency)
-                DropdownMenuListItem(
-                    title = stringResource(R.string.backup_cloud_backup_frequency),
-                    value = frequencyLabels[currentFrequencyIndex],
-                    enabled = enabled,
-                    dropdownMenuOptions = frequencyLabels,
-                    onDropdownMenuItemSelected = { index ->
-                        if (enabled) {
-                            viewModel.setCloudBackupSettings(
-                                uiState.cloudBackupSettings.copy(cloudBackupFrequency = frequencies[index]),
-                            )
-                        }
-                    },
-                )
-            }
             SubtleHorizontalDivider()
             CircularProgressListItem(
                 title = stringResource(R.string.backup_sync_with_firestore),

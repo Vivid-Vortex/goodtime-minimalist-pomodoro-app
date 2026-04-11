@@ -1,4 +1,5 @@
 import com.mikepenz.aboutlibraries.plugin.DuplicateMode
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
@@ -19,7 +20,7 @@ android {
 
     val versionPropsFile = rootProject.file("version.properties")
     val versionProps =
-        java.util.Properties().apply {
+        Properties().apply {
             if (versionPropsFile.exists()) load(versionPropsFile.inputStream())
         }
     val appVersionCode = versionProps.getProperty("VERSION_CODE", "345").toInt()
