@@ -81,6 +81,21 @@ Timer profile definitions (focus duration, break duration, name).
 
 ---
 
+## Developer Guide
+
+For a full technical reference — including what files to touch when adding a field, form, screen, label, or setting, plus an AI agent prompt template — see:
+
+**[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**
+
+Covers:
+- Complete data flow (Room → ViewModel → Compose → Firestore)
+- tagSnapshot → formData mapping logic
+- Per-change checklists (settings, Room columns, Firestore fields, new screens)
+- File map of the entire codebase
+- Agent prompt template for AI-assisted development
+
+---
+
 ## Building Locally
 
 Requirements: JDK 17, Android SDK (compile SDK 36)
