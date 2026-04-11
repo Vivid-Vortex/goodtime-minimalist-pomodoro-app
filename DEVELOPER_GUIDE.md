@@ -1,6 +1,6 @@
 # Developer Guide — Pomodoro Auto
 
-> **Purpose:** This document covers every layer you must touch when adding a new field, form, section, label, setting, or screen to this app. Written for use with AI coding agents — a prompt template is provided at the end.
+> **Purpose:** This document covers every layer you must touch when adding a new field, form, section, label, setting, or screen to this app, and how to diagnose and fix bugs at any layer. Written for use with AI coding agents — prompt templates are provided at the end.
 
 ---
 
@@ -26,10 +26,22 @@
    - [4.5 Adding a New Screen](#45-adding-a-new-screen)
    - [4.6 Adding a New Repository](#46-adding-a-new-repository)
    - [4.7 Adding a UI-Only Form Field (no persistence)](#47-adding-a-ui-only-form-field-no-persistence)
+   - [4.1 Adding a New App Setting](#41-adding-a-new-app-setting)
+   - [4.2 Adding a New Label / Tag Category (Cloud Sync)](#42-adding-a-new-label--tag-category-cloud-sync)
+   - [4.3 Adding a New Field to the Firestore Timesheet](#43-adding-a-new-field-to-the-firestore-timesheet)
+   - [4.4 Adding a New Room DB Column](#44-adding-a-new-room-db-column)
+   - [4.5 Adding a New Screen](#45-adding-a-new-screen)
+   - [4.6 Adding a New Repository](#46-adding-a-new-repository)
+   - [4.7 Adding a UI-Only Form Field (no persistence)](#47-adding-a-ui-only-form-field-no-persistence)
 5. [Key File Map](#5-key-file-map)
 6. [tagSnapshot → formData Mapping — Deep Dive](#6-tagsnapshot--formdata-mapping--deep-dive)
 7. [Version & Release Process](#7-version--release-process)
-8. [Agent Prompt Template](#8-agent-prompt-template)
+8. [Agent Prompt Template — Building Features](#8-agent-prompt-template)
+9. [Agent Prompt Template — Fixing Issues](#9-agent-prompt-template--fixing-issues)
+   - [9.1 Bug Report Anatomy](#91-bug-report-anatomy)
+   - [9.2 Layer-Specific Diagnostic Hints](#92-layer-specific-diagnostic-hints)
+   - [9.3 Reusable Fix Prompt (general)](#93-reusable-fix-prompt-general)
+   - [9.4 Scenario Prompts](#94-scenario-prompts)
 
 ---
 
@@ -1100,4 +1112,324 @@ Current Room version is [N]. Bump to [N+1].
 Add MIGRATION_N_N+1 to Migrations.kt.
 Register it in Database.kt addMigrations(...).
 The SQL change is: [ALTER TABLE / CREATE TABLE / etc.]
+```
+
+---
+
+## 9. Agent Prompt Template — Fixing Issues
+
+Use this section when something is broken and you need an AI agent to diagnose and fix it.
+
+---
+
+### 9.1 Bug Report Anatomy
+
+Before writing a fix prompt, collect as much of this as possible:
+
+| Info | Where to get it |
+|------|----------------|
+| **What you expected** | Your mental model of the feature |
+| **What actually happened** | What you saw on screen / in Firestore console |
+| **Which screen / action triggered it** | "I pressed Save to cloud after running W1M for 1 min" |
+| **Logcat output** | Android Studio → Logcat, filter by `goodtime` or `Firestore` |
+| **Firestore document state** | Firebase console → Firestore → the affected collection/document |
+| **Local DB state** | Android Studio → App Inspection → localSession table |
+| **Which feature section it relates to** | Timer / Cloud sync / Statistics / Settings / Navigation |
+
+---
+
+### 9.2 Layer-Specific Diagnostic Hints
+
+Use these to narrow down which layer the bug is in before writing your fix prompt.
+
+#### Bug is in **Timer / Session saving**
+- Check `TimerManager.kt` → `finish()` / `skip()` / `next()`
+- Check `FinishedSessionsHandler.kt` → `saveSession()`
+- Check Room `localSession` table in App Inspection — is the session row there?
+- Key files: `TimerManager.kt`, `FinishedSessionsHandler.kt`, `LocalSession.kt`, `SessionDao.kt`
+
+#### Bug is in **Cloud sync (wrong value, missing field, 0 instead of actual)**
+- The most common cause: `tagSnapshot` key does not match the outer `formData` field name
+- Check: is the label code (e.g. `W1M`) present in `tagSnapshot` values?
+- Check: does `tagSnapshot` key for that label match the outer field name exactly?
+- Check: are sessions marked as synced before push completes? (notes field)
+- Key file: `FirestoreSyncHandler.android.kt`
+- Methods: `syncData()`, `replaceInTimesheet()`, `createNewTimesheetDocument()`, `createBaseTimesheetStructure()`
+
+#### Bug is in **Statistics / data not showing**
+- Check: is `fetchFromCloud()` being called? Is the Flow being collected?
+- Check: `tagSnapshotKeyToFieldNames` — is the label's key registered there?
+- Check: is the `StatisticsViewModel` collecting `cloudDataRefreshEvents`?
+- Key files: `FirestoreSyncHandler.android.kt` → `fetchFromCloud()`, `StatisticsViewModel.kt`, `AggregatedTimelineTab.kt`
+
+#### Bug is in **Settings not persisting**
+- Check: is the DataStore key unique (no collision with another key string)?
+- Check: is the key mapped in the `settings: Flow<AppSettings>` collect block?
+- Check: does the setter call `dataStore.edit { it[key] = value }`?
+- Key files: `SettingsRepositoryImpl.kt`, `AppSettings.kt`
+
+#### Bug is in **UI not updating after state change**
+- Check: is the ViewModel's `uiState` flow being collected with `collectAsStateWithLifecycle()`?
+- Check: is the state field being updated via `_uiState.update { it.copy(…) }`?
+- Check: is the `distinctUntilChanged` predicate in `loadData()` excluding the new field?
+- Key files: the relevant `*ViewModel.kt`, the relevant `*Screen.kt`
+
+#### Bug is in **Navigation (screen not opening, crash on navigate)**
+- Check: is the destination registered in `NavHost` in `MainActivity.kt`?
+- Check: is the destination type `@Serializable`?
+- Key files: `MainActivity.kt`, `MainNavigationSheet.kt`
+
+#### Bug is in **WorkManager (midnight push not firing, or firing at wrong time)**
+- Check: is `autoCloudBackupEnabled` true in settings?
+- Check: `AutoBackupManager.kt` → `calculateMillisToNextMidnight()` — is the delay being calculated correctly?
+- Check: `AutoBackupWorker.kt` → `doWork()` — is it returning `Result.success()`?
+- Use `adb shell dumpsys jobscheduler` to inspect scheduled jobs
+- Key files: `AutoBackupManager.kt`, `AutoBackupWorker.kt`
+
+#### Bug is in **Room migration (crash on app start after schema change)**
+- Check: did you bump `@Database(version = N+1)`?
+- Check: is the migration added to `.addMigrations(…)` in `Database.kt`?
+- Check: does the SQL use the exact column type Room expects?
+- Logcat will show: `IllegalStateException: Room cannot verify the data integrity`
+- Key files: `Database.kt`, `Migrations.kt`, the changed entity file
+
+---
+
+### 9.3 Reusable Fix Prompt (general)
+
+Copy this, fill in the `[brackets]`, and send to the agent.
+
+```
+## Bug Fix Task
+
+### App context
+Kotlin Multiplatform Android app — Pomodoro Auto (forked from Goodtime).
+- Shared logic: `shared/src/commonMain/`
+- Android-specific: `shared/src/androidMain/` + `androidApp/src/main/`
+- UI: Jetpack Compose + Material 3
+- Storage: Room (sessions) + DataStore (settings) + Firestore (cloud)
+- DI: Koin | Navigation: Compose typed destinations
+
+### Bug description
+**What I did:** [Describe the exact user action step by step]
+
+**What I expected:** [What should have happened]
+
+**What actually happened:** [What happened instead — be specific, e.g. "value shows as 0 in Firestore",
+"app crashes with NullPointerException", "screen stays blank", "setting resets on restart"]
+
+**Feature area:** [Timer / Cloud sync / Statistics / Settings / Navigation / WorkManager / Room DB]
+
+### Evidence
+**Logcat (relevant lines):**
+```
+[paste logcat here, or write "not available"]
+```
+
+**Firestore document state (if cloud bug):**
+```json
+[paste the relevant Firestore document, or write "not checked"]
+```
+
+**Local DB state (if session/data bug):**
+[Describe what localSession table shows, or write "not checked"]
+
+### What I already tried
+[List anything you've already attempted, or write "nothing yet"]
+
+### Suspected cause (optional)
+[Your gut feeling about where the bug is, or write "unknown"]
+
+### Files the agent should read first
+Based on DEVELOPER_GUIDE.md section 9.2, the likely files are:
+- [ ] [File 1 — e.g. FirestoreSyncHandler.android.kt]
+- [ ] [File 2 — e.g. TimerManager.kt]
+- [ ] [File 3]
+
+### Fix constraints
+1. Read all suspected files BEFORE proposing a fix
+2. Do NOT change any file not directly related to the bug
+3. Do NOT refactor or "improve" surrounding code
+4. Do NOT change Firestore field names that already exist in the cloud
+5. If a Room migration is needed, bump version N→N+1 and add the migration
+6. Show the diff for every changed file
+7. Explain in one sentence WHY the bug occurred before showing the fix
+```
+
+---
+
+### 9.4 Scenario Prompts
+
+Use these for common bug types without filling out the full template above.
+
+---
+
+#### Wrong value saved to Firestore (e.g. 0 instead of actual minutes)
+
+```
+## Bug: Wrong value pushed to Firestore
+
+Feature area: Cloud sync
+File to read first: FirestoreSyncHandler.android.kt
+
+Bug: When I run the timer for tag [TAG_CODE] for [N] minutes and press
+"Save to cloud", Firestore shows [WRONG_VALUE] instead of [EXPECTED_VALUE]
+in field [FIELD_NAME] of timesheet_entries/[DATE].
+
+The local Room session IS saved correctly (duration = [N] in localSession table).
+
+Please read FirestoreSyncHandler.android.kt and trace:
+1. syncData() — how sessions are aggregated by (date, label)
+2. replaceInTimesheet() — how the field name is resolved from tagSnapshot
+3. createBaseTimesheetStructure() — what the default value is for this field
+
+Fix ONLY the sync/mapping logic. Do not touch UI, Room schema, or settings.
+Show a one-line explanation of the root cause before the diff.
+```
+
+---
+
+#### Firestore field missing entirely from pushed document
+
+```
+## Bug: Field missing from Firestore document
+
+Feature area: Cloud sync
+File to read first: FirestoreSyncHandler.android.kt → createBaseTimesheetStructure()
+
+Bug: After pressing "Save to cloud", the field [FIELD_NAME] is completely
+absent from the timesheet_entries/[DATE] document in Firestore.
+
+Expected: field should exist with value [EXPECTED_VALUE] (or 0 as default).
+
+Please check:
+1. Is [FIELD_NAME] present in createBaseTimesheetStructure()?
+2. Is the corresponding tagSnapshot entry present?
+3. For existing documents: does replaceInTimesheet() find the correct key?
+
+Fix ONLY what is missing. Do not rename or remove any existing fields.
+```
+
+---
+
+#### Setting does not persist after app restart
+
+```
+## Bug: Setting resets after restart
+
+Feature area: DataStore / Settings
+Files to read first: AppSettings.kt, SettingsRepositoryImpl.kt
+
+Bug: The setting [SETTING_NAME] (type: Boolean/Int/String) shows correctly
+in the UI while the app is open, but resets to [DEFAULT_VALUE] after
+restarting the app.
+
+Please check:
+1. Is there a DataStore key defined for this setting in SettingsRepositoryImpl.Keys?
+2. Is the key mapped in the settings: Flow<AppSettings> collect block?
+3. Does the setter call dataStore.edit correctly?
+4. Is the key string unique (no collision with another setting)?
+
+Fix only SettingsRepositoryImpl.kt (and AppSettings.kt if the field is missing).
+```
+
+---
+
+#### App crashes on start after a code change (Room migration missing)
+
+```
+## Bug: App crashes on launch — likely Room migration missing
+
+Feature area: Room DB
+Files to read first: Database.kt, Migrations.kt, [ChangedEntity].kt
+
+Bug: App crashes immediately after installing the new build.
+Logcat shows: [paste the crash line, likely "IllegalStateException" or
+"A migration from X to Y was required"]
+
+Current Room version in Database.kt: [N]
+The entity change I made: [describe the column/table change]
+
+Please:
+1. Add MIGRATION_[N]_[N+1] to Migrations.kt with the correct SQL
+2. Register it in Database.kt addMigrations(...)
+3. Bump @Database(version = [N+1])
+4. Do not change any other files
+```
+
+---
+
+#### Statistics screen shows wrong data or blank
+
+```
+## Bug: Statistics screen showing incorrect / empty data
+
+Feature area: Statistics UI + cloud fetch
+Files to read first: StatisticsViewModel.kt, AggregatedTimelineTab.kt,
+FirestoreSyncHandler.android.kt → fetchFromCloud()
+
+Bug: [Describe exactly which tab / section is wrong]
+Expected: [What data should appear]
+Actual: [What is shown — blank, wrong numbers, wrong dates]
+
+The Firestore document for [DATE] contains: [paste relevant JSON]
+
+Please trace:
+1. fetchFromCloud() — is it reading the right field names?
+2. Does tagSnapshotKeyToFieldNames include the affected label's key?
+3. Is StatisticsViewModel collecting the cloudDataRefreshEvents flow?
+4. Is the Composable collecting uiState correctly?
+
+Fix only the data-fetch and display pipeline. Do not change Firestore documents.
+```
+
+---
+
+#### UI element not appearing / toggle not working
+
+```
+## Bug: UI element missing or not responding
+
+Feature area: Compose UI
+Files to read first: [ScreenName].kt, [ViewModelName].kt
+
+Bug: [Describe the UI element and where it should appear]
+The [BUTTON / TOGGLE / FIELD] at [LOCATION ON SCREEN] is [missing / not toggling /
+not saving / not navigating].
+
+Please check:
+1. Is the state field present in the UiState data class?
+2. Is the field being updated in _uiState.update { it.copy(…) }?
+3. Is the Composable reading the right field from uiState?
+4. If a toggle: is the ViewModel action calling settingsRepo correctly?
+
+Only fix the UI and ViewModel wiring. Do not touch Room, Firestore, or navigation.
+```
+
+---
+
+#### Midnight cloud push not triggering
+
+```
+## Bug: Midnight auto cloud push is not firing
+
+Feature area: WorkManager / AutoBackupManager
+Files to read first: AutoBackupManager.kt, AutoBackupWorker.kt
+
+Bug: The automatic cloud push at 12:00 AM is [not firing at all /
+firing at wrong time / firing but not syncing data].
+
+Settings state: autoCloudBackupEnabled = [true/false]
+Device time when issue observed: [time]
+
+Please check:
+1. AutoBackupManager.calculateMillisToNextMidnight() — correct calculation?
+2. Is ExistingPeriodicWorkPolicy.REPLACE re-scheduling correctly when settings change?
+3. AutoBackupWorker.doWork() — is it returning Result.success() or Result.retry()?
+4. Is timerManager.skip() causing any exception before the sync?
+
+Run: adb shell dumpsys jobscheduler | grep auto_cloud
+to see if the job is scheduled, and include output if available.
+
+Fix only AutoBackupManager.kt and AutoBackupWorker.kt.
 ```
