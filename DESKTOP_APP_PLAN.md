@@ -214,15 +214,36 @@ desktop/
 
 | Step | Status | Commit |
 |------|--------|--------|
-| Prerequisites | ⏳ Pending | — |
-| 1 — Scaffold | ⏳ Pending | — |
-| 2 — Data Layer | ⏳ Pending | — |
-| 3 — Timer Engine | ⏳ Pending | — |
-| 4 — Timer UI | ⏳ Pending | — |
-| 5 — Labels | ⏳ Pending | — |
-| 6 — Session History | ⏳ Pending | — |
-| 7 — Statistics | ⏳ Pending | — |
-| 8 — Settings | ⏳ Pending | — |
-| 9 — Firestore Sync | ⏳ Pending | — |
-| 10 — Windows Build | ⏳ Pending | — |
-| 11 — macOS Build | ⏳ Pending | — |
+| Prerequisites | ⚠️ Manual | Install Go + Wails (see below) |
+| 1 — Scaffold | ✅ Done | `70cbc7f6` |
+| 2 — Data Layer | ✅ Done | `70cbc7f6` |
+| 3 — Timer Engine | ✅ Done | `70cbc7f6` |
+| 4 — Timer UI | ✅ Done | `e56dc2b7` |
+| 5 — Labels | ✅ Done | `e56dc2b7` |
+| 6 — Session History | ✅ Done | `e56dc2b7` |
+| 7 — Statistics | ✅ Done | `e56dc2b7` |
+| 8 — Settings | ✅ Done | `e56dc2b7` |
+| 9 — Firestore Sync | ⏳ Pending | Next step |
+| 10 — Windows Build | ✅ Done | `8e77a645` |
+| 11 — macOS Build | ✅ Done | `8e77a645` |
+
+## To run locally (after installing Go + Wails)
+
+```bash
+# 1. Install prerequisites
+winget install GoLang.Go          # or https://go.dev/dl/
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# 2. Dev mode (hot-reload)
+cd desktop
+wails dev
+
+# 3. Production build (Windows)
+wails build -platform windows/amd64
+
+# 4. Run Go backend tests only (no Wails needed)
+go test ./internal/... -v
+
+# 5. Run frontend tests only (Node only)
+cd frontend && npm test
+```
