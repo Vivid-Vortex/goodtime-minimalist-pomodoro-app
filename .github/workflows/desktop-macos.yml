@@ -1,0 +1,105 @@
+name: Desktop — macOS Build & Test
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop-macos.yml"
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "desktop/**"
+
+jobs:
+  test-go:
+    name: Go unit tests (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: desktop/go.sum
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run Go tests
+        run: go test ./internal/... -v -count=1 -timeout 60s
+
+  test-frontend:
+    name: Frontend unit tests (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: desktop/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: desktop/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm test
+
+  build-macos:
+    name: Build macOS app bundle
+    runs-on: macos-latest
+    needs: [test-go, test-frontend]
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: desktop/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      # WebKit2GTK not needed on macOS; Wails uses WKWebView natively
+      - name: Install frontend dependencies
+        working-directory: desktop/frontend
+        run: npm ci
+
+      - name: Wails build (macOS universal)
+        run: wails build -platform darwin/universal
+
+      - name: Zip app bundle
+        run: |
+          cd build/bin
+          zip -r GoodtimePomodoro-macos-universal.zip "Goodtime Pomodoro.app"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoodtimePomodoro-macos-universal
+          path: desktop/build/bin/GoodtimePomodoro-macos-universal.zip
+          retention-days: 30
+
+      - name: Verify app bundle structure
+        run: |
+          ls desktop/build/bin/
+          ls "desktop/build/bin/Goodtime Pomodoro.app/Contents/"

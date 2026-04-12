@@ -1,0 +1,94 @@
+name: Desktop — Windows Build & Test
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop-windows.yml"
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - "desktop/**"
+
+jobs:
+  test-go:
+    name: Go unit tests (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: desktop/go.sum
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Run Go tests
+        run: go test ./internal/... -v -count=1 -timeout 60s
+
+  test-frontend:
+    name: Frontend unit tests (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: desktop/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vitest
+        run: npm test
+
+  build-windows:
+    name: Build Windows executable
+    runs-on: windows-latest
+    needs: [test-go, test-frontend]
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: desktop/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend dependencies
+        working-directory: desktop/frontend
+        run: npm ci
+
+      - name: Wails build (Windows)
+        run: wails build -platform windows/amd64 -o GoodtimePomodoro.exe
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GoodtimePomodoro-windows-amd64
+          path: desktop/build/bin/GoodtimePomodoro.exe
+          retention-days: 30
