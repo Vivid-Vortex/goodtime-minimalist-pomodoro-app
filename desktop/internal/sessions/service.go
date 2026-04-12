@@ -166,6 +166,58 @@ func (s *Service) BulkEditLabel(ctx context.Context, req BulkEditRequest) error 
 	return err
 }
 
+// InsertRaw inserts a session with full control over all fields (used by tests and import).
+func (s *Service) InsertRaw(ctx context.Context, sess database.Session) error {
+	_, err := s.db.SQL().ExecContext(ctx, `
+		INSERT OR IGNORE INTO sessions
+		(id, timestamp, duration, interruptions, label_name, notes, is_work, is_archived, device_name, synced_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+		sess.ID, sess.Timestamp, sess.Duration, sess.Interruptions,
+		sess.LabelName, sess.Notes, boolToInt(sess.IsWork), boolToInt(sess.IsArchived), sess.DeviceName)
+	return err
+}
+
+// ListUnsynced returns sessions that have not yet been pushed to Firestore.
+func (s *Service) ListUnsynced(ctx context.Context) ([]database.Session, error) {
+	rows, err := s.db.SQL().QueryContext(ctx, `
+		SELECT id, timestamp, duration, interruptions, label_name, notes, is_work, is_archived, device_name
+		FROM sessions WHERE synced_at = 0 ORDER BY timestamp ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []database.Session
+	for rows.Next() {
+		var sess database.Session
+		var isWork, isArchived int
+		if err := rows.Scan(
+			&sess.ID, &sess.Timestamp, &sess.Duration, &sess.Interruptions,
+			&sess.LabelName, &sess.Notes, &isWork, &isArchived, &sess.DeviceName,
+		); err != nil {
+			return nil, err
+		}
+		sess.IsWork = isWork == 1
+		sess.IsArchived = isArchived == 1
+		out = append(out, sess)
+	}
+	return out, rows.Err()
+}
+
+// MarkSynced sets synced_at = now for the given session IDs.
+func (s *Service) MarkSynced(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	now := time.Now().UnixMilli()
+	q := "UPDATE sessions SET synced_at=? WHERE id IN (" + placeholders(len(ids)) + ")"
+	args := []interface{}{now}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	_, err := s.db.SQL().ExecContext(ctx, q, args...)
+	return err
+}
+
 // GetSummary returns aggregated statistics for sessions after the given time.
 func (s *Service) GetSummary(ctx context.Context, req SummaryRequest) (Summary, error) {
 	var sum Summary

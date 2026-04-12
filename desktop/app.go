@@ -5,16 +5,26 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/adrcotfas/goodtime/desktop/internal/database"
 	"github.com/adrcotfas/goodtime/desktop/internal/labels"
 	"github.com/adrcotfas/goodtime/desktop/internal/sessions"
 	"github.com/adrcotfas/goodtime/desktop/internal/settings"
+	cloudsync "github.com/adrcotfas/goodtime/desktop/internal/sync"
 	"github.com/adrcotfas/goodtime/desktop/internal/timer"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 const EventTimerTick = "timer:tick"
+
+// CloudSyncStatus is returned to the frontend after a sync attempt.
+type CloudSyncStatus struct {
+	DocsCreated   int    `json:"docsCreated"`
+	DocsUpdated   int    `json:"docsUpdated"`
+	Error         string `json:"error"`
+	CredsMissing  bool   `json:"credsMissing"`
+}
 
 // App holds all application state and exposes the Go API to the frontend via Wails bindings.
 type App struct {
@@ -25,6 +35,7 @@ type App struct {
 	labelService   *labels.Service
 	sessionService *sessions.Service
 	settingService *settings.Service
+	syncHandler    *cloudsync.Handler // nil until credentials are loaded
 }
 
 // NewApp creates a new App instance.
@@ -59,6 +70,17 @@ func (a *App) startup(ctx context.Context) {
 	a.timerBridge = timer.NewWailsBridge(ctx, a.sessionService, a.settingService, func(s timer.State) {
 		runtime.EventsEmit(ctx, EventTimerTick, s)
 	})
+
+	// Try to init the sync handler if credentials are present
+	if credPath, err := cloudsync.CredentialsPath(); err == nil {
+		if credJSON, err := os.ReadFile(credPath); err == nil {
+			if h, err := cloudsync.NewHandler(ctx, credJSON, a.sessionService, a.db); err == nil {
+				a.syncHandler = h
+			} else {
+				runtime.LogWarningf(ctx, "sync handler init: %v", err)
+			}
+		}
+	}
 }
 
 // shutdown is called when the app is about to quit.
@@ -129,6 +151,50 @@ func (a *App) DeleteTimerProfile(name string) error {
 	return a.settingService.DeleteTimerProfile(a.ctx, name)
 }
 
+// ─── Cloud Sync API ───────────────────────────────────────────────────────────
+
+// SaveToCloud pushes all unsynced sessions to Firestore.
+func (a *App) SaveToCloud() CloudSyncStatus {
+	if !cloudsync.CredentialsExist() {
+		credPath, _ := cloudsync.CredentialsPath()
+		return CloudSyncStatus{
+			CredsMissing: true,
+			Error: "service-account.json not found.\n\nPlace it at:\n" + credPath +
+				"\n\nDownload from Firebase Console → Project Settings → Service Accounts.",
+		}
+	}
+	if a.syncHandler == nil {
+		// Try to init now (user may have dropped credentials after startup)
+		credPath, _ := cloudsync.CredentialsPath()
+		credJSON, err := os.ReadFile(credPath)
+		if err != nil {
+			return CloudSyncStatus{Error: err.Error()}
+		}
+		h, err := cloudsync.NewHandler(a.ctx, credJSON, a.sessionService, a.db)
+		if err != nil {
+			return CloudSyncStatus{Error: "Failed to initialise sync: " + err.Error()}
+		}
+		a.syncHandler = h
+	}
+	status, err := a.syncHandler.Push(a.ctx)
+	result := CloudSyncStatus{DocsCreated: status.DocsCreated, DocsUpdated: status.DocsUpdated}
+	if err != nil {
+		result.Error = err.Error()
+	} else {
+		_ = a.settingService.SetLastSyncTimestamp(a.ctx, time.Now().UnixMilli())
+	}
+	return result
+}
+
+// GetCredentialsPath returns where the user should put service-account.json.
+func (a *App) GetCredentialsPath() string {
+	p, _ := cloudsync.CredentialsPath()
+	return p
+}
+
+// CloudSyncEnabled reports whether credentials are present.
+func (a *App) CloudSyncEnabled() bool { return cloudsync.CredentialsExist() }
+
 // ─── Backup API ────────────────────────────────────────────────────────────────
 
 func (a *App) ExportBackup() (string, error) {
@@ -155,6 +221,7 @@ func (a *App) ImportBackup() error {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 func resolveDBPath() (string, error) {
 	dataDir, err := os.UserConfigDir()

@@ -223,7 +223,7 @@ desktop/
 | 6 — Session History | ✅ Done | `e56dc2b7` |
 | 7 — Statistics | ✅ Done | `e56dc2b7` |
 | 8 — Settings | ✅ Done | `e56dc2b7` |
-| 9 — Firestore Sync | ⏳ Pending | Next step |
+| 9 — Firestore Sync | ✅ Done | pending commit |
 | 10 — Windows Build | ✅ Done | `8e77a645` |
 | 11 — macOS Build | ✅ Done | `8e77a645` |
 
