@@ -111,6 +111,15 @@
             android:exported="false">
         </receiver>
 
+        <receiver
+            android:name=".backup.MidnightBackupReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.apps.adrcotfas.goodtime.ACTION_MIDNIGHT_BACKUP" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!--        Used for database back-ups-->
         <provider
             android:name="androidx.core.content.FileProvider"

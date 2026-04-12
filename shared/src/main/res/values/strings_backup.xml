@@ -32,7 +32,7 @@
     <string name="backup_sync_firestore_success">Successfully synced with cloud</string>
     <string name="backup_sync_firestore_error">Sync failed: %s</string>
     <string name="backup_auto_cloud_backup">Auto push to cloud at midnight</string>
-    <string name="backup_auto_cloud_backup_subtitle">Completes any active timer and pushes data to cloud at 12:00 AM daily</string>
+    <string name="backup_auto_cloud_backup_subtitle">Fires at 12:00 AM even in Doze mode. Works offline — data syncs when connected. Grant battery unrestricted access when prompted.</string>
     <string name="backup_cloud_backup_frequency">Backup frequency</string>
     <string name="backup_frequency_hourly">Hourly</string>
     <string name="backup_frequency_every_4_hours">Every 4 hours</string>

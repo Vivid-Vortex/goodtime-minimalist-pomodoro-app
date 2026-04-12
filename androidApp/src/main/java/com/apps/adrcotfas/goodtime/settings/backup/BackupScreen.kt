@@ -17,7 +17,10 @@
  */
 package com.apps.adrcotfas.goodtime.settings.backup
 
+import android.content.Intent
 import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -271,6 +275,17 @@ fun BackupScreen(
                         viewModel.setCloudBackupSettings(
                             uiState.cloudBackupSettings.copy(autoCloudBackupEnabled = isEnabled),
                         )
+                        if (isEnabled) {
+                            val pm = ContextCompat.getSystemService(context, PowerManager::class.java)
+                            if (pm != null && !pm.isIgnoringBatteryOptimizations(context.packageName)) {
+                                val intent =
+                                    Intent(
+                                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                        Uri.parse("package:${context.packageName}"),
+                                    )
+                                context.startActivity(intent)
+                            }
+                        }
                     }
                 },
             )

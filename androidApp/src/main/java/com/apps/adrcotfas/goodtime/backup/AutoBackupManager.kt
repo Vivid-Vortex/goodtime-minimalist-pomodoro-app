@@ -17,13 +17,10 @@
  */
 package com.apps.adrcotfas.goodtime.backup
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
+import android.content.Intent
 import co.touchlab.kermit.Logger
 import com.apps.adrcotfas.goodtime.data.settings.CloudBackupSettings
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
@@ -34,19 +31,18 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 /**
- * Manager for scheduling and canceling auto cloud backup operations.
- * It observes the CloudBackupSettings from SettingsRepository and schedules or cancels
- * the backup work accordingly.
+ * Manager for scheduling and canceling midnight cloud backup.
+ * Uses AlarmManager.setExactAndAllowWhileIdle() so the alarm fires even
+ * when the device is in Doze mode. No network constraint — Firestore
+ * queues writes offline and syncs automatically when connectivity resumes.
  */
 class AutoBackupManager(
-    context: Context,
+    private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val logger: Logger,
 ) {
-    private val workManager = WorkManager.getInstance(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     init {
@@ -69,58 +65,57 @@ class AutoBackupManager(
         logger.i {
             "Cloud backup settings changed: autoCloudBackupEnabled=${cloudBackupSettings.autoCloudBackupEnabled}"
         }
-
         if (cloudBackupSettings.autoCloudBackupEnabled) {
-            scheduleCloudBackupAtMidnight()
-            logger.i { "Auto cloud backup scheduled daily at midnight" }
+            scheduleExactMidnightAlarm(context)
+            val minutesUntilMidnight = (calculateNextMidnightMillis() - System.currentTimeMillis()) / 60_000
+            logger.i { "Midnight backup scheduled via exact alarm ($minutesUntilMidnight min away)" }
         } else {
-            cancelCloudBackup()
-            logger.i { "Auto cloud backup canceled" }
+            cancelMidnightAlarm(context)
+            logger.i { "Midnight backup alarm canceled" }
         }
     }
 
-    private fun scheduleCloudBackupAtMidnight() {
-        val constraints =
-            Constraints
-                .Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+    companion object {
+        private const val REQUEST_CODE = 1200
 
-        val initialDelay = calculateMillisToNextMidnight()
-        logger.i { "Auto cloud backup initial delay: ${initialDelay / 1000 / 60} minutes until midnight" }
+        fun scheduleExactMidnightAlarm(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calculateNextMidnightMillis(),
+                buildPendingIntent(context),
+            )
+        }
 
-        val backupWorkRequest =
-            PeriodicWorkRequestBuilder<AutoBackupWorker>(
-                repeatInterval = 24,
-                repeatIntervalTimeUnit = TimeUnit.HOURS,
-            ).setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
-                .setConstraints(constraints)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
-                .build()
+        fun cancelMidnightAlarm(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            alarmManager.cancel(buildPendingIntent(context))
+        }
 
-        workManager.enqueueUniquePeriodicWork(
-            AutoBackupWorker.WORK_NAME,
-            ExistingPeriodicWorkPolicy.REPLACE,
-            backupWorkRequest,
-        )
-    }
+        /** Returns the epoch-millis timestamp of the next 00:00:00. */
+        fun calculateNextMidnightMillis(): Long {
+            val midnight =
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+            return midnight.timeInMillis
+        }
 
-    /** Returns milliseconds until the next 12:00 AM (midnight). */
-    private fun calculateMillisToNextMidnight(): Long {
-        val now = Calendar.getInstance()
-        val midnight =
-            Calendar.getInstance().apply {
-                add(Calendar.DAY_OF_YEAR, 1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-        return midnight.timeInMillis - now.timeInMillis
-    }
-
-    private fun cancelCloudBackup() {
-        logger.i { "Auto cloud backup canceled" }
-        workManager.cancelUniqueWork(AutoBackupWorker.WORK_NAME)
+        private fun buildPendingIntent(context: Context): PendingIntent {
+            val intent =
+                Intent(context, MidnightBackupReceiver::class.java).apply {
+                    action = MidnightBackupReceiver.ACTION_MIDNIGHT_BACKUP
+                }
+            return PendingIntent.getBroadcast(
+                context,
+                REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
     }
 }
