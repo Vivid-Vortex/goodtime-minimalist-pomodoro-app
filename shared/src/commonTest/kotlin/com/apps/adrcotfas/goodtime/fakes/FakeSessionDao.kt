@@ -173,6 +173,16 @@ class FakeSessionDao : SessionDao {
             }
     }
 
+    override suspend fun updateNotes(
+        id: Long,
+        newNotes: String,
+    ) {
+        sessions.value =
+            sessions.value.map {
+                if (it.id == id) it.copy(notes = newNotes) else it
+            }
+    }
+
     override suspend fun deleteAll() {
         sessions.value = emptyList()
     }

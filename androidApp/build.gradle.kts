@@ -99,6 +99,13 @@ android {
         generateLocaleConfig = true
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
     aboutLibraries {
         collect.configPath = file("config")
         library.duplicationMode = DuplicateMode.MERGE
@@ -148,4 +155,25 @@ dependencies {
     "googleImplementation"(libs.billing.ktx)
     "googleImplementation"(libs.app.update.ktx)
     "googleImplementation"(libs.review.ktx)
+
+    // Unit tests (JVM / Robolectric)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.roboelectric)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.koin.test)
+    testImplementation(libs.mockk.jvm)
+    testImplementation(libs.work.testing)
+    testImplementation(libs.turbine)
+
+    // Instrumented integration tests
+    androidTestImplementation(libs.kotlin.test)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.koin.test)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.work.testing)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

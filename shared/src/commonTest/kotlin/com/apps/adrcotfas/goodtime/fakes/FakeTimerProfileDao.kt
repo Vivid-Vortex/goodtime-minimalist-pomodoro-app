@@ -69,4 +69,21 @@ class FakeTimerProfileDao : TimerProfileDao {
         }
 
     override fun selectAll(): Flow<List<LocalTimerProfile>> = timerProfiles
+
+    override suspend fun renameProfile(
+        oldName: String,
+        newName: String,
+    ) {
+        timerProfiles.value =
+            timerProfiles.value.map {
+                if (it.name == oldName) it.copy(name = newName) else it
+            }
+    }
+
+    override suspend fun update(timerProfile: LocalTimerProfile) {
+        val currentList = timerProfiles.value.toMutableList()
+        val idx = currentList.indexOfFirst { it.name == timerProfile.name }
+        if (idx != -1) currentList[idx] = timerProfile else currentList.add(timerProfile)
+        timerProfiles.value = currentList
+    }
 }

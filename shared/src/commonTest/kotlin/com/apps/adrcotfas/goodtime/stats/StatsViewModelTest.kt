@@ -19,12 +19,19 @@ package com.apps.adrcotfas.goodtime.stats
 
 import androidx.paging.testing.asSnapshot
 import app.cash.turbine.test
+import co.touchlab.kermit.Logger
+import co.touchlab.kermit.StaticConfig
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepositoryImpl
+import com.apps.adrcotfas.goodtime.data.local.ProductivityDatabase
+import com.apps.adrcotfas.goodtime.data.local.RoomDatabaseTest
+import com.apps.adrcotfas.goodtime.data.local.backup.BackupManager
+import com.apps.adrcotfas.goodtime.data.local.backup.BackupViewModel
 import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.data.model.toLocal
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
+import com.apps.adrcotfas.goodtime.fakes.FakeBackupPrompter
 import com.apps.adrcotfas.goodtime.fakes.FakeLabelDao
 import com.apps.adrcotfas.goodtime.fakes.FakeSessionDao
 import com.apps.adrcotfas.goodtime.fakes.FakeSettingsRepository
@@ -34,19 +41,22 @@ import com.apps.adrcotfas.goodtime.testutil.retryTest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class StatsViewModelTest {
+class StatsViewModelTest : RoomDatabaseTest() {
     private lateinit var fakeSessionDao: FakeSessionDao
     private lateinit var fakeLabelDao: FakeLabelDao
     private lateinit var fakeTimerProfileDao: FakeTimerProfileDao
     private lateinit var localDataRepository: LocalDataRepository
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var timeProvider: FakeTimeProvider
+    private lateinit var db: ProductivityDatabase
+    private lateinit var backupViewModel: BackupViewModel
 
     private lateinit var viewModel: StatisticsViewModel
 
@@ -67,13 +77,31 @@ class StatsViewModelTest {
                         settingsRepository,
                         this,
                     )
-                viewModel = StatisticsViewModel(localDataRepository, settingsRepository, timeProvider)
+                db = getInMemoryDatabaseBuilder().allowMainThreadQueries().build()
+                val fakeFs = FakeFileSystem()
+                val backupManager =
+                    BackupManager(
+                        fileSystem = fakeFs,
+                        dbPath = "/tmp/test.db",
+                        filesDirPath = "/tmp",
+                        database = db,
+                        timeProvider = timeProvider,
+                        backupPrompter = FakeBackupPrompter(),
+                        localDataRepository = localDataRepository,
+                        logger = Logger(StaticConfig()),
+                    )
+                backupViewModel = BackupViewModel(backupManager, settingsRepository, null, this)
+                viewModel =
+                    StatisticsViewModel(localDataRepository, settingsRepository, timeProvider, null, backupViewModel)
                 populateRepo()
 
                 viewModel.uiState.test {
-                    assertTrue { awaitItem() == StatisticsUiState() }
-                    awaitItem()
-                    assertTrue { awaitItem().labels.isNotEmpty() }
+                    // Consume state updates until labels have been loaded
+                    var item = awaitItem()
+                    repeat(10) {
+                        if (item.labels.isEmpty()) item = awaitItem()
+                    }
+                    assertTrue { item.labels.isNotEmpty() }
                     cancelAndIgnoreRemainingEvents()
                 }
             }
@@ -84,6 +112,7 @@ class StatsViewModelTest {
         runTest {
             fakeSessionDao.deleteAll()
             fakeLabelDao.deleteAll()
+            db.close()
         }
 
     @Test

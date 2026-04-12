@@ -200,6 +200,12 @@ class FakeSettingsRepository(
         )
     }
 
+    override suspend fun setCloudBackupSettings(cloudBackupSettings: com.apps.adrcotfas.goodtime.data.settings.CloudBackupSettings) {
+        _settings.emit(
+            _settings.value.copy(cloudBackupSettings = cloudBackupSettings),
+        )
+    }
+
     override suspend fun setLongBreakData(longBreakData: LongBreakData) {
         _settings.emit(
             _settings.value.copy(longBreakData = longBreakData),
