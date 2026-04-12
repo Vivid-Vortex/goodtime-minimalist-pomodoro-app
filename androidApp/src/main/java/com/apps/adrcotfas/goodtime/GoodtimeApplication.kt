@@ -181,8 +181,8 @@ class GoodtimeApplication :
                         AutoBackupWorker(
                             get(),
                             get(),
-                            get(),
                             getWith("AutoBackupWorker"),
+                            get(),
                         )
                     }
                 },

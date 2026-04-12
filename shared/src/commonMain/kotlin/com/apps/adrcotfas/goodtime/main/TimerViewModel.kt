@@ -162,10 +162,10 @@ class TimerViewModel(
         viewModelScope.launch {
             uiState
                 .map { it.startOfToday }
+                .distinctUntilChanged()
                 .flatMapLatest { startOfToday ->
                     localDataRepo.selectNumberOfSessionsAfter(startOfToday)
-                }.distinctUntilChanged()
-                .collect { sessionCountToday ->
+                }.collect { sessionCountToday ->
                     _uiState.update {
                         it.copy(sessionCountToday = sessionCountToday)
                     }
