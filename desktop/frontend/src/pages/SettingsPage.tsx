@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, DeleteTimerProfile,
-  ExportBackup, ImportBackup,
+  ExportBackup, ImportBackup, SaveToCloud, GetCredentialsPath,
 } from "../wailsjs/go/main/App";
 import { useAppStore } from "../stores/appStore";
-import type { AppSettings, TimerProfile } from "../types";
+import type { AppSettings, CloudSyncStatus, TimerProfile } from "../types";
 
 export function SettingsPage() {
   const { settings, setSettings, timerProfiles, setTimerProfiles } = useAppStore();
   const [editingProfile, setEditingProfile] = useState<TimerProfile | null>(null);
   const [creating, setCreating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<CloudSyncStatus | null>(null);
+  const [credPath, setCredPath] = useState("");
 
   const reloadProfiles = useCallback(() => {
     GetTimerProfiles().then(setTimerProfiles).catch(console.error);
@@ -19,7 +22,20 @@ export function SettingsPage() {
     GetSettings().then(setSettings).catch(console.error);
   }, [setSettings]);
 
-  useEffect(() => { reloadProfiles(); reloadSettings(); }, [reloadProfiles, reloadSettings]);
+  useEffect(() => {
+    reloadProfiles();
+    reloadSettings();
+    GetCredentialsPath().then(setCredPath).catch(console.error);
+  }, [reloadProfiles, reloadSettings]);
+
+  function handleSaveToCloud() {
+    setSyncing(true);
+    setSyncResult(null);
+    SaveToCloud()
+      .then((result) => { setSyncResult(result); reloadSettings(); })
+      .catch((err) => setSyncResult({ docsCreated: 0, docsUpdated: 0, error: String(err), credsMissing: false }))
+      .finally(() => setSyncing(false));
+  }
 
   if (!settings) return null;
 
@@ -120,6 +136,41 @@ export function SettingsPage() {
             >
               Import JSON
             </button>
+          </div>
+
+          {/* Cloud Sync */}
+          <div className="mt-4">
+            <button
+              onClick={handleSaveToCloud}
+              disabled={syncing}
+              className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors
+                ${syncing
+                  ? "bg-surface-600 text-gray-500 cursor-not-allowed"
+                  : "bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white"
+                }`}
+            >
+              {syncing ? "Syncing…" : "Save to Cloud"}
+            </button>
+
+            {syncResult && (
+              <div className={`mt-2 p-3 rounded-xl text-xs ${
+                syncResult.error ? "bg-red-950 text-red-300" : "bg-green-950 text-green-300"
+              }`}>
+                {syncResult.error ? (
+                  <>
+                    <p className="font-semibold mb-1">Sync failed</p>
+                    <p className="whitespace-pre-wrap break-words">{syncResult.error}</p>
+                    {syncResult.credsMissing && (
+                      <p className="mt-2 text-gray-400 break-all">Expected path: {credPath}</p>
+                    )}
+                  </>
+                ) : (
+                  <p>
+                    Sync complete — {syncResult.docsCreated} created, {syncResult.docsUpdated} updated
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </Section>
 

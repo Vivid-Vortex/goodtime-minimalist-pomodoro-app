@@ -7,6 +7,7 @@ import type {
   TimerProfile,
   TimerState,
   AppSettings,
+  CloudSyncStatus,
   Summary,
   TimelineEntry,
   ListRequest,
@@ -62,3 +63,8 @@ export const DeleteTimerProfile = (name: string): Promise<void>                 
 // Backup
 export const ExportBackup = (): Promise<string>  => call("ExportBackup");
 export const ImportBackup = (): Promise<void>    => call("ImportBackup");
+
+// Cloud Sync
+export const SaveToCloud = (): Promise<CloudSyncStatus>  => call("SaveToCloud");
+export const GetCredentialsPath = (): Promise<string>    => call("GetCredentialsPath");
+export const CloudSyncEnabled = (): Promise<boolean>     => call("CloudSyncEnabled");

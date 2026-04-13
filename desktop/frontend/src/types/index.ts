@@ -71,6 +71,13 @@ export interface TimelineEntry {
   minutes: number;
 }
 
+export interface CloudSyncStatus {
+  docsCreated: number;
+  docsUpdated: number;
+  error: string;
+  credsMissing: boolean;
+}
+
 // Request types
 export interface ListRequest {
   labelNames?: string[];

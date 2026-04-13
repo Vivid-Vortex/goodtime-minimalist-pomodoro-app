@@ -43,4 +43,7 @@ vi.mock("../wailsjs/go/main/App", () => ({
   DeleteTimerProfile:      vi.fn().mockResolvedValue(undefined),
   ExportBackup:            vi.fn().mockResolvedValue("/tmp/backup.json"),
   ImportBackup:            vi.fn().mockResolvedValue(undefined),
+  SaveToCloud:             vi.fn().mockResolvedValue({ docsCreated: 0, docsUpdated: 0, error: "", credsMissing: false }),
+  GetCredentialsPath:      vi.fn().mockResolvedValue("/mock/path/service-account.json"),
+  CloudSyncEnabled:        vi.fn().mockResolvedValue(false),
 }));
