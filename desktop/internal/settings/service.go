@@ -158,24 +158,34 @@ func (s *Service) DeleteTimerProfile(ctx context.Context, name string) error {
 }
 
 // GetActiveProfile resolves the active timer profile for the engine.
-// It reads the active label, then returns its overriding profile (or the default).
+// If the active label uses the default profile, the app's defaultTimerProfileName
+// setting is used — so changing the default profile in Settings takes effect
+// immediately on the next timer start.
 func (s *Service) GetActiveProfile(ctx context.Context) (timer.Profile, error) {
 	st, err := s.Get(ctx)
 	if err != nil {
 		return timer.DefaultProfile(), nil
 	}
 
-	// Find which profile is associated with the active label
-	var (
-		isCountdown, isBreak, isLongBreak int
-		p                                  timer.Profile
-	)
+	// Determine which profile name to load
+	var useDefault int
+	var labelProfileName string
+	err = s.db.SQL().QueryRowContext(ctx,
+		"SELECT use_default_profile, timer_profile_name FROM labels WHERE name=?",
+		st.ActiveLabelName).Scan(&useDefault, &labelProfileName)
+	if err != nil {
+		return timer.DefaultProfile(), nil
+	}
+	profileName := labelProfileName
+	if useDefault == 1 {
+		profileName = st.DefaultTimerProfileName
+	}
+
+	var (isCountdown, isBreak, isLongBreak int; p timer.Profile)
 	err = s.db.SQL().QueryRowContext(ctx, `
-		SELECT tp.is_countdown, tp.work_duration, tp.is_break_enabled, tp.break_duration,
-		       tp.is_long_break_enabled, tp.long_break_duration, tp.sessions_before_lb, tp.work_break_ratio
-		FROM labels l
-		JOIN timer_profiles tp ON tp.name = l.timer_profile_name
-		WHERE l.name = ?`, st.ActiveLabelName).Scan(
+		SELECT is_countdown, work_duration, is_break_enabled, break_duration,
+		       is_long_break_enabled, long_break_duration, sessions_before_lb, work_break_ratio
+		FROM timer_profiles WHERE name=?`, profileName).Scan(
 		&isCountdown, &p.WorkDurationMin, &isBreak, &p.BreakDurationMin,
 		&isLongBreak, &p.LongBreakDurationMin, &p.SessionsBeforeLongBreak, &p.WorkBreakRatio)
 	if err != nil {

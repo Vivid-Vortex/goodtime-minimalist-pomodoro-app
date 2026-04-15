@@ -1,4 +1,5 @@
 import { useAppStore } from "../../stores/appStore";
+import { useTimerStore } from "../../stores/timerStore";
 import { SetActiveLabel } from "../../wailsjs/go/main/App";
 import { LABEL_COLORS } from "../../types";
 
@@ -10,13 +11,17 @@ export function LabelSelector({ activeLabel }: Props) {
   const labels = useAppStore((s) => s.labels);
   const setSettings = useAppStore((s) => s.setSettings);
   const settings = useAppStore((s) => s.settings);
+  const timerState = useTimerStore((s) => s.state);
+  const setTimerState = useTimerStore((s) => s.setState);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const name = e.target.value;
     SetActiveLabel(name).catch(console.error);
+    // Keep both stores in sync so the dropdown value is stable
     if (settings) {
       setSettings({ ...settings, activeLabelName: name });
     }
+    setTimerState({ ...timerState, activeLabelName: name });
   }
 
   const activeLabelObj = labels.find((l) => l.name === activeLabel);

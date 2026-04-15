@@ -65,31 +65,57 @@ export function SettingsPage() {
         {/* Timer Profiles */}
         <Section title="Timer Profiles">
           <ul className="divide-y divide-surface-700 rounded-xl overflow-hidden">
-            {timerProfiles.map((p) => (
-              <li key={p.name} className="flex items-center gap-3 px-4 py-3 bg-surface-800">
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium">{p.name}</p>
-                  <p className="text-gray-500 text-xs">
-                    {p.workDuration}m focus · {p.breakDuration}m break
-                    {p.isLongBreakEnabled ? ` · ${p.longBreakDuration}m long break` : ""}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setEditingProfile(p)}
-                  className="text-gray-500 hover:text-white text-sm transition-colors"
+            {timerProfiles.map((p) => {
+              const isActive = settings?.defaultTimerProfileName === p.name;
+              return (
+                <li
+                  key={p.name}
+                  className={`flex items-center gap-3 px-4 py-3 transition-colors
+                    ${isActive ? "bg-brand-900/40 border-l-2 border-brand-500" : "bg-surface-800"}`}
                 >
-                  Edit
-                </button>
-                {p.name !== "72/5" && (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-white text-sm font-medium">{p.name}</p>
+                      {isActive && (
+                        <span className="text-[10px] font-semibold text-brand-400 uppercase tracking-wide">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-gray-500 text-xs">
+                      {p.workDuration}m focus · {p.breakDuration}m break
+                      {p.isLongBreakEnabled ? ` · ${p.longBreakDuration}m long break` : ""}
+                    </p>
+                  </div>
+                  {!isActive && (
+                    <button
+                      onClick={() => {
+                        const updated = { ...settings!, defaultTimerProfileName: p.name };
+                        setSettings(updated);
+                        UpdateSettings({ ...updated }).catch(console.error);
+                      }}
+                      className="text-brand-400 hover:text-brand-300 text-xs font-medium transition-colors"
+                    >
+                      Select
+                    </button>
+                  )}
                   <button
-                    onClick={() => DeleteTimerProfile(p.name).then(reloadProfiles).catch(console.error)}
-                    className="text-red-500 hover:text-red-400 text-sm transition-colors"
+                    onClick={() => setEditingProfile(p)}
+                    className="text-gray-500 hover:text-white text-sm transition-colors"
                   >
-                    Delete
+                    Edit
                   </button>
-                )}
-              </li>
-            ))}
+                  {p.name !== "72/5" && (
+                    <button
+                      onClick={() => DeleteTimerProfile(p.name).then(reloadProfiles).catch(console.error)}
+                      className="text-red-500 hover:text-red-400 text-sm transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <button
             onClick={() => setCreating(true)}

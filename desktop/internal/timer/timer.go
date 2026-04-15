@@ -306,11 +306,17 @@ func (e *Engine) segmentDuration() time.Duration {
 // Caller must hold e.mu.
 func (e *Engine) snapshot() State {
 	elapsed := e.elapsed()
+	totalSecs := int64(e.totalDuration.Seconds())
+	if e.state == StateReset {
+		// In RESET the timer hasn't started, so totalDuration is 0.
+		// Return the would-be segment duration so the UI can show e.g. "72:00".
+		totalSecs = int64(e.segmentDuration().Seconds())
+	}
 	return State{
 		Kind:              e.state,
 		TimerType:         e.timerType,
 		ElapsedSeconds:    int64(elapsed.Seconds()),
-		TotalSeconds:      int64(e.totalDuration.Seconds()),
+		TotalSeconds:      totalSecs,
 		CompletedSessions: e.completedSessions,
 		ActiveLabelName:   e.activeLabelName,
 	}
