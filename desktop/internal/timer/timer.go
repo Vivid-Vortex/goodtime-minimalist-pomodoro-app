@@ -94,6 +94,11 @@ type Engine struct {
 	activeLabelName   string
 	saver             SessionSaver
 	onTick            TickHandler
+	// auto-start: when set, the engine automatically begins the next segment
+	// 1 tick (≈1 s) after the current one finishes so the frontend sees FINISHED.
+	autoStartWork  bool
+	autoStartBreak bool
+	pendingAutoStart bool // set after finish(), cleared when start fires
 }
 
 // NewEngine creates a ready-to-use engine.
@@ -128,6 +133,16 @@ func (e *Engine) SetActiveLabel(name string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.activeLabelName = name
+}
+
+// SetAutoStart configures whether the engine automatically begins the next
+// segment after the current one finishes (autoWork = start focus after break;
+// autoBreak = start break after focus).
+func (e *Engine) SetAutoStart(autoWork, autoBreak bool) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.autoStartWork = autoWork
+	e.autoStartBreak = autoBreak
 }
 
 // Start transitions from RESET (or FINISHED) to RUNNING.
@@ -175,6 +190,7 @@ func (e *Engine) Stop() error {
 	wasWork := e.timerType == TypeFocus
 	label := e.activeLabelName
 	e.resetLocked()
+	e.pendingAutoStart = false // cancel any pending auto-start
 	e.mu.Unlock()
 
 	if wasWork && elapsed >= time.Minute && e.saver != nil {
@@ -225,8 +241,25 @@ func (e *Engine) tick() {
 	e.mu.Lock()
 	if e.state == StateRunning {
 		if e.profile.IsCountdown && e.elapsed() >= e.totalDuration {
+			// Determine now whether we should auto-start the NEXT segment.
+			// We record this before finish() advances the timerType.
+			prevType := e.timerType
 			e.finish()
+			switch prevType {
+			case TypeFocus:
+				if e.autoStartBreak && e.profile.IsBreakEnabled {
+					e.pendingAutoStart = true
+				}
+			case TypeBreak, TypeLongBreak:
+				if e.autoStartWork {
+					e.pendingAutoStart = true
+				}
+			}
 		}
+	} else if e.state == StateFinished && e.pendingAutoStart {
+		// One tick has elapsed showing FINISHED — now auto-start the next segment.
+		e.pendingAutoStart = false
+		e.startLocked()
 	}
 	snap := e.snapshot()
 	e.mu.Unlock()
@@ -271,6 +304,14 @@ func (e *Engine) resetLocked() {
 	e.state = StateReset
 	e.timerType = TypeFocus
 	e.pausedDuration = 0
+}
+
+// startLocked transitions from FINISHED to RUNNING. Caller must hold e.mu.
+func (e *Engine) startLocked() {
+	e.startedAt = time.Now()
+	e.pausedDuration = 0
+	e.totalDuration = e.segmentDuration()
+	e.state = StateRunning
 }
 
 // elapsed returns how much time has been actively running (excluding pauses).

@@ -16,6 +16,7 @@ type ServiceSaver interface {
 type ServiceSettings interface {
 	GetActiveLabel(ctx context.Context) (string, error)
 	GetActiveProfile(ctx context.Context) (Profile, error)
+	GetAutoStart(ctx context.Context) (autoWork, autoBreak bool)
 }
 
 // WailsBridge wraps Engine and lazily resolves profile/label from services.
@@ -30,14 +31,16 @@ type WailsBridge struct {
 func NewWailsBridge(ctx context.Context, svc ServiceSaver, stgs ServiceSettings, onTick TickHandler) *WailsBridge {
 	profile, _ := stgs.GetActiveProfile(ctx)
 	label, _ := stgs.GetActiveLabel(ctx)
+	autoWork, autoBreak := stgs.GetAutoStart(ctx)
 
 	e := NewEngine(profile, svc, onTick)
 	e.SetActiveLabel(label)
+	e.SetAutoStart(autoWork, autoBreak)
 
 	return &WailsBridge{ctx: ctx, engine: e, stgs: stgs}
 }
 
-// Start refreshes profile/label from settings, then starts the timer.
+// Start refreshes profile/label/auto-start from settings, then starts the timer.
 func (b *WailsBridge) Start() error {
 	profile, err := b.stgs.GetActiveProfile(b.ctx)
 	if err != nil {
@@ -47,8 +50,10 @@ func (b *WailsBridge) Start() error {
 	if err != nil {
 		return err
 	}
+	autoWork, autoBreak := b.stgs.GetAutoStart(b.ctx)
 	b.engine.SetProfile(profile)
 	b.engine.SetActiveLabel(label)
+	b.engine.SetAutoStart(autoWork, autoBreak)
 	return b.engine.Start()
 }
 

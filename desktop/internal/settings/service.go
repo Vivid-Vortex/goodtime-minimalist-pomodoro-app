@@ -84,6 +84,15 @@ func (s *Service) GetActiveLabel(ctx context.Context) (string, error) {
 	return name, err
 }
 
+// GetAutoStart returns the auto-start-work and auto-start-break flags.
+// Returns (false, false) on any DB error so the caller gets safe defaults.
+func (s *Service) GetAutoStart(ctx context.Context) (autoWork, autoBreak bool) {
+	var w, b int
+	_ = s.db.SQL().QueryRowContext(ctx,
+		"SELECT auto_start_work, auto_start_break FROM app_settings WHERE id=1").Scan(&w, &b)
+	return w == 1, b == 1
+}
+
 // SetLastSyncTimestamp records when the last cloud sync occurred.
 func (s *Service) SetLastSyncTimestamp(ctx context.Context, ts int64) error {
 	_, err := s.db.SQL().ExecContext(ctx,

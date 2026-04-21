@@ -268,3 +268,89 @@ func TestSetProfile_UpdatesProfile(t *testing.T) {
 		t.Errorf("want TotalSeconds=3000, got %d", s.TotalSeconds)
 	}
 }
+
+// ─── auto-start tests ─────────────────────────────────────────────────────────
+
+// awaitState polls the engine every 100 ms until it reaches the desired state
+// or the timeout expires.  More reliable than fixed sleeps.
+func awaitState(t *testing.T, e *timer.Engine, wantKind timer.StateKind, wantType timer.TypeKind, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		s := e.GetState()
+		if s.Kind == wantKind && s.TimerType == wantType {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	s := e.GetState()
+	t.Errorf("timeout waiting for %s/%s — final state: %s/%s", wantKind, wantType, s.Kind, s.TimerType)
+}
+
+func TestAutoStartBreak_StartsBreakAfterFocus(t *testing.T) {
+	p := timer.DefaultProfile()
+	p.WorkDurationMin = 0   // finishes on next tick (~1 s)
+	p.IsBreakEnabled = true
+	p.BreakDurationMin = 60 // long break — won't finish during test
+
+	e := timer.NewEngine(p, nil, nil)
+	t.Cleanup(e.Shutdown)
+	e.SetAutoStart(false, true) // autoBreak=true
+
+	_ = e.Start()
+	awaitState(t, e, timer.StateRunning, timer.TypeBreak, 5*time.Second)
+}
+
+func TestAutoStartWork_StartsWorkAfterBreak(t *testing.T) {
+	p := timer.DefaultProfile()
+	p.WorkDurationMin = 0   // focus finishes on next tick
+	p.IsBreakEnabled = true
+	p.BreakDurationMin = 0  // break also finishes on next tick
+
+	e := timer.NewEngine(p, nil, nil)
+	t.Cleanup(e.Shutdown)
+	e.SetAutoStart(true, true)
+
+	_ = e.Start()
+	// Wait for: focus→FINISHED→break starts→break→FINISHED→focus starts
+	awaitState(t, e, timer.StateRunning, timer.TypeFocus, 8*time.Second)
+}
+
+func TestAutoStart_Stop_CancelsPending(t *testing.T) {
+	p := timer.DefaultProfile()
+	p.WorkDurationMin = 0
+	p.IsBreakEnabled = true
+	p.BreakDurationMin = 60
+
+	e := timer.NewEngine(p, nil, nil)
+	t.Cleanup(e.Shutdown)
+	e.SetAutoStart(false, true)
+
+	_ = e.Start()
+	// Wait for focus to finish (→ FINISHED)
+	awaitState(t, e, timer.StateFinished, timer.TypeBreak, 4*time.Second)
+
+	// User manually stops before the auto-start tick fires
+	_ = e.Stop()
+	time.Sleep(1500 * time.Millisecond) // ensure the pending tick passes
+
+	s := e.GetState()
+	if s.Kind != timer.StateReset {
+		t.Errorf("want RESET after manual stop, got %s", s.Kind)
+	}
+}
+
+func TestResetState_ShowsCorrectTotalSeconds(t *testing.T) {
+	p := timer.DefaultProfile()
+	p.WorkDurationMin = 72
+	e := timer.NewEngine(p, nil, nil)
+	t.Cleanup(e.Shutdown)
+
+	s := e.GetState()
+	if s.Kind != timer.StateReset {
+		t.Fatalf("want RESET, got %s", s.Kind)
+	}
+	if s.TotalSeconds != 72*60 {
+		t.Errorf("want TotalSeconds=4320 in RESET, got %d", s.TotalSeconds)
+	}
+}
