@@ -254,6 +254,130 @@ func (a *App) runScheduler() {
 	}
 }
 
+// ─── Combined Cloud Data API ──────────────────────────────────────────────────
+
+// CloudHistoryEntry is one cached entry from the pomodoro_app_history collection.
+type CloudHistoryEntry struct {
+	DateMillis int64  `json:"dateMillis"`
+	LabelName  string `json:"labelName"`
+	Minutes    int64  `json:"minutes"`
+	DeviceName string `json:"deviceName"`
+	FetchedAt  int64  `json:"fetchedAt"`
+}
+
+// CloudTimelineEntry is one cached entry from the timesheet_entries collection.
+type CloudTimelineEntry struct {
+	DateMillis int64  `json:"dateMillis"`
+	LabelName  string `json:"labelName"`
+	Minutes    int64  `json:"minutes"`
+	FetchedAt  int64  `json:"fetchedAt"`
+}
+
+// RefreshCloudData fetches timesheet_entries + pomodoro_app_history from Firestore
+// and caches them in the local SQLite cloud_*_cache tables.
+func (a *App) RefreshCloudData() error {
+	if !cloudsync.CredentialsExist() {
+		return fmt.Errorf("service-account.json not found — place it at the path shown in Settings")
+	}
+	if a.syncHandler == nil {
+		credPath, _ := cloudsync.CredentialsPath()
+		credJSON, err := os.ReadFile(credPath)
+		if err != nil {
+			return err
+		}
+		h, err := cloudsync.NewHandler(a.ctx, credJSON, a.sessionService, a.db)
+		if err != nil {
+			return fmt.Errorf("init sync: %w", err)
+		}
+		a.syncHandler = h
+	}
+
+	fetchedAt := time.Now().UnixMilli()
+	db := a.db.SQL()
+
+	// ── Timeline: parse timesheet_entries ──────────────────────────────────────
+	timelineDocs, err := a.syncHandler.ListTimesheetEntries(a.ctx)
+	if err != nil {
+		return fmt.Errorf("fetch timesheet_entries: %w", err)
+	}
+	if _, err := db.ExecContext(a.ctx, "DELETE FROM cloud_timeline_cache"); err != nil {
+		return err
+	}
+	for _, doc := range timelineDocs {
+		dateMillis := cloudsync.DocIDToMidnightMillis(doc.DocID)
+		for label, mins := range doc.LabelMinutes {
+			if mins == 0 {
+				continue
+			}
+			_, err := db.ExecContext(a.ctx,
+				`INSERT OR REPLACE INTO cloud_timeline_cache (date_millis, label_name, minutes, fetched_at)
+				 VALUES (?, ?, ?, ?)`, dateMillis, label, mins, fetchedAt)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// ── History: parse pomodoro_app_history ───────────────────────────────────
+	historyDocs, err := a.syncHandler.ListHistoryEntries(a.ctx)
+	if err != nil {
+		return fmt.Errorf("fetch pomodoro_app_history: %w", err)
+	}
+	if _, err := db.ExecContext(a.ctx, "DELETE FROM cloud_history_cache"); err != nil {
+		return err
+	}
+	for _, entry := range historyDocs {
+		_, err := db.ExecContext(a.ctx,
+			`INSERT INTO cloud_history_cache (date_millis, label_name, minutes, device_name, fetched_at)
+			 VALUES (?, ?, ?, ?, ?)`,
+			entry.DateMillis, entry.LabelName, entry.Minutes, entry.DeviceName, fetchedAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetCombinedHistory returns all cached entries from cloud_history_cache (newest first).
+func (a *App) GetCombinedHistory() ([]CloudHistoryEntry, error) {
+	rows, err := a.db.SQL().QueryContext(a.ctx,
+		`SELECT date_millis, label_name, minutes, device_name, fetched_at
+		 FROM cloud_history_cache ORDER BY date_millis DESC, id DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []CloudHistoryEntry
+	for rows.Next() {
+		var e CloudHistoryEntry
+		if err := rows.Scan(&e.DateMillis, &e.LabelName, &e.Minutes, &e.DeviceName, &e.FetchedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
+// GetCombinedTimeline returns all cached entries from cloud_timeline_cache (newest first).
+func (a *App) GetCombinedTimeline() ([]CloudTimelineEntry, error) {
+	rows, err := a.db.SQL().QueryContext(a.ctx,
+		`SELECT date_millis, label_name, minutes, fetched_at
+		 FROM cloud_timeline_cache ORDER BY date_millis DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []CloudTimelineEntry
+	for rows.Next() {
+		var e CloudTimelineEntry
+		if err := rows.Scan(&e.DateMillis, &e.LabelName, &e.Minutes, &e.FetchedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}
+
 // ─── Backup API ────────────────────────────────────────────────────────────────
 
 func (a *App) ExportBackup() (string, error) {

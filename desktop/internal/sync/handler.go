@@ -217,6 +217,111 @@ func (h *Handler) pushHistorySession(ctx context.Context, s database.Session) er
 	return h.client.SetDocument(ctx, collectionHistory, dateStr, doc)
 }
 
+// ─── Pull API ─────────────────────────────────────────────────────────────────
+
+// TimesheetDoc holds the parsed content of one timesheet_entries document.
+type TimesheetDoc struct {
+	DocID        string           // DD-MM-YYYY
+	LabelMinutes map[string]int64 // label abbreviation → minutes
+}
+
+// HistoryEntry holds one session record from the pomodoro_app_history collection.
+type HistoryEntry struct {
+	DateMillis int64
+	LabelName  string
+	Minutes    int64
+	DeviceName string
+}
+
+// ListTimesheetEntries fetches all documents from timesheet_entries and parses
+// the label minutes from each document's formData/tagSnapshot.
+func (h *Handler) ListTimesheetEntries(ctx context.Context) ([]TimesheetDoc, error) {
+	docs, err := h.client.ListDocuments(ctx, collectionTimesheet)
+	if err != nil {
+		return nil, err
+	}
+	var result []TimesheetDoc
+	for _, doc := range docs {
+		docID, _ := doc["_id"].(string)
+		formData, _ := doc["formData"].(map[string]interface{})
+		if formData == nil {
+			continue
+		}
+		tagSnapshot, _ := formData["tagSnapshot"].(map[string]interface{})
+		if tagSnapshot == nil {
+			continue
+		}
+		labelMins := map[string]int64{}
+		// tagSnapshot: {fieldKey → abbreviation}, e.g. {"work1Main": "W1M"}
+		// formData[fieldKey] is the minutes value
+		for fieldKey, abbrevRaw := range tagSnapshot {
+			abbrev, _ := abbrevRaw.(string)
+			if abbrev == "" {
+				continue
+			}
+			val := formData[fieldKey]
+			var mins int64
+			switch n := val.(type) {
+			case int64:
+				mins = n
+			case float64:
+				mins = int64(n)
+			case int:
+				mins = int64(n)
+			}
+			if mins > 0 {
+				labelMins[abbrev] = mins
+			}
+		}
+		if len(labelMins) > 0 {
+			result = append(result, TimesheetDoc{DocID: docID, LabelMinutes: labelMins})
+		}
+	}
+	return result, nil
+}
+
+// ListHistoryEntries fetches all session entries from pomodoro_app_history.
+func (h *Handler) ListHistoryEntries(ctx context.Context) ([]HistoryEntry, error) {
+	docs, err := h.client.ListDocuments(ctx, collectionHistory)
+	if err != nil {
+		return nil, err
+	}
+	var result []HistoryEntry
+	for _, doc := range docs {
+		docID, _ := doc["_id"].(string)
+		dateMillis := DocIDToMidnightMillis(docID)
+		sessions, _ := doc["sessions"].([]interface{})
+		for _, raw := range sessions {
+			entry, _ := raw.(map[string]interface{})
+			if entry == nil {
+				continue
+			}
+			label, _ := entry["labelName"].(string)
+			device, _ := entry["deviceName"].(string)
+			var mins int64
+			switch n := entry["duration"].(type) {
+			case int64:
+				mins = n
+			case float64:
+				mins = int64(n)
+			}
+			isWork, _ := entry["isWork"].(bool)
+			if isWork && mins > 0 {
+				result = append(result, HistoryEntry{
+					DateMillis: dateMillis,
+					LabelName:  label,
+					Minutes:    mins,
+					DeviceName: device,
+				})
+			}
+		}
+	}
+	return result, nil
+}
+
+// DocIDToMidnightMillis is the exported wrapper for docIDToMidnightMillis.
+func DocIDToMidnightMillis(docID string) int64 { return docIDToMidnightMillis(docID) }
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // millisToDocID converts a Unix-millisecond timestamp to the Firestore doc-ID

@@ -85,6 +85,77 @@ func (c *Client) GetDocument(ctx context.Context, collection, docID string) (map
 	return firestoreFieldsToMap(fsDoc.Fields), nil
 }
 
+// ListDocuments returns all documents in a collection as a slice of maps.
+// Each map includes a special "_id" key with the document ID.
+// It follows pageToken pagination automatically to return all documents.
+func (c *Client) ListDocuments(ctx context.Context, collection string) ([]map[string]interface{}, error) {
+	base := fmt.Sprintf("%s/projects/%s/databases/(default)/documents/%s",
+		c.baseURL, c.projectID, collection)
+
+	var results []map[string]interface{}
+	pageToken := ""
+
+	for {
+		url := base
+		if pageToken != "" {
+			url += "?pageToken=" + pageToken
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusNotFound {
+			return results, nil // empty collection
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("Firestore LIST %s: HTTP %d — %s", collection, resp.StatusCode, body)
+		}
+
+		var page struct {
+			Documents     []struct {
+				Name   string                    `json:"name"`
+				Fields map[string]firestoreValue `json:"fields"`
+			} `json:"documents"`
+			NextPageToken string `json:"nextPageToken"`
+		}
+		if err := json.Unmarshal(body, &page); err != nil {
+			return nil, fmt.Errorf("decode LIST response: %w", err)
+		}
+		for _, d := range page.Documents {
+			m := firestoreFieldsToMap(d.Fields)
+			// Extract the document ID from the resource name (last path segment)
+			parts := splitLast(d.Name, '/')
+			m["_id"] = parts
+			results = append(results, m)
+		}
+		if page.NextPageToken == "" {
+			break
+		}
+		pageToken = page.NextPageToken
+	}
+	return results, nil
+}
+
+// splitLast returns the substring after the last occurrence of sep in s.
+// If sep is not found, returns s.
+func splitLast(s string, sep byte) string {
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == sep {
+			return s[i+1:]
+		}
+	}
+	return s
+}
+
 // SetDocument creates or fully replaces a document via PATCH (updateMask omitted).
 func (c *Client) SetDocument(ctx context.Context, collection, docID string, data map[string]interface{}) error {
 	fsDoc := firestoreDocument{Fields: mapToFirestoreFields(data)}

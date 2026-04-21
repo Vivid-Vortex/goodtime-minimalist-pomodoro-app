@@ -69,6 +69,7 @@ describe("appStore", () => {
       enableDesktopNotifications: true,
       cloudBackupEnabled: false,
       lastSyncTimestamp: 0,
+      cloudSyncSchedule: "",
     };
     useAppStore.getState().setSettings(s);
     expect(useAppStore.getState().settings?.autoStartBreak).toBe(true);

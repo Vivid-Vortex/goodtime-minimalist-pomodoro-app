@@ -56,6 +56,7 @@ export interface AppSettings {
   enableDesktopNotifications: boolean;
   cloudBackupEnabled: boolean;
   lastSyncTimestamp: number;
+  cloudSyncSchedule: string;
 }
 
 export interface Summary {
@@ -76,6 +77,21 @@ export interface CloudSyncStatus {
   docsUpdated: number;
   error: string;
   credsMissing: boolean;
+}
+
+export interface CloudHistoryEntry {
+  dateMillis: number;
+  labelName: string;
+  minutes: number;
+  deviceName: string;
+  fetchedAt: number;
+}
+
+export interface CloudTimelineEntry {
+  dateMillis: number;
+  labelName: string;
+  minutes: number;
+  fetchedAt: number;
 }
 
 // Request types

@@ -8,6 +8,8 @@ import type {
   TimerState,
   AppSettings,
   CloudSyncStatus,
+  CloudHistoryEntry,
+  CloudTimelineEntry,
   Summary,
   TimelineEntry,
   ListRequest,
@@ -70,3 +72,8 @@ export const GetCredentialsPath = (): Promise<string>                 => call("G
 export const CloudSyncEnabled = (): Promise<boolean>                  => call("CloudSyncEnabled");
 export const GetCloudSyncSchedule = (): Promise<string>               => call("GetCloudSyncSchedule");
 export const SetCloudSyncSchedule = (schedule: string): Promise<void> => call("SetCloudSyncSchedule", schedule);
+
+// Combined Cloud Data
+export const RefreshCloudData = (): Promise<void>                                      => call("RefreshCloudData");
+export const GetCombinedHistory = (): Promise<CloudHistoryEntry[]>                     => call("GetCombinedHistory");
+export const GetCombinedTimeline = (): Promise<CloudTimelineEntry[]>                   => call("GetCombinedTimeline");

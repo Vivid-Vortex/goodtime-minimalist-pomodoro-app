@@ -104,6 +104,33 @@ INSERT OR IGNORE INTO app_settings (id) VALUES (1);
 		// v2: scheduled cloud push time (e.g. "23:30" in HH:MM 24h format, empty = disabled)
 		`ALTER TABLE app_settings ADD COLUMN cloud_sync_schedule TEXT NOT NULL DEFAULT ''`,
 	}
+
+	// One-shot table creation migrations (idempotent via IF NOT EXISTS).
+	tableCreations := []string{
+		// Cloud history cache: all entries fetched from pomodoro_app_history collection.
+		`CREATE TABLE IF NOT EXISTS cloud_history_cache (
+		    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		    date_millis INTEGER NOT NULL,
+		    label_name  TEXT    NOT NULL DEFAULT '',
+		    minutes     INTEGER NOT NULL DEFAULT 0,
+		    device_name TEXT    NOT NULL DEFAULT '',
+		    fetched_at  INTEGER NOT NULL DEFAULT 0
+		)`,
+		// Cloud timeline cache: aggregated per-label per-date from timesheet_entries.
+		`CREATE TABLE IF NOT EXISTS cloud_timeline_cache (
+		    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+		    date_millis INTEGER NOT NULL,
+		    label_name  TEXT    NOT NULL DEFAULT '',
+		    minutes     INTEGER NOT NULL DEFAULT 0,
+		    fetched_at  INTEGER NOT NULL DEFAULT 0,
+		    UNIQUE(date_millis, label_name)
+		)`,
+	}
+	for _, stmt := range tableCreations {
+		if _, err := db.sql.Exec(stmt); err != nil {
+			return err
+		}
+	}
 	for _, stmt := range additiveMigrations {
 		if _, err := db.sql.Exec(stmt); err != nil {
 			// "duplicate column name" is expected on databases that already have the column.
