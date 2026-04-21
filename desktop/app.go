@@ -36,6 +36,8 @@ type App struct {
 	sessionService *sessions.Service
 	settingService *settings.Service
 	syncHandler    *cloudsync.Handler // nil until credentials are loaded
+
+	schedulerStop chan struct{} // closed to stop the background scheduler goroutine
 }
 
 // NewApp creates a new App instance.
@@ -81,10 +83,17 @@ func (a *App) startup(ctx context.Context) {
 			}
 		}
 	}
+
+	// Start background scheduler for scheduled cloud push
+	a.schedulerStop = make(chan struct{})
+	go a.runScheduler()
 }
 
 // shutdown is called when the app is about to quit.
 func (a *App) shutdown(_ context.Context) {
+	if a.schedulerStop != nil {
+		close(a.schedulerStop)
+	}
 	a.timerBridge.Shutdown()
 	if a.db != nil {
 		_ = a.db.Close()
@@ -194,6 +203,56 @@ func (a *App) GetCredentialsPath() string {
 
 // CloudSyncEnabled reports whether credentials are present.
 func (a *App) CloudSyncEnabled() bool { return cloudsync.CredentialsExist() }
+
+// GetCloudSyncSchedule returns the scheduled daily push time ("HH:MM" or "").
+func (a *App) GetCloudSyncSchedule() string {
+	return a.settingService.GetCloudSyncSchedule(a.ctx)
+}
+
+// SetCloudSyncSchedule sets (or clears) the daily auto-push time.
+// Pass "" to disable, "HH:MM" (24h) to enable.
+func (a *App) SetCloudSyncSchedule(schedule string) error {
+	return a.settingService.SetCloudSyncSchedule(a.ctx, schedule)
+}
+
+// runScheduler is a background goroutine that fires SaveToCloud at the
+// user-configured daily time.  It wakes up every 30 seconds to check.
+func (a *App) runScheduler() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	var lastFiredDate string // "YYYY-MM-DD" of the last successful auto-push
+
+	for {
+		select {
+		case <-a.schedulerStop:
+			return
+		case now := <-ticker.C:
+			schedule := a.settingService.GetCloudSyncSchedule(a.ctx)
+			if schedule == "" {
+				continue
+			}
+			// Parse HH:MM
+			var hh, mm int
+			if _, err := fmt.Sscanf(schedule, "%d:%d", &hh, &mm); err != nil {
+				continue
+			}
+			// Check if current time matches and we haven't already fired today
+			today := now.Format("2006-01-02")
+			if now.Hour() == hh && now.Minute() == mm && lastFiredDate != today {
+				lastFiredDate = today
+				runtime.LogInfof(a.ctx, "scheduler: auto-push triggered at %s", schedule)
+				result := a.SaveToCloud()
+				if result.Error != "" {
+					runtime.LogWarningf(a.ctx, "scheduler: auto-push error: %s", result.Error)
+				} else {
+					runtime.LogInfof(a.ctx, "scheduler: auto-push ok — created=%d updated=%d",
+						result.DocsCreated, result.DocsUpdated)
+				}
+			}
+		}
+	}
+}
 
 // ─── Backup API ────────────────────────────────────────────────────────────────
 

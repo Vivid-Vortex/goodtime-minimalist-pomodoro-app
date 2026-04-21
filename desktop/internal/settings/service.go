@@ -36,12 +36,14 @@ func (s *Service) Get(ctx context.Context) (database.AppSettings, error) {
 		SELECT active_label_name, default_timer_profile_name, theme,
 		       work_finished_sound, break_finished_sound,
 		       auto_start_work, auto_start_break,
-		       enable_desktop_notifications, cloud_backup_enabled, last_sync_timestamp
+		       enable_desktop_notifications, cloud_backup_enabled, last_sync_timestamp,
+		       cloud_sync_schedule
 		FROM app_settings WHERE id=1`)
 	err := row.Scan(
 		&st.ActiveLabelName, &st.DefaultTimerProfileName, &st.Theme,
 		&st.WorkFinishedSound, &st.BreakFinishedSound,
 		&autoWork, &autoBreak, &notif, &cloud, &st.LastSyncTimestamp,
+		&st.CloudSyncSchedule,
 	)
 	if err != nil {
 		return st, err
@@ -91,6 +93,21 @@ func (s *Service) GetAutoStart(ctx context.Context) (autoWork, autoBreak bool) {
 	_ = s.db.SQL().QueryRowContext(ctx,
 		"SELECT auto_start_work, auto_start_break FROM app_settings WHERE id=1").Scan(&w, &b)
 	return w == 1, b == 1
+}
+
+// GetCloudSyncSchedule returns the scheduled push time ("HH:MM" or "").
+func (s *Service) GetCloudSyncSchedule(ctx context.Context) string {
+	var schedule string
+	_ = s.db.SQL().QueryRowContext(ctx,
+		"SELECT cloud_sync_schedule FROM app_settings WHERE id=1").Scan(&schedule)
+	return schedule
+}
+
+// SetCloudSyncSchedule persists the scheduled push time ("HH:MM" or "" to disable).
+func (s *Service) SetCloudSyncSchedule(ctx context.Context, schedule string) error {
+	_, err := s.db.SQL().ExecContext(ctx,
+		"UPDATE app_settings SET cloud_sync_schedule=? WHERE id=1", schedule)
+	return err
 }
 
 // SetLastSyncTimestamp records when the last cloud sync occurred.

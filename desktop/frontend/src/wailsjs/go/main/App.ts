@@ -65,6 +65,8 @@ export const ExportBackup = (): Promise<string>  => call("ExportBackup");
 export const ImportBackup = (): Promise<void>    => call("ImportBackup");
 
 // Cloud Sync
-export const SaveToCloud = (): Promise<CloudSyncStatus>  => call("SaveToCloud");
-export const GetCredentialsPath = (): Promise<string>    => call("GetCredentialsPath");
-export const CloudSyncEnabled = (): Promise<boolean>     => call("CloudSyncEnabled");
+export const SaveToCloud = (): Promise<CloudSyncStatus>               => call("SaveToCloud");
+export const GetCredentialsPath = (): Promise<string>                 => call("GetCredentialsPath");
+export const CloudSyncEnabled = (): Promise<boolean>                  => call("CloudSyncEnabled");
+export const GetCloudSyncSchedule = (): Promise<string>               => call("GetCloudSyncSchedule");
+export const SetCloudSyncSchedule = (schedule: string): Promise<void> => call("SetCloudSyncSchedule", schedule);

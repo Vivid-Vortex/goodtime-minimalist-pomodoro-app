@@ -40,7 +40,7 @@ func (db *DB) Close() error { return db.sql.Close() }
 // SQL returns the raw *sql.DB (use sparingly — prefer typed methods).
 func (db *DB) SQL() *sql.DB { return db.sql }
 
-// migrate creates all tables if they do not already exist.
+// migrate creates all tables if they do not already exist and runs additive ALTER TABLE migrations.
 func (db *DB) migrate() error {
 	const schema = `
 CREATE TABLE IF NOT EXISTS timer_profiles (
@@ -95,6 +95,31 @@ CREATE TABLE IF NOT EXISTS app_settings (
 -- Ensure there is always exactly one settings row
 INSERT OR IGNORE INTO app_settings (id) VALUES (1);
 `
-	_, err := db.sql.Exec(schema)
-	return err
+	if _, err := db.sql.Exec(schema); err != nil {
+		return err
+	}
+
+	// Additive migrations — safe to run on existing databases.
+	additiveMigrations := []string{
+		// v2: scheduled cloud push time (e.g. "23:30" in HH:MM 24h format, empty = disabled)
+		`ALTER TABLE app_settings ADD COLUMN cloud_sync_schedule TEXT NOT NULL DEFAULT ''`,
+	}
+	for _, stmt := range additiveMigrations {
+		if _, err := db.sql.Exec(stmt); err != nil {
+			// "duplicate column name" is expected on databases that already have the column.
+			if !isDuplicateColumnErr(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// isDuplicateColumnErr reports whether the SQLite error is "duplicate column name".
+func isDuplicateColumnErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return len(msg) >= 21 && msg[:21] == "duplicate column name"
 }

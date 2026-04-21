@@ -48,6 +48,7 @@ type AppSettings struct {
 	EnableDesktopNotifications bool `json:"enableDesktopNotifications"`
 	CloudBackupEnabled     bool   `json:"cloudBackupEnabled"`
 	LastSyncTimestamp      int64  `json:"lastSyncTimestamp"`
+	CloudSyncSchedule      string `json:"cloudSyncSchedule"` // "HH:MM" 24h or "" (disabled)
 }
 
 // DefaultTimerProfile returns the built-in 72/5 profile.

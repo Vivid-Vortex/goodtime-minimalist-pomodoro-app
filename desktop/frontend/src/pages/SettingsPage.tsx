@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, DeleteTimerProfile,
   ExportBackup, ImportBackup, SaveToCloud, GetCredentialsPath,
+  GetCloudSyncSchedule, SetCloudSyncSchedule,
 } from "../wailsjs/go/main/App";
 import { useAppStore } from "../stores/appStore";
 import type { AppSettings, CloudSyncStatus, TimerProfile } from "../types";
@@ -13,6 +14,7 @@ export function SettingsPage() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<CloudSyncStatus | null>(null);
   const [credPath, setCredPath] = useState("");
+  const [syncSchedule, setSyncSchedule] = useState(""); // "HH:MM" or ""
 
   const reloadProfiles = useCallback(() => {
     GetTimerProfiles().then(setTimerProfiles).catch(console.error);
@@ -26,6 +28,7 @@ export function SettingsPage() {
     reloadProfiles();
     reloadSettings();
     GetCredentialsPath().then(setCredPath).catch(console.error);
+    GetCloudSyncSchedule().then(setSyncSchedule).catch(console.error);
   }, [reloadProfiles, reloadSettings]);
 
   function handleSaveToCloud() {
@@ -197,6 +200,43 @@ export function SettingsPage() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Scheduled auto-push */}
+          <div className="mt-4 flex items-center justify-between py-3 border-t border-surface-700">
+            <div className="flex-1 min-w-0 pr-4">
+              <p className="text-white text-sm">Scheduled cloud push</p>
+              <p className="text-gray-500 text-xs">
+                {syncSchedule
+                  ? `Auto-push daily at ${syncSchedule}`
+                  : "Set a daily time to push automatically"}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="time"
+                value={syncSchedule}
+                onChange={(e) => {
+                  const val = e.target.value; // "HH:MM" or ""
+                  setSyncSchedule(val);
+                  SetCloudSyncSchedule(val).catch(console.error);
+                }}
+                className="bg-surface-700 text-gray-200 text-sm rounded-lg px-2 py-1 border border-surface-600
+                           focus:outline-none focus:border-brand-500"
+              />
+              {syncSchedule && (
+                <button
+                  onClick={() => {
+                    setSyncSchedule("");
+                    SetCloudSyncSchedule("").catch(console.error);
+                  }}
+                  className="text-gray-500 hover:text-red-400 text-xs transition-colors"
+                  title="Clear schedule"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
         </Section>
 
