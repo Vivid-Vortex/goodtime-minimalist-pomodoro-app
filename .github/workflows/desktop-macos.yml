@@ -84,19 +84,19 @@ jobs:
         working-directory: desktop/frontend
         run: npm ci
 
-      - name: Wails build (macOS universal)
-        run: wails build -platform darwin/universal
+      - name: Wails build (macOS amd64)
+        run: wails build -platform darwin/amd64
 
       - name: Zip app bundle
         run: |
           cd build/bin
-          zip -r GoodtimePomodoro-macos-universal.zip GoodtimePomodoro.app
+          zip -r GoodtimePomodoro-macos-amd64.zip GoodtimePomodoro.app
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GoodtimePomodoro-macos-universal
-          path: desktop/build/bin/GoodtimePomodoro-macos-universal.zip
+          name: GoodtimePomodoro-macos-amd64
+          path: desktop/build/bin/GoodtimePomodoro-macos-amd64.zip
           retention-days: 30
 
       - name: Verify app bundle structure
