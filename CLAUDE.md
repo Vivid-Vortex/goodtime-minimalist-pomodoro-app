@@ -550,10 +550,11 @@ When I am changing focus time then it seems like the drop down under timer profi
 
 Section 17:
 
- Also I can still see that the combined App history and combined Timeline section under statistics is still vanishing it's data as soon as I close and reopne the app. I thought this was fix in the recent commit. Check this as well.       
+ Also I can still see that the combined App history and combined Timeline section under statistics is still vanishing it's data as soon as I close and reopne the app. I thought this was fix in the recent commit. Check this as well.    
+	On top of that the timer is not changing when when I am chaning the profile. Do this after next point.
  Also Under Timer Profile in setting, I think there should be some save button and under the hood it should save to cloud as soon as the save button is pressed. Also some explicit save button should be there.  
  The bottom right corner count - As per the existing feature we should be able to reset this count. In case say If I mistankinly ran some timer. So it should not be present locally. I think until we push it to cloud it will not be saved to cloud. But we should be able to make it consitent with cloud as well. Say if any counter If I saved to cloud by mistake then if I do the changes here locally it should change cloud as well.
- 
+----
  Make sure everything thing is in sync with local and cloud. For examapl if mulitple app say App1, App2, App3 are making any changes to cloud, then all other app should be able to mimic that Similar to how github and git (sittong on develoers) work in developerers environemnt. But in this case you can assume I am the same person operating on differnt machines. In fact you can count desktop app also in this.
  
  ----
