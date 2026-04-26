@@ -35,6 +35,9 @@ export const ResumeTimer = (): Promise<void>       => call("ResumeTimer");
 export const StopTimer = (): Promise<void>         => call("StopTimer");
 export const SkipTimer = (): Promise<void>         => call("SkipTimer");
 export const GetTimerState = (): Promise<TimerState> => call("GetTimerState");
+export const ApplyTimerProfile = (): Promise<void>   => call("ApplyTimerProfile");
+export const ResetCompletedSessions = (): Promise<void> => call("ResetCompletedSessions");
+export const SetMiniMode = (enabled: boolean): Promise<void> => call("SetMiniMode", enabled);
 
 // Labels
 export const GetLabels = (): Promise<Label[]>                              => call("GetLabels");
@@ -62,6 +65,7 @@ export const UpdateSettings = (req: SettingsUpdateRequest): Promise<void>       
 export const GetTimerProfiles = (): Promise<TimerProfile[]>                      => call("GetTimerProfiles");
 export const SaveTimerProfile = (p: TimerProfile): Promise<void>                 => call("SaveTimerProfile", p);
 export const DeleteTimerProfile = (name: string): Promise<void>                  => call("DeleteTimerProfile", name);
+export const SyncProfilesFromCloud = (): Promise<number>                         => call("SyncProfilesFromCloud");
 
 // Backup
 export const ExportBackup = (): Promise<string>  => call("ExportBackup");

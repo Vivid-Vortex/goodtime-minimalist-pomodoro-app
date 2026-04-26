@@ -322,6 +322,107 @@ func (h *Handler) ListHistoryEntries(ctx context.Context) ([]HistoryEntry, error
 // DocIDToMidnightMillis is the exported wrapper for docIDToMidnightMillis.
 func DocIDToMidnightMillis(docID string) int64 { return docIDToMidnightMillis(docID) }
 
+// ─── Timer profiles cloud sync ────────────────────────────────────────────────
+
+const (
+	collectionGlobalNotes  = "global_notes"
+	docTimerProfiles       = "timer_profiles"
+)
+
+// TimerProfileDoc is a named timer profile as stored in Firestore.
+type TimerProfileDoc struct {
+	Name                    string `json:"name"`
+	IsCountdown             bool   `json:"isCountdown"`
+	WorkDuration            int    `json:"workDuration"`
+	IsBreakEnabled          bool   `json:"isBreakEnabled"`
+	BreakDuration           int    `json:"breakDuration"`
+	IsLongBreakEnabled      bool   `json:"isLongBreakEnabled"`
+	LongBreakDuration       int    `json:"longBreakDuration"`
+	SessionsBeforeLongBreak int    `json:"sessionsBeforeLongBreak"`
+	WorkBreakRatio          int    `json:"workBreakRatio"`
+}
+
+// PushTimerProfiles writes all local profiles to global_notes/timer_profiles.
+func (h *Handler) PushTimerProfiles(ctx context.Context, profiles []TimerProfileDoc) error {
+	doc := map[string]interface{}{
+		"profiles":  profilesToIface(profiles),
+		"updatedAt": time.Now().UnixMilli(),
+	}
+	return h.client.SetDocument(ctx, collectionGlobalNotes, docTimerProfiles, doc)
+}
+
+// PullTimerProfiles fetches timer profiles from global_notes/timer_profiles.
+// Returns nil slice (no error) when the document doesn't exist yet.
+func (h *Handler) PullTimerProfiles(ctx context.Context) ([]TimerProfileDoc, error) {
+	doc, err := h.client.GetDocument(ctx, collectionGlobalNotes, docTimerProfiles)
+	if doc == nil || err != nil {
+		return nil, err
+	}
+	raw, _ := doc["profiles"].([]interface{})
+	var out []TimerProfileDoc
+	for _, item := range raw {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		p := TimerProfileDoc{
+			Name:                    str(m, "name"),
+			IsCountdown:             boolVal(m, "isCountdown"),
+			WorkDuration:            intVal(m, "workDuration"),
+			IsBreakEnabled:          boolVal(m, "isBreakEnabled"),
+			BreakDuration:           intVal(m, "breakDuration"),
+			IsLongBreakEnabled:      boolVal(m, "isLongBreakEnabled"),
+			LongBreakDuration:       intVal(m, "longBreakDuration"),
+			SessionsBeforeLongBreak: intVal(m, "sessionsBeforeLongBreak"),
+			WorkBreakRatio:          intVal(m, "workBreakRatio"),
+		}
+		if p.Name != "" {
+			out = append(out, p)
+		}
+	}
+	return out, nil
+}
+
+func profilesToIface(ps []TimerProfileDoc) []interface{} {
+	out := make([]interface{}, len(ps))
+	for i, p := range ps {
+		out[i] = map[string]interface{}{
+			"name":                    p.Name,
+			"isCountdown":             p.IsCountdown,
+			"workDuration":            p.WorkDuration,
+			"isBreakEnabled":          p.IsBreakEnabled,
+			"breakDuration":           p.BreakDuration,
+			"isLongBreakEnabled":      p.IsLongBreakEnabled,
+			"longBreakDuration":       p.LongBreakDuration,
+			"sessionsBeforeLongBreak": p.SessionsBeforeLongBreak,
+			"workBreakRatio":          p.WorkBreakRatio,
+		}
+	}
+	return out
+}
+
+func str(m map[string]interface{}, k string) string {
+	s, _ := m[k].(string)
+	return s
+}
+
+func boolVal(m map[string]interface{}, k string) bool {
+	b, _ := m[k].(bool)
+	return b
+}
+
+func intVal(m map[string]interface{}, k string) int {
+	switch n := m[k].(type) {
+	case int64:
+		return int(n)
+	case float64:
+		return int(n)
+	case int:
+		return n
+	}
+	return 0
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 // millisToDocID converts a Unix-millisecond timestamp to the Firestore doc-ID

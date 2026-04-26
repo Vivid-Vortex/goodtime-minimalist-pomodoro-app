@@ -3,6 +3,7 @@ import {
   GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, DeleteTimerProfile,
   ExportBackup, ImportBackup, SaveToCloud, GetCredentialsPath,
   GetCloudSyncSchedule, SetCloudSyncSchedule,
+  ApplyTimerProfile, SyncProfilesFromCloud,
 } from "../wailsjs/go/main/App";
 import { useAppStore } from "../stores/appStore";
 import type { AppSettings, CloudSyncStatus, TimerProfile } from "../types";
@@ -13,6 +14,7 @@ export function SettingsPage() {
   const [creating, setCreating] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<CloudSyncStatus | null>(null);
+  const [profileSyncMsg, setProfileSyncMsg] = useState("");
   const [credPath, setCredPath] = useState("");
   const [syncSchedule, setSyncSchedule] = useState(""); // "HH:MM" or ""
 
@@ -95,7 +97,9 @@ export function SettingsPage() {
                       onClick={() => {
                         const updated = { ...settings!, defaultTimerProfileName: p.name };
                         setSettings(updated);
-                        UpdateSettings({ ...updated }).catch(console.error);
+                        UpdateSettings({ ...updated })
+                          .then(() => ApplyTimerProfile())
+                          .catch(console.error);
                       }}
                       className="text-brand-400 hover:text-brand-300 text-xs font-medium transition-colors"
                     >
@@ -120,12 +124,31 @@ export function SettingsPage() {
               );
             })}
           </ul>
-          <button
-            onClick={() => setCreating(true)}
-            className="mt-2 w-full py-2 rounded-xl bg-surface-700 hover:bg-surface-600 text-gray-300 text-sm transition-colors"
-          >
-            + New Profile
-          </button>
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={() => setCreating(true)}
+              className="flex-1 py-2 rounded-xl bg-surface-700 hover:bg-surface-600 text-gray-300 text-sm transition-colors"
+            >
+              + New Profile
+            </button>
+            <button
+              onClick={() => {
+                setProfileSyncMsg("");
+                SyncProfilesFromCloud()
+                  .then((n) => {
+                    reloadProfiles();
+                    setProfileSyncMsg(`Synced ${n} profile${n !== 1 ? "s" : ""} from cloud`);
+                  })
+                  .catch((e) => setProfileSyncMsg("Sync failed: " + String(e)));
+              }}
+              className="flex-1 py-2 rounded-xl bg-violet-800 hover:bg-violet-700 text-gray-200 text-sm transition-colors"
+            >
+              ↓ Sync from Cloud
+            </button>
+          </div>
+          {profileSyncMsg && (
+            <p className="text-xs text-violet-300 mt-1">{profileSyncMsg}</p>
+          )}
         </Section>
 
         {/* Behaviour */}
@@ -267,7 +290,10 @@ export function SettingsPage() {
         <ProfileModal
           initial={editingProfile ?? undefined}
           onSave={(p) => {
-            SaveTimerProfile(p).then(reloadProfiles).catch(console.error);
+            SaveTimerProfile(p)
+              .then(reloadProfiles)
+              .then(() => ApplyTimerProfile())
+              .catch(console.error);
             setEditingProfile(null);
             setCreating(false);
           }}

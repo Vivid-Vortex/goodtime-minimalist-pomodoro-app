@@ -63,3 +63,15 @@ func (b *WailsBridge) StopAndSave() error { return b.engine.Stop() }
 func (b *WailsBridge) Skip() error        { return b.engine.Skip() }
 func (b *WailsBridge) Shutdown()          { b.engine.Shutdown() }
 func (b *WailsBridge) GetState() State    { return b.engine.GetState() }
+
+// ApplyCurrentProfile refreshes the engine's profile from the active settings so
+// the RESET-state countdown display updates immediately when the user changes profiles.
+func (b *WailsBridge) ApplyCurrentProfile() {
+	profile, _ := b.stgs.GetActiveProfile(b.ctx)
+	b.engine.SetProfile(profile)
+}
+
+// ResetCompletedSessions zeroes the bottom-right session counter.
+func (b *WailsBridge) ResetCompletedSessions() {
+	b.engine.ResetCompletedSessions()
+}

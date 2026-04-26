@@ -222,6 +222,13 @@ func (e *Engine) Shutdown() {
 	e.cancel()
 }
 
+// ResetCompletedSessions zeroes the in-session completed-sessions counter.
+func (e *Engine) ResetCompletedSessions() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.completedSessions = 0
+}
+
 // ─── internal helpers ────────────────────────────────────────────────────────
 
 func (e *Engine) loop() {

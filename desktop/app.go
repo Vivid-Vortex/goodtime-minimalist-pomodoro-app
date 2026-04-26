@@ -109,6 +109,28 @@ func (a *App) StopTimer() error            { return a.timerBridge.StopAndSave() 
 func (a *App) SkipTimer() error            { return a.timerBridge.Skip() }
 func (a *App) GetTimerState() timer.State  { return a.timerBridge.GetState() }
 
+// ApplyTimerProfile refreshes the engine's profile from current settings so
+// the RESET-state display updates when the user changes the active profile.
+func (a *App) ApplyTimerProfile() {
+	a.timerBridge.ApplyCurrentProfile()
+}
+
+// ResetCompletedSessions zeroes the bottom-right session counter.
+func (a *App) ResetCompletedSessions() {
+	a.timerBridge.ResetCompletedSessions()
+}
+
+// SetMiniMode resizes the window and toggles always-on-top for the mini widget.
+func (a *App) SetMiniMode(enabled bool) {
+	if enabled {
+		runtime.WindowSetSize(a.ctx, 260, 80)
+		runtime.WindowSetAlwaysOnTop(a.ctx, true)
+	} else {
+		runtime.WindowSetSize(a.ctx, 420, 780)
+		runtime.WindowSetAlwaysOnTop(a.ctx, false)
+	}
+}
+
 // ─── Label API ────────────────────────────────────────────────────────────────
 
 func (a *App) GetLabels() ([]database.Label, error) { return a.labelService.GetAll(a.ctx) }
@@ -153,11 +175,61 @@ func (a *App) UpdateSettings(req settings.UpdateRequest) error {
 func (a *App) GetTimerProfiles() ([]database.TimerProfile, error) {
 	return a.settingService.GetTimerProfiles(a.ctx)
 }
+
+// SaveTimerProfile upserts a profile locally and, if cloud credentials exist,
+// pushes all profiles to global_notes/timer_profiles.
 func (a *App) SaveTimerProfile(p database.TimerProfile) error {
-	return a.settingService.SaveTimerProfile(a.ctx, p)
+	if err := a.settingService.SaveTimerProfile(a.ctx, p); err != nil {
+		return err
+	}
+	// best-effort cloud sync
+	if a.syncHandler != nil {
+		profiles, _ := a.settingService.GetTimerProfiles(a.ctx)
+		docs := make([]cloudsync.TimerProfileDoc, len(profiles))
+		for i, pr := range profiles {
+			docs[i] = cloudsync.TimerProfileDoc{
+				Name: pr.Name, IsCountdown: pr.IsCountdown,
+				WorkDuration: pr.WorkDuration, IsBreakEnabled: pr.IsBreakEnabled,
+				BreakDuration: pr.BreakDuration, IsLongBreakEnabled: pr.IsLongBreakEnabled,
+				LongBreakDuration: pr.LongBreakDuration,
+				SessionsBeforeLongBreak: pr.SessionsBeforeLongBreak,
+				WorkBreakRatio: pr.WorkBreakRatio,
+			}
+		}
+		_ = a.syncHandler.PushTimerProfiles(a.ctx, docs)
+	}
+	return nil
 }
+
 func (a *App) DeleteTimerProfile(name string) error {
 	return a.settingService.DeleteTimerProfile(a.ctx, name)
+}
+
+// SyncProfilesFromCloud pulls timer profiles from Firestore and upserts them locally.
+// Profiles that already exist locally are overwritten; new ones are added.
+func (a *App) SyncProfilesFromCloud() (int, error) {
+	if a.syncHandler == nil {
+		return 0, fmt.Errorf("cloud sync not configured")
+	}
+	cloudProfiles, err := a.syncHandler.PullTimerProfiles(a.ctx)
+	if err != nil {
+		return 0, err
+	}
+	count := 0
+	for _, cp := range cloudProfiles {
+		p := database.TimerProfile{
+			Name: cp.Name, IsCountdown: cp.IsCountdown,
+			WorkDuration: cp.WorkDuration, IsBreakEnabled: cp.IsBreakEnabled,
+			BreakDuration: cp.BreakDuration, IsLongBreakEnabled: cp.IsLongBreakEnabled,
+			LongBreakDuration: cp.LongBreakDuration,
+			SessionsBeforeLongBreak: cp.SessionsBeforeLongBreak,
+			WorkBreakRatio: cp.WorkBreakRatio,
+		}
+		if err := a.settingService.SaveTimerProfile(a.ctx, p); err == nil {
+			count++
+		}
+	}
+	return count, nil
 }
 
 // ─── Cloud Sync API ───────────────────────────────────────────────────────────
