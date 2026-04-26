@@ -316,6 +316,23 @@ func TestAutoStartWork_StartsWorkAfterBreak(t *testing.T) {
 	awaitState(t, e, timer.StateRunning, timer.TypeFocus, 8*time.Second)
 }
 
+func TestAutoStartBreak_DriversFullCycle(t *testing.T) {
+	// When only autoBreak=true, the engine should run the full
+	// focus→break→focus cycle without requiring autoWork=true.
+	p := timer.DefaultProfile()
+	p.WorkDurationMin = 0  // focus finishes on next tick
+	p.IsBreakEnabled = true
+	p.BreakDurationMin = 0 // break also finishes on next tick
+
+	e := timer.NewEngine(p, nil, nil)
+	t.Cleanup(e.Shutdown)
+	e.SetAutoStart(false, true) // only autoBreak enabled
+
+	_ = e.Start()
+	// Expect: focus→break (auto)→focus (auto, via autoBreak flag)
+	awaitState(t, e, timer.StateRunning, timer.TypeFocus, 8*time.Second)
+}
+
 func TestAutoStart_Stop_CancelsPending(t *testing.T) {
 	p := timer.DefaultProfile()
 	p.WorkDurationMin = 0

@@ -251,7 +251,9 @@ func (e *Engine) tick() {
 					e.pendingAutoStart = true
 				}
 			case TypeBreak, TypeLongBreak:
-				if e.autoStartWork {
+				// Auto-start focus after break if either flag is on — enabling
+				// "auto start break" implies the user wants the full cycle.
+				if e.autoStartWork || e.autoStartBreak {
 					e.pendingAutoStart = true
 				}
 			}
