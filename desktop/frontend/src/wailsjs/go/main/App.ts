@@ -22,9 +22,10 @@ import type {
   SettingsUpdateRequest,
 } from "../../../types";
 
+type WailsRuntime = { go: { main: { App: Record<string, (...a: unknown[]) => Promise<unknown>> } } };
+
 function call<T>(method: string, ...args: unknown[]): Promise<T> {
-  return (window as unknown as Record<string, Record<string, (...a: unknown[]) => Promise<T>>>)
-    .go.main.App[method](...args);
+  return (window as unknown as WailsRuntime).go.main.App[method](...args) as Promise<T>;
 }
 
 // Timer
