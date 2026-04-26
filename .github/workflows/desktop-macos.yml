@@ -90,7 +90,7 @@ jobs:
       - name: Zip app bundle
         run: |
           cd build/bin
-          zip -r GoodtimePomodoro-macos-universal.zip "Goodtime Pomodoro.app"
+          zip -r GoodtimePomodoro-macos-universal.zip GoodtimePomodoro.app
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -101,5 +101,5 @@ jobs:
 
       - name: Verify app bundle structure
         run: |
-          ls desktop/build/bin/
-          ls "desktop/build/bin/Goodtime Pomodoro.app/Contents/"
+          ls build/bin/
+          ls "build/bin/GoodtimePomodoro.app/Contents/"

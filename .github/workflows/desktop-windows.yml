@@ -79,6 +79,11 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
+      - name: Set up MinGW (CGO for WebView2)
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
       - name: Install frontend dependencies
         working-directory: desktop/frontend
         run: npm ci
