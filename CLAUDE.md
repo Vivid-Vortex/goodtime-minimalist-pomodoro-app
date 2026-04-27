@@ -562,3 +562,22 @@ Section 18:
  Can you create an onscreen widgit which I can use to control this app. Somehing which I can use inconspicuously to control the app without anyone noticing what I am doing on my screen. Also take care of the aesthetics.
  
  ----
+ 
+ Section 19:
+ 
+ 1. Staticstics combined app history and combined timeline still vanishing the data when I close and reopne it.
+ 2. Settings -> Timer profile: I am not able t5
+o use the timer profile properly. 
+	- It is directly saving to cloud. Have some save button which saves loclaly + saves to cloud. In case if save cloud fails at a time in case of network then there should be explicit save to cloud button to save it later. Alos make I should be able to delete any profile which changes in the cloud as well.
+	- When I selct any new profiel it should change the current timer on home or atelast change the timer on home when I reset the alrezdy running timer. when alreay running timer resets, then it's data should be saved and then the new profiel should apper say for 10 mins prfile now instead of 72 mins.
+	- Make sure there is a dedicated lock any profile button here. which shows which profile is currently running. If at all previous profile is rnning currently and at the same time the user locked antother profile. Then once the user reset the current running profile, it's data should be saved and bottom right counter shoudl increase. And after it resets by swapping, then the new locked profile should show.
+ 3. Bottom right corner timer count should be used to reset the conter to 0. But now when I am clicking on it, it is taking me to Staticstics section.
+ 4. Make sure the app is also visible in notificatin bars or sections. So that even if I minimize the app it should keep on running in notification and I should be able to conrol it from there. Like play, pause, start the break, start after break etc.
+ 5. The next timer should start automatically after the auto breadk start whne auto start break button is on.
+ 6. Please ask the user to add a label before starting the timer as a warning. Else if no label is selected, then add it in Others(OTH).
+ 7. Widget -
+		Please add more functionality to widget and not just play and pause. Add as much functionality as much as possible which I contorl from this widget.
+		Make it more inconspicious (may be more transparent). Transparency I can set.
+ 
+---
+ 

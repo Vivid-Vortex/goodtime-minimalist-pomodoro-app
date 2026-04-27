@@ -229,4 +229,12 @@ class FakeSettingsRepository(
             _settings.value.copy(lastDismissedUpdateVersionCode = versionCode),
         )
     }
+
+    override suspend fun setLockedTimerProfile(name: String) {
+        _settings.emit(_settings.value.copy(lockedTimerProfileName = name))
+    }
+
+    override suspend fun clearLockedTimerProfile() {
+        _settings.emit(_settings.value.copy(lockedTimerProfileName = ""))
+    }
 }

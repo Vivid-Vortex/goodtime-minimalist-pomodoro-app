@@ -92,7 +92,15 @@ class StatsViewModelTest : RoomDatabaseTest() {
                     )
                 backupViewModel = BackupViewModel(backupManager, settingsRepository, null, this)
                 viewModel =
-                    StatisticsViewModel(localDataRepository, settingsRepository, timeProvider, null, backupViewModel)
+                    StatisticsViewModel(
+                        localDataRepository,
+                        settingsRepository,
+                        timeProvider,
+                        null,
+                        backupViewModel,
+                        com.apps.adrcotfas.goodtime.fakes
+                            .FakeCloudCacheDao(),
+                    )
                 populateRepo()
 
                 viewModel.uiState.test {

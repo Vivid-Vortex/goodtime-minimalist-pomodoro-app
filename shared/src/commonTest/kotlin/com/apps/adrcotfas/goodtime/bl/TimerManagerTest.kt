@@ -47,6 +47,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -847,6 +848,87 @@ class TimerManagerTest {
                 timerManager.timerData.value.breakBudgetData.breakBudget,
                 expectedBreakBudget + extraBreakBudget,
                 "The break budget should have been recalculated",
+            )
+        }
+
+    // ── Section 19 point 5: autoStartBreak drives the full focus→break→focus cycle ─────────
+
+    @Test
+    fun `autoStartBreak alone drives focus then break then focus cycle`() =
+        runTest {
+            settingsRepo.setAutoStartBreak(true)
+            // autoStartWork stays false — only autoStartBreak is toggled
+            timerManager.restart()
+
+            // simulate focus finishing
+            timerManager.start()
+            val focusDuration = DEFAULT_DURATION
+            timeProvider.elapsedRealtime += focusDuration
+            testScope.advanceTimeBy(focusDuration)
+            timerManager.finish() // ends focus → should auto-start break
+
+            val breakDuration =
+                defaultLabel.timerProfile.breakDuration.minutes.inWholeMilliseconds
+            timeProvider.elapsedRealtime += breakDuration
+            testScope.advanceTimeBy(breakDuration)
+            timerManager.finish() // ends break → should auto-start focus
+
+            val events = fakeEventListener.events
+            // Focus starts (auto), break auto-starts, then focus auto-starts again
+            assertTrue(
+                events.any { it is Event.Finished && it.type.isBreak && it.autostartNextSession },
+                "Break finished event should have autostartNextSession=true",
+            )
+            assertTrue(
+                events.filterIsInstance<Event.Start>().count { it.isFocus } >= 2,
+                "Focus should have been started at least twice (initial + after break)",
+            )
+        }
+
+    @Test
+    fun `autoStartBreak with no break enabled does not loop`() =
+        runTest {
+            settingsRepo.setAutoStartBreak(true)
+            // Disable break in the profile so there is no break to auto-start
+            val noBreakLabel =
+                defaultLabel.copy(
+                    timerProfile = defaultLabel.timerProfile.copy(isBreakEnabled = false),
+                )
+            localDataRepo.updateDefaultLabel(noBreakLabel)
+            timerManager.restart()
+
+            timerManager.start()
+            val focusDuration = DEFAULT_DURATION
+            timeProvider.elapsedRealtime += focusDuration
+            testScope.advanceTimeBy(focusDuration)
+            timerManager.finish()
+
+            val finishedEvents = fakeEventListener.events.filterIsInstance<Event.Finished>()
+            // Only one finished event; autostartNextSession should be true (autoStartBreak
+            // implies cycling even when break is disabled → next focus auto-starts).
+            assertEquals(1, finishedEvents.size)
+            assertTrue(finishedEvents.first().autostartNextSession)
+        }
+
+    @Test
+    fun `autoStartWork alone auto-starts focus after break but not break after focus`() =
+        runTest {
+            settingsRepo.setAutoStartWork(true)
+            // autoStartBreak stays false
+            timerManager.restart()
+
+            timerManager.start()
+            val focusDuration = DEFAULT_DURATION
+            timeProvider.elapsedRealtime += focusDuration
+            testScope.advanceTimeBy(focusDuration)
+            timerManager.finish() // ends focus
+
+            val afterFocusFinished = fakeEventListener.events.filterIsInstance<Event.Finished>()
+            assertEquals(1, afterFocusFinished.size)
+            // Break should NOT auto-start (autoStartBreak is false)
+            assertFalse(
+                afterFocusFinished.first().autostartNextSession,
+                "Break should not auto-start when only autoStartWork is on",
             )
         }
 
