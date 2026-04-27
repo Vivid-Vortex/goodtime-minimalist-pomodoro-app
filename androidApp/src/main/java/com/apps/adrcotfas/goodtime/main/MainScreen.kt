@@ -315,6 +315,7 @@ fun MainScreen(
                             labelData = label.getLabelData(),
                             sessionCountToday = uiState.sessionCountToday,
                             badgeItemCount = actionBadgeItemCount,
+                            onResetSessionCount = { viewModel.resetTodaySessionCount() },
                             navController = navController,
                         )
                     }

@@ -111,6 +111,7 @@ val coreModule =
         single { get<ProductivityDatabase>().sessionsDao() }
         single { get<ProductivityDatabase>().labelsDao() }
         single { get<ProductivityDatabase>().timerProfileDao() }
+        single { get<ProductivityDatabase>().cloudCacheDao() }
         single<LocalDataRepository> {
             LocalDataRepositoryImpl(
                 get(),

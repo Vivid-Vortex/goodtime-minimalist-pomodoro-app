@@ -64,6 +64,7 @@ export const GetSettings = (): Promise<AppSettings>                             
 export const UpdateSettings = (req: SettingsUpdateRequest): Promise<void>        => call("UpdateSettings", req);
 export const GetTimerProfiles = (): Promise<TimerProfile[]>                      => call("GetTimerProfiles");
 export const SaveTimerProfile = (p: TimerProfile): Promise<void>                 => call("SaveTimerProfile", p);
+export const SaveTimerProfilesToCloud = (): Promise<void>                        => call("SaveTimerProfilesToCloud");
 export const DeleteTimerProfile = (name: string): Promise<void>                  => call("DeleteTimerProfile", name);
 export const SyncProfilesFromCloud = (): Promise<number>                         => call("SyncProfilesFromCloud");
 

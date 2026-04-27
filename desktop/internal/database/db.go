@@ -14,12 +14,24 @@ type DB struct {
 
 // Open opens (or creates) the SQLite database at the given path and runs migrations.
 func Open(path string) (*DB, error) {
-	sqlDB, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_foreign_keys=on")
+	sqlDB, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("sql.Open: %w", err)
 	}
+	// SQLite requires a single connection when using WAL mode from the same process.
+	sqlDB.SetMaxOpenConns(1)
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("ping: %w", err)
+	}
+	// Set pragmas explicitly — more reliable than DSN query params across drivers.
+	for _, p := range []string{
+		"PRAGMA journal_mode=WAL",
+		"PRAGMA foreign_keys=ON",
+		"PRAGMA busy_timeout=5000",
+	} {
+		if _, err := sqlDB.Exec(p); err != nil {
+			return nil, fmt.Errorf("pragma %q: %w", p, err)
+		}
 	}
 
 	db := &DB{sql: sqlDB}

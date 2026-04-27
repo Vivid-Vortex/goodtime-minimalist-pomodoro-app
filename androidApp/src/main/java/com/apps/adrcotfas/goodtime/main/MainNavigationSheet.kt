@@ -17,7 +17,11 @@
  */
 package com.apps.adrcotfas.goodtime.main
 
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +35,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.outlined.PictureInPicture
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -53,6 +58,7 @@ import com.apps.adrcotfas.goodtime.settings.ActionSection
 import com.apps.adrcotfas.goodtime.shared.R
 import com.apps.adrcotfas.goodtime.ui.common.IconTextButton
 import com.apps.adrcotfas.goodtime.ui.common.SubtleHorizontalDivider
+import com.apps.adrcotfas.goodtime.widget.FloatingWidgetService
 import compose.icons.EvaIcons
 import compose.icons.evaicons.Outline
 import compose.icons.evaicons.outline.Info
@@ -211,6 +217,24 @@ fun MainNavigationSheetContent(
             },
             onClick = {
                 navigateToBackup()
+            },
+        )
+        IconTextButton(
+            title = "Floating Widget",
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.PictureInPicture,
+                    contentDescription = "Floating Widget",
+                )
+            },
+            onClick = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(context)) {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                } else {
+                    FloatingWidgetService.start(context)
+                }
             },
         )
         if (settingsBadgeItemCount != 0) {

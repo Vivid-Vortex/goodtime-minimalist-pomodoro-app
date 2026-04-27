@@ -275,6 +275,16 @@ class TimerViewModel(
         }
     }
 
+    fun resetTodaySessionCount() {
+        viewModelScope.launch {
+            val startOfToday = _uiState.value.startOfToday
+            val todaySessions = localDataRepo.selectSessionsAfter(startOfToday).first()
+            if (todaySessions.isNotEmpty()) {
+                localDataRepo.deleteSessions(todaySessions.map { it.id })
+            }
+        }
+    }
+
     suspend fun listenForeground() {
         timerUiState
             .filter { it.isActive }

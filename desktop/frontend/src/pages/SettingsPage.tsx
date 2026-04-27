@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, DeleteTimerProfile,
+  GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, SaveTimerProfilesToCloud,
+  DeleteTimerProfile,
   ExportBackup, ImportBackup, SaveToCloud, GetCredentialsPath,
   GetCloudSyncSchedule, SetCloudSyncSchedule,
   ApplyTimerProfile, SyncProfilesFromCloud,
@@ -146,6 +147,17 @@ export function SettingsPage() {
               ↓ Sync from Cloud
             </button>
           </div>
+          <button
+            onClick={() => {
+              setProfileSyncMsg("");
+              SaveTimerProfilesToCloud()
+                .then(() => setProfileSyncMsg("All profiles saved to cloud"))
+                .catch((e) => setProfileSyncMsg("Cloud save failed: " + String(e)));
+            }}
+            className="w-full mt-2 py-2 rounded-xl bg-gradient-to-r from-pink-700 to-violet-700 hover:from-pink-600 hover:to-violet-600 text-white text-sm transition-colors"
+          >
+            ☁ Save Profiles to Cloud
+          </button>
           {profileSyncMsg && (
             <p className="text-xs text-violet-300 mt-1">{profileSyncMsg}</p>
           )}

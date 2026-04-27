@@ -109,10 +109,12 @@ func (a *App) StopTimer() error            { return a.timerBridge.StopAndSave() 
 func (a *App) SkipTimer() error            { return a.timerBridge.Skip() }
 func (a *App) GetTimerState() timer.State  { return a.timerBridge.GetState() }
 
-// ApplyTimerProfile refreshes the engine's profile from current settings so
-// the RESET-state display updates when the user changes the active profile.
+// ApplyTimerProfile refreshes the engine's profile from current settings and
+// emits an immediate tick so the RESET-state display updates right away.
 func (a *App) ApplyTimerProfile() {
 	a.timerBridge.ApplyCurrentProfile()
+	s := a.timerBridge.GetState()
+	runtime.EventsEmit(a.ctx, EventTimerTick, s)
 }
 
 // ResetCompletedSessions zeroes the bottom-right session counter.
@@ -176,29 +178,33 @@ func (a *App) GetTimerProfiles() ([]database.TimerProfile, error) {
 	return a.settingService.GetTimerProfiles(a.ctx)
 }
 
-// SaveTimerProfile upserts a profile locally and, if cloud credentials exist,
-// pushes all profiles to global_notes/timer_profiles.
+// SaveTimerProfile upserts a profile locally only.
+// Use SaveTimerProfilesToCloud to explicitly push all profiles to the cloud.
 func (a *App) SaveTimerProfile(p database.TimerProfile) error {
-	if err := a.settingService.SaveTimerProfile(a.ctx, p); err != nil {
+	return a.settingService.SaveTimerProfile(a.ctx, p)
+}
+
+// SaveTimerProfilesToCloud pushes all local timer profiles to Firestore.
+func (a *App) SaveTimerProfilesToCloud() error {
+	if a.syncHandler == nil {
+		return fmt.Errorf("cloud sync not configured — place service-account.json in the path shown in Settings")
+	}
+	profiles, err := a.settingService.GetTimerProfiles(a.ctx)
+	if err != nil {
 		return err
 	}
-	// best-effort cloud sync
-	if a.syncHandler != nil {
-		profiles, _ := a.settingService.GetTimerProfiles(a.ctx)
-		docs := make([]cloudsync.TimerProfileDoc, len(profiles))
-		for i, pr := range profiles {
-			docs[i] = cloudsync.TimerProfileDoc{
-				Name: pr.Name, IsCountdown: pr.IsCountdown,
-				WorkDuration: pr.WorkDuration, IsBreakEnabled: pr.IsBreakEnabled,
-				BreakDuration: pr.BreakDuration, IsLongBreakEnabled: pr.IsLongBreakEnabled,
-				LongBreakDuration: pr.LongBreakDuration,
-				SessionsBeforeLongBreak: pr.SessionsBeforeLongBreak,
-				WorkBreakRatio: pr.WorkBreakRatio,
-			}
+	docs := make([]cloudsync.TimerProfileDoc, len(profiles))
+	for i, pr := range profiles {
+		docs[i] = cloudsync.TimerProfileDoc{
+			Name: pr.Name, IsCountdown: pr.IsCountdown,
+			WorkDuration: pr.WorkDuration, IsBreakEnabled: pr.IsBreakEnabled,
+			BreakDuration: pr.BreakDuration, IsLongBreakEnabled: pr.IsLongBreakEnabled,
+			LongBreakDuration: pr.LongBreakDuration,
+			SessionsBeforeLongBreak: pr.SessionsBeforeLongBreak,
+			WorkBreakRatio: pr.WorkBreakRatio,
 		}
-		_ = a.syncHandler.PushTimerProfiles(a.ctx, docs)
 	}
-	return nil
+	return a.syncHandler.PushTimerProfiles(a.ctx, docs)
 }
 
 func (a *App) DeleteTimerProfile(name string) error {

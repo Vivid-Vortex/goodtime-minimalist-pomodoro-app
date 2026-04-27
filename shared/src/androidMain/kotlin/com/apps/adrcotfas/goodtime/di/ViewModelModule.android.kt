@@ -44,7 +44,7 @@ actual val viewModelModule: Module =
         // Section 14: Inject Firestore handler for Timer Profiles
         viewModel<TimerProfileViewModel> { TimerProfileViewModel(get(), get(), getOrNull()) }
         viewModel { BackupViewModel(get(), get(), get(), get(named(IO_SCOPE))) }
-        viewModel { StatisticsViewModel(get(), get(), get(), get(), get()) }
+        viewModel { StatisticsViewModel(get(), get(), get(), get(), get(), get()) }
         viewModelOf(::StatisticsHistoryViewModel)
     }
 actual val mainModule: Module =

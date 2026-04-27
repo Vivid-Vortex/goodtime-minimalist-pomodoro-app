@@ -31,13 +31,9 @@ export function useTimerDisplay(): string {
   const { kind, timerType, elapsedSeconds, totalSeconds } = state;
 
   if (kind === "RESET") {
-    const total =
-      timerType === "FOCUS"
-        ? totalSeconds
-        : timerType === "BREAK"
-          ? 5 * 60
-          : 15 * 60;
-    return formatSeconds(total);
+    // totalSeconds is pre-computed by the Go backend (segmentDuration for the
+    // current timer type), so it already reflects the active profile's settings.
+    return formatSeconds(totalSeconds);
   }
 
   const remaining = Math.max(0, totalSeconds - elapsedSeconds);

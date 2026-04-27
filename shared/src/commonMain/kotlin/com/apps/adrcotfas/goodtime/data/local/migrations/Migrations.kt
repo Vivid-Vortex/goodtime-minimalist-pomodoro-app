@@ -340,6 +340,33 @@ val MIGRATION_9_10: Migration =
         }
     }
 
+val MIGRATION_10_11: Migration =
+    object : Migration(10, 11) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS localCloudTimelineEntry (
+                    key TEXT PRIMARY KEY NOT NULL,
+                    duration INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS localCloudHistoryEntry (
+                    id INTEGER PRIMARY KEY NOT NULL,
+                    timestamp INTEGER NOT NULL DEFAULT 0,
+                    duration INTEGER NOT NULL DEFAULT 0,
+                    label TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT '',
+                    deviceName TEXT NOT NULL DEFAULT '',
+                    syncedAt INTEGER NOT NULL DEFAULT 0
+                )
+                """.trimIndent(),
+            )
+        }
+    }
+
 val MIGRATIONS =
     arrayOf(
         MIGRATION_1_2,
@@ -351,4 +378,5 @@ val MIGRATIONS =
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
+        MIGRATION_10_11,
     )

@@ -23,8 +23,11 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 
 @Database(
-    entities = [LocalLabel::class, LocalSession::class, LocalTimerProfile::class],
-    version = 10, // Section 15: Updated for new timer profiles
+    entities = [
+        LocalLabel::class, LocalSession::class, LocalTimerProfile::class,
+        LocalCloudTimelineEntry::class, LocalCloudHistoryEntry::class,
+    ],
+    version = 11,
     exportSchema = true,
 )
 @ConstructedBy(ProductivityDatabaseConstructor::class)
@@ -34,6 +37,8 @@ abstract class ProductivityDatabase : RoomDatabase() {
     abstract fun sessionsDao(): SessionDao
 
     abstract fun timerProfileDao(): TimerProfileDao
+
+    abstract fun cloudCacheDao(): CloudCacheDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

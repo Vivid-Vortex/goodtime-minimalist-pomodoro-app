@@ -25,6 +25,9 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.apps.adrcotfas.goodtime.bl.LabelData
 import com.apps.adrcotfas.goodtime.bl.TimeProvider
+import com.apps.adrcotfas.goodtime.data.local.CloudCacheDao
+import com.apps.adrcotfas.goodtime.data.local.LocalCloudHistoryEntry
+import com.apps.adrcotfas.goodtime.data.local.LocalCloudTimelineEntry
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
 import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncHandler
 import com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult
@@ -101,6 +104,7 @@ class StatisticsViewModel(
     private val timeProvider: TimeProvider,
     private val firestoreSyncHandler: FirestoreSyncHandler?,
     private val backupViewModel: com.apps.adrcotfas.goodtime.data.local.backup.BackupViewModel,
+    private val cloudCacheDao: CloudCacheDao,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState =
@@ -270,6 +274,7 @@ class StatisticsViewModel(
                     }
                     co.touchlab.kermit.Logger
                         .d { "Updated cloudAggregatedData in state: ${_uiState.value.cloudAggregatedData.size} entries" }
+                    persistCloudCache(result.aggregatedData, result.appHistorySessions)
 
                     // Always trigger recomputation with current sessions
                     val allSessions = localDataRepo.selectAllSessions().first()
@@ -278,8 +283,72 @@ class StatisticsViewModel(
             }
         }
 
-        // Section 11: Don't auto-fetch on initialization
-        // Only fetch when user manually presses refresh
+        // Load persisted cloud cache so data survives app restarts
+        viewModelScope.launch {
+            try {
+                val timelineEntries = cloudCacheDao.getTimelineEntries()
+                val historyEntries = cloudCacheDao.getHistoryEntries()
+                if (timelineEntries.isNotEmpty()) {
+                    val cloudAggregatedData = timelineEntries.associate { it.key to it.duration }
+                    val cloudAppHistorySessions =
+                        historyEntries.map { entry ->
+                            com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession(
+                                id = entry.id,
+                                timestamp = entry.timestamp,
+                                duration = entry.duration,
+                                label = entry.label,
+                                notes = entry.notes,
+                                deviceName = entry.deviceName,
+                                syncedAt = entry.syncedAt,
+                            )
+                        }
+                    _uiState.update {
+                        it.copy(
+                            cloudAggregatedData = cloudAggregatedData,
+                            cloudAppHistorySessions = cloudAppHistorySessions,
+                        )
+                    }
+                    co.touchlab.kermit.Logger
+                        .d { "Loaded ${timelineEntries.size} timeline + ${historyEntries.size} history entries from local cache" }
+                }
+            } catch (e: Exception) {
+                co.touchlab.kermit.Logger
+                    .e { "Failed to load cloud cache: ${e.message}" }
+            }
+        }
+    }
+
+    private fun persistCloudCache(
+        aggregatedData: Map<String, Long>,
+        appHistorySessions: List<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession>,
+    ) {
+        viewModelScope.launch {
+            try {
+                cloudCacheDao.clearTimelineEntries()
+                cloudCacheDao.upsertTimelineEntries(
+                    aggregatedData.map { (key, duration) -> LocalCloudTimelineEntry(key, duration) },
+                )
+                cloudCacheDao.clearHistoryEntries()
+                cloudCacheDao.upsertHistoryEntries(
+                    appHistorySessions.map { s ->
+                        LocalCloudHistoryEntry(
+                            id = s.id,
+                            timestamp = s.timestamp,
+                            duration = s.duration,
+                            label = s.label,
+                            notes = s.notes,
+                            deviceName = s.deviceName,
+                            syncedAt = s.syncedAt,
+                        )
+                    },
+                )
+                co.touchlab.kermit.Logger
+                    .d { "Persisted ${aggregatedData.size} timeline + ${appHistorySessions.size} history entries to local cache" }
+            } catch (e: Exception) {
+                co.touchlab.kermit.Logger
+                    .e { "Failed to persist cloud cache: ${e.message}" }
+            }
+        }
     }
 
     private fun computeTimelineData(allSessions: List<Session>) {
@@ -554,6 +623,7 @@ class StatisticsViewModel(
                 }
                 co.touchlab.kermit.Logger
                     .d { "refreshFromCloud: Updated state, cloudAggregatedData size=${_uiState.value.cloudAggregatedData.size}" }
+                persistCloudCache(result.aggregatedData, result.appHistorySessions)
                 // Trigger recomputation with current sessions
                 val allSessions = localDataRepo.selectAllSessions().first()
                 computeTimelineData(allSessions)

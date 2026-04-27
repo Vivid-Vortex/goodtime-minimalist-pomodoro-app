@@ -20,7 +20,9 @@ package com.apps.adrcotfas.goodtime.main
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -31,11 +33,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +63,7 @@ import compose.icons.EvaIcons
 import compose.icons.evaicons.Outline
 import compose.icons.evaicons.outline.Menu2
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BottomAppBar(
     modifier: Modifier,
@@ -64,8 +73,31 @@ fun BottomAppBar(
     sessionCountToday: Int,
     onShowSheet: () -> Unit,
     onLabelClick: () -> Unit,
+    onResetSessionCount: () -> Unit = {},
     navController: NavController,
 ) {
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reset today's count?") },
+            text = {
+                Text(
+                    "This will delete all of today's local sessions. Synced cloud data may still be updated the next time you save to cloud.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onResetSessionCount()
+                    showResetDialog = false
+                }) { Text("Reset") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
     val haptic = LocalHapticFeedback.current
     AnimatedVisibility(
         modifier = modifier,
@@ -122,10 +154,23 @@ fun BottomAppBar(
                     ) { onNavigateToSelectLabelDialog() }
                 }
             }
-            IconButton(onClick = {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                navController.navigate(StatsDest)
-            }) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .combinedClickable(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                navController.navigate(StatsDest)
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showResetDialog = true
+                            },
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Box(
                     modifier =
                         Modifier
