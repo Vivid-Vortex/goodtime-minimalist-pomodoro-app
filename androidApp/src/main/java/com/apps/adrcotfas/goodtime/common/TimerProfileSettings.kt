@@ -30,6 +30,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -69,6 +71,9 @@ fun TimerProfileSettings(
     onTimerProfileSelect: (TimerProfile) -> Unit,
     onEditProfiles: (() -> Unit)? = null,
     onBreakBudgetInfo: () -> Unit,
+    lockedProfileName: String? = null,
+    onLockProfile: ((String) -> Unit)? = null,
+    onUnlockProfile: (() -> Unit)? = null,
 ) {
     // ---- Profile selector -------------------------------------------------
     AnimatedVisibility(timerProfiles.isNotEmpty(), enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
@@ -92,6 +97,28 @@ fun TimerProfileSettings(
                         onTimerProfileSelect(selected)
                     },
                 )
+            }
+            // Lock icon: locks the selected profile to apply on next timer reset
+            if (onLockProfile != null && timerProfile.name != null) {
+                val isThisLocked = lockedProfileName == timerProfile.name
+                IconButton(
+                    onClick = {
+                        if (isThisLocked) onUnlockProfile?.invoke() else onLockProfile(timerProfile.name!!)
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (isThisLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                        contentDescription = if (isThisLocked) "Unlock profile" else "Lock profile for next session",
+                        tint =
+                            if (isThisLocked) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.5f,
+                                )
+                            },
+                    )
+                }
             }
             onEditProfiles?.let {
                 IconButton(onClick = it) {

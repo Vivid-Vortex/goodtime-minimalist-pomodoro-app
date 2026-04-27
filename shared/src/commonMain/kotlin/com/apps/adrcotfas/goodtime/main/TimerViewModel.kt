@@ -185,7 +185,19 @@ class TimerViewModel(
         updateWorkTime: Boolean = false,
         actionType: FinishActionType = FinishActionType.MANUAL_RESET,
     ) {
-        timerManager.reset(updateWorkTime, actionType)
+        viewModelScope.launch {
+            val lockedProfileName = settingsRepo.settings.first().lockedTimerProfileName
+            if (lockedProfileName.isNotEmpty()) {
+                val profiles = localDataRepo.selectAllTimerProfiles().first()
+                val defaultLabel = localDataRepo.selectDefaultLabel().first()
+                val lockedProfile = profiles.find { it.name == lockedProfileName }
+                if (defaultLabel != null && lockedProfile != null) {
+                    localDataRepo.updateDefaultLabel(defaultLabel.copy(timerProfile = lockedProfile))
+                }
+                settingsRepo.clearLockedTimerProfile()
+            }
+            timerManager.reset(updateWorkTime, actionType)
+        }
     }
 
     fun addOneMinute() {

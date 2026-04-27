@@ -72,6 +72,7 @@ class SettingsRepositoryImpl(
         val backupSettingsKey = stringPreferencesKey("backupSettingsKey")
         val cloudBackupSettingsKey = stringPreferencesKey("cloudBackupSettingsKey")
         val lastDismissedUpdateVersionCodeKey = longPreferencesKey("lastDismissedUpdateVersionCodeKey")
+        val lockedTimerProfileNameKey = stringPreferencesKey("lockedTimerProfileNameKey")
     }
 
     override val settings: Flow<AppSettings> =
@@ -166,6 +167,7 @@ class SettingsRepositoryImpl(
                             json.decodeFromString<CloudBackupSettings>(c)
                         } ?: CloudBackupSettings(),
                     lastDismissedUpdateVersionCode = it[Keys.lastDismissedUpdateVersionCodeKey] ?: default.lastDismissedUpdateVersionCode,
+                    lockedTimerProfileName = it[Keys.lockedTimerProfileNameKey] ?: "",
                 )
             }.catch {
                 log.e("Error parsing settings", it)
@@ -330,5 +332,13 @@ class SettingsRepositoryImpl(
 
     override suspend fun setLastDismissedUpdateVersionCode(versionCode: Long) {
         dataStore.edit { it[Keys.lastDismissedUpdateVersionCodeKey] = versionCode }
+    }
+
+    override suspend fun setLockedTimerProfile(name: String) {
+        dataStore.edit { it[Keys.lockedTimerProfileNameKey] = name }
+    }
+
+    override suspend fun clearLockedTimerProfile() {
+        dataStore.edit { it.remove(Keys.lockedTimerProfileNameKey) }
     }
 }

@@ -88,4 +88,8 @@ interface SettingsRepository {
     suspend fun setCloudBackupSettings(cloudBackupSettings: CloudBackupSettings)
 
     suspend fun setLastDismissedUpdateVersionCode(versionCode: Long)
+
+    suspend fun setLockedTimerProfile(name: String)
+
+    suspend fun clearLockedTimerProfile()
 }

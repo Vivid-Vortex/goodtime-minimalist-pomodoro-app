@@ -60,6 +60,8 @@ data class AppSettings(
     val cloudBackupSettings: CloudBackupSettings = CloudBackupSettings(),
     /** The version code of the last dismissed update, or 0 if no update has been dismissed */
     val lastDismissedUpdateVersionCode: Long = 0,
+    /** Name of the timer profile to apply on the next timer reset. Empty = no pending lock. */
+    val lockedTimerProfileName: String = "",
 )
 
 enum class NotificationPermissionState {

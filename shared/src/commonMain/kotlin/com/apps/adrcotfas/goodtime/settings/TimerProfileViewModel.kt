@@ -27,8 +27,8 @@ import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -38,8 +38,12 @@ data class TimerProfileUiState(
     val isLoading: Boolean = true,
     val isPro: Boolean = true,
     val tmpLabel: Label = Label.defaultLabel(),
-    val defaultLabel: Label = Label.defaultLabel(), // this does not change after initialization
+    val defaultLabel: Label = Label.defaultLabel(),
     val timerProfiles: List<TimerProfile> = emptyList(),
+    /** Name of the profile that will be applied on the next timer reset. Null = no lock. */
+    val lockedProfileName: String? = null,
+    /** True when the last cloud save attempt failed — user should retry explicitly. */
+    val hasPendingCloudSave: Boolean = false,
 )
 
 class TimerProfileViewModel(
@@ -57,21 +61,21 @@ class TimerProfileViewModel(
     private fun loadData() {
         viewModelScope.launch {
             combine(
-                settingsRepository.settings.distinctUntilChanged { old, new ->
-                    old.isPro == new.isPro
-                },
+                settingsRepository.settings.map { it.isPro to it.lockedTimerProfileName },
                 repo.selectDefaultLabel().filterNotNull(),
                 repo.selectAllTimerProfiles(),
-            ) { settings, defaultLabel, profiles ->
-                Triple(settings, defaultLabel, profiles)
-            }.collect { (settings, defaultLabel, profiles) ->
+            ) { (isPro, lockedName), defaultLabel, profiles ->
+                Triple(Triple(isPro, lockedName, defaultLabel), profiles, Unit)
+            }.collect { (inner, profiles, _) ->
+                val (isPro, lockedName, defaultLabel) = inner
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        isPro = settings.isPro,
-                        tmpLabel = if (!it.isLoading) it.tmpLabel else defaultLabel, // keep tmpLabel if already set
+                        isPro = isPro,
+                        tmpLabel = if (!it.isLoading) it.tmpLabel else defaultLabel,
                         defaultLabel = defaultLabel,
                         timerProfiles = profiles,
+                        lockedProfileName = lockedName.ifEmpty { null },
                     )
                 }
             }
@@ -81,14 +85,30 @@ class TimerProfileViewModel(
     fun saveChanges(label: Label) {
         viewModelScope.launch {
             repo.updateDefaultLabel(label)
-            // Section 15: Also update the timer profile if it's a named profile
-            label.timerProfile.name?.let { profileName ->
+            label.timerProfile.name?.let {
                 repo.updateTimerProfile(label.timerProfile)
             }
-            _uiState.update {
-                it.copy(defaultLabel = label)
-            }
+            _uiState.update { it.copy(defaultLabel = label) }
+            // Attempt cloud save after every local save; track failure for retry button
+            attemptCloudSave()
         }
+    }
+
+    private suspend fun attemptCloudSave() {
+        val profiles = _uiState.value.timerProfiles
+        if (firestoreHandler == null || profiles.isEmpty()) return
+        firestoreHandler.saveProfilesToCloud(profiles).fold(
+            onSuccess = {
+                _uiState.update { it.copy(hasPendingCloudSave = false) }
+                co.touchlab.kermit.Logger
+                    .d { "Profiles saved to Firestore" }
+            },
+            onFailure = { error ->
+                _uiState.update { it.copy(hasPendingCloudSave = true) }
+                co.touchlab.kermit.Logger
+                    .e { "Cloud save failed: ${error.message}" }
+            },
+        )
     }
 
     fun updateTmpLabel(
@@ -99,12 +119,7 @@ class TimerProfileViewModel(
             it.copy(
                 tmpLabel =
                     if (resetProfile) {
-                        newLabel.copy(
-                            timerProfile =
-                                newLabel.timerProfile.copy(
-                                    name = null,
-                                ),
-                        )
+                        newLabel.copy(timerProfile = newLabel.timerProfile.copy(name = null))
                     } else {
                         newLabel
                     },
@@ -125,13 +140,14 @@ class TimerProfileViewModel(
                     it.copy(
                         tmpLabel =
                             it.tmpLabel.copy(
-                                timerProfile =
-                                    it.tmpLabel.timerProfile.copy(
-                                        name = null,
-                                    ),
+                                timerProfile = it.tmpLabel.timerProfile.copy(name = null),
                             ),
                     )
                 }
+            }
+            // If locked profile is deleted, clear the lock too
+            if (_uiState.value.lockedProfileName == name) {
+                settingsRepository.clearLockedTimerProfile()
             }
             repo.deleteTimerProfile(name)
             firestoreHandler?.deleteProfileFromCloud(name)?.fold(
@@ -141,7 +157,7 @@ class TimerProfileViewModel(
                 },
                 onFailure = { error ->
                     co.touchlab.kermit.Logger
-                        .e { "Failed to delete profile '$name' from Firestore: ${error.message}" }
+                        .e { "Failed to delete '$name' from Firestore: ${error.message}" }
                 },
             )
         }
@@ -153,19 +169,19 @@ class TimerProfileViewModel(
     ) {
         viewModelScope.launch {
             repo.renameTimerProfile(oldName, newName)
-            // Update tmpLabel if it was using the renamed profile
             if (_uiState.value.tmpLabel.timerProfile.name == oldName) {
                 _uiState.update {
                     it.copy(
                         tmpLabel =
                             it.tmpLabel.copy(
-                                timerProfile =
-                                    it.tmpLabel.timerProfile.copy(
-                                        name = newName,
-                                    ),
+                                timerProfile = it.tmpLabel.timerProfile.copy(name = newName),
                             ),
                     )
                 }
+            }
+            // Update locked profile name if it was renamed
+            if (_uiState.value.lockedProfileName == oldName) {
+                settingsRepository.setLockedTimerProfile(newName)
             }
         }
     }
@@ -176,19 +192,21 @@ class TimerProfileViewModel(
         }
     }
 
+    fun lockProfile(name: String) {
+        viewModelScope.launch {
+            settingsRepository.setLockedTimerProfile(name)
+        }
+    }
+
+    fun unlockProfile() {
+        viewModelScope.launch {
+            settingsRepository.clearLockedTimerProfile()
+        }
+    }
+
     fun saveProfilesToCloud() {
         viewModelScope.launch {
-            val profiles = _uiState.value.timerProfiles
-            firestoreHandler?.saveProfilesToCloud(profiles)?.fold(
-                onSuccess = {
-                    co.touchlab.kermit.Logger
-                        .d { "Successfully saved ${profiles.size} profiles to Firestore" }
-                },
-                onFailure = { error ->
-                    co.touchlab.kermit.Logger
-                        .e { "Failed to save profiles to Firestore: ${error.message}" }
-                },
-            )
+            attemptCloudSave()
         }
     }
 
@@ -197,12 +215,9 @@ class TimerProfileViewModel(
             firestoreHandler?.loadProfilesFromCloud()?.fold(
                 onSuccess = { cloudProfiles ->
                     co.touchlab.kermit.Logger
-                        .d { "Successfully loaded ${cloudProfiles.size} profiles from Firestore" }
-                    // Merge cloud profiles with local profiles
+                        .d { "Loaded ${cloudProfiles.size} profiles from Firestore" }
                     cloudProfiles.forEach { profile ->
-                        profile.name?.let { name ->
-                            repo.insertTimerProfile(profile)
-                        }
+                        profile.name?.let { repo.insertTimerProfile(profile) }
                     }
                 },
                 onFailure = { error ->

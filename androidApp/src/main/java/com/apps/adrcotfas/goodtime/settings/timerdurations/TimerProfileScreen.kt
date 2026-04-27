@@ -30,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -100,7 +101,6 @@ fun TimerProfileScreen(
                     timerProfile = label.timerProfile,
                     timerProfiles = uiState.timerProfiles,
                     onTimerProfileChange = { updated ->
-                        // Section 15: Don't reset profile name when changing settings
                         viewModel.updateTmpLabel(
                             label.copy(timerProfile = updated),
                             resetProfile = false,
@@ -112,9 +112,11 @@ fun TimerProfileScreen(
                             resetProfile = false,
                         )
                     },
-                    // Section 15: Allow all users to edit/rename/delete profiles
                     onEditProfiles = { showTimerProfilesSheet = true },
                     onBreakBudgetInfo = { showBreakBudgetInfoDialog = true },
+                    lockedProfileName = uiState.lockedProfileName,
+                    onLockProfile = { viewModel.lockProfile(it) },
+                    onUnlockProfile = { viewModel.unlockProfile() },
                 )
 
                 if (isDifferentFromDefault || label.timerProfile.name == null) {
@@ -167,7 +169,7 @@ fun TimerProfileScreen(
                             }
                         }
 
-                        if (saveButtonAnimatedWeight > 0.5f) {
+                        if (saveButtonAnimatedWeight > 0.01f) {
                             Button(
                                 modifier = Modifier.weight(saveButtonAnimatedWeight),
                                 enabled = isDifferentFromDefault,
@@ -179,7 +181,30 @@ fun TimerProfileScreen(
                     }
                 }
 
-                // Section 14: Save Profiles to Cloud button
+                // Locked profile indicator
+                uiState.lockedProfileName?.let { locked ->
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = "\"$locked\" will apply on next timer reset",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // Cloud save / retry button
                 if (uiState.timerProfiles.isNotEmpty()) {
                     Row(
                         modifier =
@@ -191,7 +216,13 @@ fun TimerProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = { viewModel.saveProfilesToCloud() },
                         ) {
-                            Text(stringResource(R.string.settings_save_profiles_to_cloud))
+                            Text(
+                                if (uiState.hasPendingCloudSave) {
+                                    "Retry Save to Cloud"
+                                } else {
+                                    stringResource(R.string.settings_save_profiles_to_cloud)
+                                },
+                            )
                         }
                     }
                 }

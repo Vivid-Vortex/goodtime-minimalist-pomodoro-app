@@ -433,8 +433,10 @@ class TimerManager(
         updateBreakBudgetIfNeeded()
         handleFinishedSession(finishActionType = FinishActionType.AUTO)
 
+        // autoStartBreak drives the full focus→break→focus cycle:
+        // when break ends, auto-start focus if either flag is on.
         val autoStart =
-            settings.autoStartFocus &&
+            (settings.autoStartFocus || settings.autoStartBreak) &&
                 (type.isBreak || !timerProfile.profile.isBreakEnabled) ||
                 settings.autoStartBreak &&
                 type.isFocus &&
