@@ -183,6 +183,8 @@ Notes & troubleshooting
 
 - Ensure the claude CLI is authenticated and in PATH: claude --version
 - If you see messages about --dangerously-skip-permissions, update claude CLI or accept the warning; the script uses that flag for unattended resumes.
-- If extraction fails again, copy/paste the exact raw claude check output line (the script prints it) so regex can be adjusted.
+- Timezone handling: The Extract-NewFormatTimestamp function was extended to parse minute-precision times and optional timezone labels returned by Claude (for example, 'resets 9:30pm (Asia/Calcutta)'). The script maps common IANA timezone names to Windows timezone IDs (for example, 'Asia/Calcutta' or 'Asia/Kolkata' → 'India Standard Time') and converts the reported reset time to the local system time before computing the wait. If the printed timezone is unfamiliar the script falls back to interpreting the time as local.
+- If extraction fails, copy/paste the exact raw Claude check output line (the script prints it). To add more timezone mappings, edit the $tzMap in Extract-NewFormatTimestamp and re-run the script.
+- Use claude-auto-resume --check to validate environment and parsing before a long run.
 
 If you want, commit this file into the repo or I can open it for edits.

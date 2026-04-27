@@ -76,4 +76,5 @@ https://github.com/terryso/claude-auto-resume
 Notes
 
 - Keep claude CLI updated if the script warns about --dangerously-skip-permissions
-- If parsing fails on the "resets" time (e.g., "resets 9:30pm"), update the regex in Extract-NewFormatTimestamp; docs/fix_Auto_Resume.md contains the robust version used during testing.
+- The script now supports parsing minute-precision reset times (e.g., "resets 9:30pm") and optionally handles timezone labels reported by Claude (for example, "(Asia/Calcutta)"). On Windows the script maps common IANA names such as Asia/Calcutta or Asia/Kolkata to the appropriate Windows timezone (India Standard Time) and converts the reset time to your local time before waiting.
+- If extraction still fails, copy/paste the exact raw claude check output line (the script prints it) so the regex or timezone mapping can be adjusted; see docs/fix_Auto_Resume.md for implementation details and the exact function replacement used.
