@@ -119,3 +119,16 @@ Different phone [OEMs](https://en.wikipedia.org/wiki/Original_equipment_manufact
 Disable battery optimization for this app to ensure accurate alarms and midnight cloud push.
 
 Read more: [www.dontkillmyapp.com](https://dontkillmyapp.com/)
+
+---
+
+## claude-auto-resume plugin docs
+
+This repository includes documentation for integrating the claude-auto-resume utility (third-party) into your workflow. The docs are stored under /docs:
+
+- docs/claude-auto-resume-readme.md — upstream README (adapted) with installation and quick setup steps
+- docs/fix_Auto_Resume.md — session "cheat-sheet" containing the exact commands and PowerShell function replacements applied locally to fix Windows-specific issues
+
+Follow docs/claude-auto-resume-readme.md for a step-by-step install and testing guide. If you applied local fixes (Windows), see docs/fix_Auto_Resume.md for the exact edits and commands used.
+
+Note: These docs are informational only — the claude-auto-resume tool is a third-party project. See the original project at: https://github.com/terryso/claude-auto-resume
