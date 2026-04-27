@@ -117,4 +117,8 @@ class TestFakeSettingsRepository(
     override suspend fun setNotificationPermissionState(state: NotificationPermissionState) {}
 
     override suspend fun setLastDismissedUpdateVersionCode(versionCode: Long) {}
+
+    override suspend fun setLockedTimerProfile(name: String) {}
+
+    override suspend fun clearLockedTimerProfile() {}
 }
