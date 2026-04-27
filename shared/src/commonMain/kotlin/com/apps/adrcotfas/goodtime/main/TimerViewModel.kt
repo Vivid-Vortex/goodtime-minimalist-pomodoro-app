@@ -33,6 +33,7 @@ import com.apps.adrcotfas.goodtime.bl.isBreak
 import com.apps.adrcotfas.goodtime.bl.isPaused
 import com.apps.adrcotfas.goodtime.common.Time
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
+import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.data.settings.LongBreakData
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import com.apps.adrcotfas.goodtime.data.settings.ThemePreference
@@ -175,6 +176,13 @@ class TimerViewModel(
 
     fun startTimer(type: TimerType = TimerType.FOCUS) {
         timerManager.start(type)
+    }
+
+    fun startWithOthersLabel(type: TimerType = TimerType.FOCUS) {
+        viewModelScope.launch {
+            settingsRepo.activateLabelWithName(Label.OTHERS_LABEL_NAME)
+            timerManager.start(type)
+        }
     }
 
     fun toggleTimer() {

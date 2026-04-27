@@ -44,9 +44,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -214,6 +217,7 @@ fun MainScreen(
 
     var showNavigationSheet by rememberSaveable { mutableStateOf(false) }
     var showSelectLabelDialog by rememberSaveable { mutableStateOf(false) }
+    var showNoLabelWarningDialog by rememberSaveable { mutableStateOf(false) }
 
     val showTutorial = uiState.showTutorial
 
@@ -275,6 +279,8 @@ fun MainScreen(
                                 coroutineScope.launch {
                                     showAlarmPermissionSnackbar(context)
                                 }
+                            } else if (label.isDefault()) {
+                                showNoLabelWarningDialog = true
                             } else {
                                 viewModel.startTimer()
                             }
@@ -361,6 +367,30 @@ fun MainScreen(
                 }
             },
             onUpdateNotes = viewModel::updateNotesForLastCompletedSession,
+        )
+    }
+
+    if (showNoLabelWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { showNoLabelWarningDialog = false },
+            title = { Text("No label selected") },
+            text = {
+                Text(
+                    "Please select a label/tag before starting. If you continue without selecting, the session will be saved under Others (OTH).",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showNoLabelWarningDialog = false
+                    showSelectLabelDialog = true
+                }) { Text("Select Label") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showNoLabelWarningDialog = false
+                    viewModel.startWithOthersLabel()
+                }) { Text("Continue with Others") }
+            },
         )
     }
 
