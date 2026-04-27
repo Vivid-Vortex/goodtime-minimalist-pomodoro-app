@@ -4,13 +4,15 @@
     "product_version": "3.0.15.0"
   },
   "info": {
-    "company_name": "Goodtime Productivity",
-    "file_description": "Goodtime Pomodoro — Minimalist productivity timer",
-    "file_version": "3.0.15",
-    "internal_name": "GoodtimePomodoro",
-    "legal_copyright": "Copyright (C) 2025 Adrian Cotfas",
-    "original_filename": "GoodtimePomodoro.exe",
-    "product_name": "Goodtime Pomodoro",
-    "product_version": "3.0.15"
+    "0409": {
+      "company_name": "Goodtime Productivity",
+      "file_description": "Goodtime Pomodoro — Minimalist productivity timer",
+      "file_version": "3.0.15",
+      "internal_name": "GoodtimePomodoro",
+      "legal_copyright": "Copyright (C) 2025 Adrian Cotfas",
+      "original_filename": "GoodtimePomodoro.exe",
+      "product_name": "Goodtime Pomodoro",
+      "product_version": "3.0.15"
+    }
   }
 }

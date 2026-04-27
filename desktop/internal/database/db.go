@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver, no CGO required
 )
@@ -156,9 +157,5 @@ INSERT OR IGNORE INTO app_settings (id) VALUES (1);
 
 // isDuplicateColumnErr reports whether the SQLite error is "duplicate column name".
 func isDuplicateColumnErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := err.Error()
-	return len(msg) >= 21 && msg[:21] == "duplicate column name"
+	return err != nil && strings.Contains(err.Error(), "duplicate column name")
 }

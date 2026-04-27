@@ -128,7 +128,7 @@ func (a *App) SetMiniMode(enabled bool) {
 		runtime.WindowSetSize(a.ctx, 260, 80)
 		runtime.WindowSetAlwaysOnTop(a.ctx, true)
 	} else {
-		runtime.WindowSetSize(a.ctx, 420, 780)
+		runtime.WindowSetSize(a.ctx, 460, 860)
 		runtime.WindowSetAlwaysOnTop(a.ctx, false)
 	}
 }

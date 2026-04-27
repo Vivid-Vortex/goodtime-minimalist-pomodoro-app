@@ -18,9 +18,13 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "Goodtime Pomodoro",
-		Width:  420,
-		Height: 780,
+		Title:            "Goodtime Pomodoro",
+		Width:            460,
+		Height:           860,
+		MinWidth:  400,
+		MaxWidth:  460,
+		MinHeight: 700,
+		MaxHeight: 860,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
