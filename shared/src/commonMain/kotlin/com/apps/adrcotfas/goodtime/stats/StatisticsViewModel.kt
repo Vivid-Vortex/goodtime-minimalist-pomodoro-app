@@ -47,7 +47,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -109,8 +108,11 @@ class StatisticsViewModel(
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState =
         _uiState
-            .onStart { loadData() }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatisticsUiState())
+
+    init {
+        loadData()
+    }
 
     val pagedSessions: Flow<PagingData<Session>> =
         uiState
