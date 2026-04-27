@@ -18,6 +18,8 @@
 package com.apps.adrcotfas.goodtime.bl
 
 import android.content.Context
+import android.os.Build
+import androidx.core.content.ContextCompat
 import com.apps.adrcotfas.goodtime.bl.TimerService.Companion.Action
 
 class TimerServiceStarter(
@@ -33,20 +35,15 @@ class TimerServiceStarter(
     }
 
     private fun startService(action: Action = Action.StartOrUpdate) {
-        context.startService(
-            TimerService.createIntentWithAction(
-                context,
-                action,
-            ),
-        )
+        val intent = TimerService.createIntentWithAction(context, action)
+        if (action == Action.StartOrUpdate && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ContextCompat.startForegroundService(context, intent)
+        } else {
+            context.startService(intent)
+        }
     }
 
     private fun startServiceWithFinished(autoStart: Boolean) {
-        context.startService(
-            TimerService.createFinishEvent(
-                context,
-                autoStart,
-            ),
-        )
+        context.startService(TimerService.createFinishEvent(context, autoStart))
     }
 }

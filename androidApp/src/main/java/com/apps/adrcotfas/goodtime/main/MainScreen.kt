@@ -17,8 +17,12 @@
  */
 package com.apps.adrcotfas.goodtime.main
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.animateColorAsState
@@ -51,6 +55,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -214,6 +219,18 @@ fun MainScreen(
     val permissionState = getPermissionsState()
     val actionBadgeItemCount = permissionState.count() + if (updateAvailable) 1 else 0
     val interactionSource = remember { MutableInteractionSource() }
+
+    val notifPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { granted -> mainViewModel.setNotificationPermissionGranted(granted) }
+    LaunchedEffect(permissionState.shouldAskForNotificationPermission) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            permissionState.shouldAskForNotificationPermission
+        ) {
+            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     var showNavigationSheet by rememberSaveable { mutableStateOf(false) }
     var showSelectLabelDialog by rememberSaveable { mutableStateOf(false) }
