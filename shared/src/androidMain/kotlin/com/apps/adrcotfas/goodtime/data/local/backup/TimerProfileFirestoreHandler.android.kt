@@ -19,6 +19,7 @@ package com.apps.adrcotfas.goodtime.data.local.backup
 
 import android.util.Log
 import com.apps.adrcotfas.goodtime.data.model.TimerProfile
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.tasks.await
@@ -132,4 +133,19 @@ actual class TimerProfileFirestoreHandler actual constructor() {
             Result.failure(e)
         }
     }
+
+    actual suspend fun deleteProfileFromCloud(name: String): Result<Unit> =
+        try {
+            Log.d(TAG, "Deleting profile '$name' from Firestore")
+            db
+                .collection(COLLECTION_GLOBAL_NOTES)
+                .document(DOCUMENT_TIMER_PROFILES)
+                .update(name, FieldValue.delete())
+                .await()
+            Log.d(TAG, "Successfully deleted profile '$name' from Firestore")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete profile '$name' from Firestore", e)
+            Result.failure(e)
+        }
 }

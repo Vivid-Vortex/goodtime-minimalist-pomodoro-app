@@ -120,7 +120,6 @@ class TimerProfileViewModel(
 
     fun deleteTimerProfile(name: String) {
         viewModelScope.launch {
-            // If the deleted profile was the one currently being edited, reset the tmpLabel's timerProfile name
             if (_uiState.value.tmpLabel.timerProfile.name == name) {
                 _uiState.update {
                     it.copy(
@@ -135,6 +134,16 @@ class TimerProfileViewModel(
                 }
             }
             repo.deleteTimerProfile(name)
+            firestoreHandler?.deleteProfileFromCloud(name)?.fold(
+                onSuccess = {
+                    co.touchlab.kermit.Logger
+                        .d { "Deleted profile '$name' from Firestore" }
+                },
+                onFailure = { error ->
+                    co.touchlab.kermit.Logger
+                        .e { "Failed to delete profile '$name' from Firestore: ${error.message}" }
+                },
+            )
         }
     }
 

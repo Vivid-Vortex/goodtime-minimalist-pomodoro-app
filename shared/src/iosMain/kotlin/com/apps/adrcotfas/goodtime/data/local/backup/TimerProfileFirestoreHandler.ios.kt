@@ -19,13 +19,14 @@ package com.apps.adrcotfas.goodtime.data.local.backup
 
 import com.apps.adrcotfas.goodtime.data.model.TimerProfile
 
-/**
- * Platform-specific handler for Timer Profile Firestore operations
- */
-expect class TimerProfileFirestoreHandler() {
-    suspend fun saveProfilesToCloud(profiles: List<TimerProfile>): Result<Unit>
+// iOS stub — Firestore not implemented on iOS
+actual class TimerProfileFirestoreHandler actual constructor() {
+    actual suspend fun saveProfilesToCloud(profiles: List<TimerProfile>): Result<Unit> =
+        Result.failure(UnsupportedOperationException("Firestore is not available on iOS"))
 
-    suspend fun loadProfilesFromCloud(): Result<List<TimerProfile>>
+    actual suspend fun loadProfilesFromCloud(): Result<List<TimerProfile>> =
+        Result.failure(UnsupportedOperationException("Firestore is not available on iOS"))
 
-    suspend fun deleteProfileFromCloud(name: String): Result<Unit>
+    actual suspend fun deleteProfileFromCloud(name: String): Result<Unit> =
+        Result.failure(UnsupportedOperationException("Firestore is not available on iOS"))
 }
