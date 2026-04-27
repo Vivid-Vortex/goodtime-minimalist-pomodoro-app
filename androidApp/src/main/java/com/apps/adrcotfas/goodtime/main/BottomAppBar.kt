@@ -52,7 +52,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.apps.adrcotfas.goodtime.bl.LabelData
 import com.apps.adrcotfas.goodtime.data.model.Label
 import com.apps.adrcotfas.goodtime.shared.R
@@ -74,7 +73,6 @@ fun BottomAppBar(
     onShowSheet: () -> Unit,
     onLabelClick: () -> Unit,
     onResetSessionCount: () -> Unit = {},
-    navController: NavController,
 ) {
     var showResetDialog by remember { mutableStateOf(false) }
 
@@ -162,7 +160,7 @@ fun BottomAppBar(
                         .combinedClickable(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                navController.navigate(StatsDest)
+                                showResetDialog = true
                             },
                             onLongClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
