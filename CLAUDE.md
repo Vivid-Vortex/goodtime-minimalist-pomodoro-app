@@ -559,7 +559,7 @@ Section 17:
  
  ----
 Section 18:
- Can you create an onscreen widgit which I can use to control this app. Somehing which I can use inconspicuously to control the app without anyone noticing what I am doing on my screen. Also take care of the aesthetics.
+ Can you create an onscreen widgit which I can use to control this app. Somehing which I can use inconspicuously to control the app without anyone noticing what I am doing on my screen. Also take care of the aesthetics.4
  
  ----
  
@@ -580,4 +580,6 @@ o use the timer profile properly.
 		Make it more inconspicious (may be more transparent). Transparency I can set.
  
 ---
+#Ignore
+Just a side: claude-auto-resume -p "continue"
  
