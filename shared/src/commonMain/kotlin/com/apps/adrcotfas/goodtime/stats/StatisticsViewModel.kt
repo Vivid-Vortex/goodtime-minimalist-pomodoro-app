@@ -84,6 +84,10 @@ data class StatisticsUiState(
     val cloudAggregatedData: Map<String, Long> = emptyMap(), // Cloud totals: "timestamp_label" -> duration
     // Cloud app history sessions from all devices
     val cloudAppHistorySessions: List<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession> = emptyList(),
+    /** Epoch millis of the earliest data point in the cloud, null if no cloud data. */
+    val earliestCloudDate: Long? = null,
+    /** Epoch millis when the last cloud sync completed successfully. */
+    val lastSyncTime: Long? = null,
 ) {
     val showSelectionUi: Boolean
         get() = selectedSessions.isNotEmpty() || isSelectAllEnabled
@@ -267,11 +271,19 @@ class StatisticsViewModel(
                 if (result is com.apps.adrcotfas.goodtime.data.local.backup.FirestoreSyncResult.CloudData) {
                     co.touchlab.kermit.Logger
                         .d { "Received cloud refresh event: ${result.aggregatedData.size} entries" }
-
+                    val earliest =
+                        result.aggregatedData.keys
+                            .mapNotNull { it.split("_", limit = 2).firstOrNull()?.toLongOrNull() }
+                            .minOrNull()
                     _uiState.update {
                         it.copy(
                             cloudAggregatedData = result.aggregatedData,
                             cloudAppHistorySessions = result.appHistorySessions,
+                            earliestCloudDate = earliest,
+                            lastSyncTime =
+                                kotlinx.datetime.Clock.System
+                                    .now()
+                                    .toEpochMilliseconds(),
                         )
                     }
                     co.touchlab.kermit.Logger
@@ -292,6 +304,10 @@ class StatisticsViewModel(
                 val historyEntries = cloudCacheDao.getHistoryEntries()
                 if (timelineEntries.isNotEmpty()) {
                     val cloudAggregatedData = timelineEntries.associate { it.key to it.duration }
+                    val earliest =
+                        cloudAggregatedData.keys
+                            .mapNotNull { it.split("_", limit = 2).firstOrNull()?.toLongOrNull() }
+                            .minOrNull()
                     val cloudAppHistorySessions =
                         historyEntries.map { entry ->
                             com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession(
@@ -308,6 +324,7 @@ class StatisticsViewModel(
                         it.copy(
                             cloudAggregatedData = cloudAggregatedData,
                             cloudAppHistorySessions = cloudAppHistorySessions,
+                            earliestCloudDate = earliest,
                         )
                     }
                     co.touchlab.kermit.Logger
@@ -617,10 +634,19 @@ class StatisticsViewModel(
             if (result is FirestoreSyncResult.CloudData) {
                 co.touchlab.kermit.Logger
                     .d { "refreshFromCloud: Got CloudData with ${result.aggregatedData.size} entries" }
+                val earliest =
+                    result.aggregatedData.keys
+                        .mapNotNull { it.split("_", limit = 2).firstOrNull()?.toLongOrNull() }
+                        .minOrNull()
                 _uiState.update {
                     it.copy(
                         cloudAggregatedData = result.aggregatedData,
                         cloudAppHistorySessions = result.appHistorySessions,
+                        earliestCloudDate = earliest,
+                        lastSyncTime =
+                            kotlinx.datetime.Clock.System
+                                .now()
+                                .toEpochMilliseconds(),
                     )
                 }
                 co.touchlab.kermit.Logger

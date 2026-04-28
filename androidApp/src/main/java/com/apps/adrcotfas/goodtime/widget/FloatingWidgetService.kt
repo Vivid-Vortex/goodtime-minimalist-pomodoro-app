@@ -36,7 +36,6 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import com.apps.adrcotfas.goodtime.bl.DomainTimerData
 import com.apps.adrcotfas.goodtime.bl.TimeProvider
 import com.apps.adrcotfas.goodtime.bl.TimeUtils.formatMilliseconds
@@ -89,8 +88,7 @@ class FloatingWidgetService : Service() {
         private const val DEFAULT_ALPHA = 185
 
         fun start(context: Context) {
-            val intent = Intent(context, FloatingWidgetService::class.java)
-            ContextCompat.startForegroundService(context, intent)
+            context.startService(Intent(context, FloatingWidgetService::class.java))
         }
 
         fun stop(context: Context) {
@@ -293,7 +291,7 @@ class FloatingWidgetService : Service() {
                     dp(220),
                     dp(60),
                     params.type,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                         WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                     PixelFormat.TRANSLUCENT,
                 ).apply {

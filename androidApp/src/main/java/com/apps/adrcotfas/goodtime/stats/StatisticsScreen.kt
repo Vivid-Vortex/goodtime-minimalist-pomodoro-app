@@ -195,6 +195,10 @@ fun StatisticsScreen(
                                     viewModel.setPieChartViewType(it)
                                 },
                                 historyChartViewModel = historyViewModel,
+                                earliestCloudDate = uiState.earliestCloudDate,
+                                lastSyncTime = uiState.lastSyncTime,
+                                hasCloudData = uiState.cloudAggregatedData.isNotEmpty(),
+                                onRefreshFromCloud = { viewModel.refreshFromCloud() },
                             )
 
                         TabType.AppHistory -> {
