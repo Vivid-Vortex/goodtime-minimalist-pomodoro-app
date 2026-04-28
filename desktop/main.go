@@ -19,12 +19,12 @@ func main() {
 
 	err := wails.Run(&options.App{
 		Title:            "Goodtime Pomodoro",
-		Width:            460,
-		Height:           860,
-		MinWidth:  400,
-		MaxWidth:  460,
+		Width:     460,
+		Height:    860,
+		MinWidth:  380,
+		MaxWidth:  600,
 		MinHeight: 700,
-		MaxHeight: 860,
+		MaxHeight: 1000,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -41,7 +41,7 @@ func main() {
 			DisableWindowIcon:                 false,
 			DisableFramelessWindowDecorations: false,
 			WebviewUserDataPath:               "",
-			ZoomFactor:                        1.0,
+			ZoomFactor:                        2.0,
 		},
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHiddenInset(),

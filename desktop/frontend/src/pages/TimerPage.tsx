@@ -61,7 +61,7 @@ export function TimerPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 px-4">
+    <div className="flex flex-col items-center justify-center h-full gap-4 px-4">
       {/* Top row: timer type badge + mini-mode button */}
       <div className="flex items-center gap-3">
         <span
@@ -82,13 +82,13 @@ export function TimerPage() {
       {/* Circular progress ring with time display */}
       <CircularProgress
         progress={progress}
-        size={260}
+        size={180}
         strokeWidth={10}
         color={color}
         trackColor="#2a2a2a"
       >
         <div className="flex flex-col items-center select-none">
-          <span className="text-6xl font-mono font-light text-white tabular-nums tracking-tight">
+          <span className="text-5xl font-mono font-light text-white tabular-nums tracking-tight">
             {display}
           </span>
           {state.completedSessions > 0 && (

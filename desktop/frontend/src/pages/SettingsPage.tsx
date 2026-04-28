@@ -83,7 +83,7 @@ export function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-white text-sm font-medium">{p.name}</p>
                       {isActive && (
-                        <span className="text-[10px] font-semibold text-brand-400 uppercase tracking-wide">
+                        <span className="text-xs font-semibold text-brand-400 uppercase tracking-wide">
                           Active
                         </span>
                       )}

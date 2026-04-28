@@ -76,7 +76,7 @@ function NavButton({ icon, label, active, onClick }: NavButtonProps) {
         ${active ? "text-brand-400" : "text-gray-600 hover:text-gray-400"}`}
     >
       <span className="text-xl leading-none">{icon}</span>
-      <span className={`text-[10px] font-medium ${active ? "opacity-100" : "opacity-60"}`}>
+      <span className={`text-xs font-medium ${active ? "opacity-100" : "opacity-60"}`}>
         {label}
       </span>
     </button>

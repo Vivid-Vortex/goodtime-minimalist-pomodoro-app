@@ -1,71 +1,116 @@
 # Desktop App — Status & Pickup Notes
 
-## What was fixed in this session
-
-| # | Problem | Fix |
-|---|---------|-----|
-| 1 | `wails build` failed with `json: cannot unmarshal string into Go struct field jsonVersionInfo.info` | Updated `build/windows/info.json` to wrap strings under language-code key `"0409"` as required by Wails v2.12 / winres |
-| 2 | App crashed on startup: `duplicate column name: cloud_sync_schedule` | Fixed `isDuplicateColumnErr` in `db.go` — was checking `msg[:21] == "duplicate column name"` but SQLite prefixes errors with `"SQL logic error: "`, so check never matched. Changed to `strings.Contains` |
-| 3 | Window could be maximised to 1920×1080, making tiny content float in a black void | Added `MaxWidth: 460, MaxHeight: 860` in `main.go` to prevent maximising |
-| 4 | `wails dev` had same build error | Covered by fix #1 |
-
-**Commit:** `9f67f46b` on branch `dev`
+> **Context:** The main activity in recent sessions has been the Android app (Sections 14-20 of CLAUDE.md).
+> The desktop app is a separate Wails/Go app under `desktop/`. All desktop work below is independent of the Android work.
+> Branch: `dev`
 
 ---
 
-## Outstanding issue — UI is still too small
+## Last desktop commit
 
-Even at the constrained 460×860 window, the fonts and controls feel small on a 1080p monitor at 100% DPI.
+**`9f67f46b`** — "fix(desktop): resolve startup crash and window sizing issues"
+
+| # | Problem | Fix |
+|---|---------|-----|
+| 1 | `wails build` failed with `json: cannot unmarshal string into ...` | Updated `build/windows/info.json` to use `"0409"` language-code wrapper |
+| 2 | Crash on startup: `duplicate column name: cloud_sync_schedule` | Fixed `isDuplicateColumnErr` in `db.go` to use `strings.Contains` instead of prefix slice |
+| 3 | Window maximised to full screen, tiny content in black void | Added `MaxWidth: 460, MaxHeight: 860` in `main.go` |
+
+---
+
+## Open issue — fonts too small / poor readability
+
+**Status: NOT YET FIXED.** This is the primary UX problem to address next.
+
+### Current settings (`desktop/main.go`)
+```go
+Width:     460,
+Height:    860,
+MinWidth:  400,
+MaxWidth:  460,
+MinHeight: 700,
+MaxHeight: 860,
+// Windows options:
+ZoomFactor: 1.0,   // ← no zoom applied yet
+```
 
 ### Root cause
-The UI was designed mobile-first (420×780 viewport, Tailwind `text-sm`, `text-[10px]` etc.). On a desktop monitor these sizes are too small for comfortable use at a normal viewing distance.
+The frontend was designed mobile-first. Font classes used throughout:
+- `text-[10px]` — navigation tab labels (`App.tsx:79`, `SettingsPage.tsx:86`) — **critically small**
+- `text-xs` — (12px) helper text, timestamps (`LabelsPage.tsx:90`, `SettingsPage.tsx:91`)  
+- `text-sm` — (14px) most body text — acceptable but still small on desktop at 100% DPI
+- Base `font-size` in `styles.css` is default **16px** with no desktop override
 
-### Options to fix (pick one)
+### Recommended fix — Option A first (5 min, no layout risk)
 
-**Option A — ZoomFactor (quickest, no layout changes)**
-In `desktop/main.go` → `Windows.ZoomFactor`:
-- Set `1.3` → 30% bigger text, CSS viewport shrinks to ~354×660 px
-- Set `1.5` → 50% bigger, viewport ~307×573 px (layout may clip at bottom)
-- Combine with taller window (e.g. `Height: 1000`, `MaxHeight: 1000`) to recover vertical space
-
+In `desktop/main.go`, bump `ZoomFactor` and `MaxHeight`:
 ```go
-// main.go — try this first
 Width:     460,
 Height:    1000,
+MinWidth:  400,
 MaxWidth:  460,
+MinHeight: 700,
 MaxHeight: 1000,
 // Windows options:
 ZoomFactor: 1.3,
 ```
+This makes everything 30% larger without touching CSS. The CSS viewport shrinks to ~354×770 px — verify the timer ring, labels list, and settings page don't clip.
 
-**Option B — Larger base font size (proper fix, small CSS change)**
-In `desktop/frontend/src/styles.css`, add:
+### Option B — CSS base font (proper fix, ~15 min)
+
+In `desktop/frontend/src/styles.css`, after the existing `html, body, #root` block:
 ```css
-html { font-size: 18px; }   /* up from default 16px */
+/* Desktop scaling — makes all rem-based text larger */
+html { font-size: 18px; }
 ```
-Everything using `rem` units scales automatically. Fixed-px values (SVG circle size=260, icon sizes) need manual adjustment.
+Everything using `rem` / Tailwind `text-sm` etc. scales automatically.
+Items that still need manual adjustment:
+- `CircularProgress.tsx` — `size` prop is fixed px (currently 260)
+- SVG `strokeWidth` values
+- `text-[10px]` hardcoded classes in `App.tsx` and `SettingsPage.tsx` — change to `text-xs` or `text-sm`
 
-**Option C — Redesign layout for desktop (most work)**
-Make the app wider (650-800px), use a two-column layout on the timer page, increase the circular progress ring size prop from 260 → 360.
+### Option C — Wider window + layout redesign (most work, best result)
+Make the window 650–800 px wide, two-column layout on timer page, ring size 260 → 380.
 
 ### Recommendation
-Start with **Option A** (ZoomFactor 1.3 + MaxHeight 1000). If that clips the settings/stats pages, switch to **Option B**.
+**Start with Option A** (ZoomFactor 1.3 + MaxHeight 1000). If any page clips vertically, combine with Option B's `font-size: 18px` tweak and replace `text-[10px]` with `text-xs` in two places.
 
 ---
 
 ## How to build & run
 
 ```bash
-# From desktop/ directory:
-wails build          # produces build/bin/GoodtimePomodoro.exe
-# Then double-click the exe, or:
+# From repo root:
+cd desktop
+wails dev          # hot-reload dev mode (needs wails CLI installed)
+wails build        # produces desktop/build/bin/GoodtimePomodoro.exe
+```
+
+Or from PowerShell (repo root):
+```powershell
 Start-Process "desktop\build\bin\GoodtimePomodoro.exe"
 ```
 
-> Note: `build/windows/info.json` must have the `"0409"` language-code wrapper or `wails build` fails.
-> This file is gitignored — if lost, recreate it from the format in this doc:
+> **Important:** `build/windows/info.json` is gitignored. If it's missing after a fresh clone, recreate it:
 > ```json
-> { "fixed": { ... }, "info": { "0409": { "company_name": "...", ... } } }
+> {
+>   "fixed": {
+>     "file_version": "1.0.0.0",
+>     "product_version": "1.0.0.0"
+>   },
+>   "info": {
+>     "0409": {
+>       "CompanyName": "Vivid-Vortex",
+>       "FileDescription": "Goodtime Pomodoro",
+>       "FileVersion": "1.0.0",
+>       "InternalName": "GoodtimePomodoro",
+>       "LegalCopyright": "Copyright 2025",
+>       "OriginalFilename": "GoodtimePomodoro.exe",
+>       "ProductName": "Goodtime Pomodoro",
+>       "ProductVersion": "1.0.0"
+>     }
+>   }
+> }
 > ```
 
 ---
@@ -74,9 +119,23 @@ Start-Process "desktop\build\bin\GoodtimePomodoro.exe"
 
 | File | Purpose |
 |------|---------|
-| `desktop/main.go` | Window size, ZoomFactor, Wails options |
-| `desktop/app.go` | Go API surface, SetMiniMode sizes |
+| `desktop/main.go` | Window size, ZoomFactor, Wails app config |
+| `desktop/app.go` | Go API surface exposed to frontend, SetMiniMode resize logic |
 | `desktop/internal/database/db.go` | SQLite migrations, `isDuplicateColumnErr` |
-| `desktop/build/windows/info.json` | Windows exe version info (gitignored) |
-| `desktop/frontend/src/pages/TimerPage.tsx` | Timer UI, CircularProgress size prop |
-| `desktop/frontend/src/styles.css` | Global CSS, base font size |
+| `desktop/internal/database/models.go` | DB schema structs |
+| `desktop/build/windows/info.json` | Windows exe version info **(gitignored — must recreate)** |
+| `desktop/frontend/src/styles.css` | Global CSS — edit `font-size` here for Option B |
+| `desktop/frontend/src/main.go` | Wails entry point, window options |
+| `desktop/frontend/src/App.tsx` | Nav tabs — `text-[10px]` label on line 79 |
+| `desktop/frontend/src/pages/TimerPage.tsx` | Main timer UI |
+| `desktop/frontend/src/components/Timer/CircularProgress.tsx` | Ring — `size` prop is fixed px |
+| `desktop/frontend/src/pages/SettingsPage.tsx` | Timer profiles, cloud sync — `text-[10px]` on line 86 |
+| `desktop/frontend/src/pages/StatisticsPage.tsx` | Stats/overview |
+| `desktop/frontend/src/stores/timerStore.ts` | Zustand timer state |
+| `desktop/frontend/src/stores/appStore.ts` | Zustand app/label state |
+
+---
+
+## Android session context (do NOT touch these in a desktop session)
+
+The Android app (`androidApp/` + `shared/`) is on the same `dev` branch and is actively developed. Recent Android commits: `5ea99802` (Section 20 overview UX), `8b2c11ad` (notifications), `d6b128da` (floating widget), `11859d43` (timer profiles). When working on desktop, ignore the `androidApp/` and `shared/` directories entirely — they are KMP/Compose code and have no relation to the Wails/Go desktop app.
