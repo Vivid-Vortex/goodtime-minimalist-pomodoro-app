@@ -578,6 +578,15 @@ o use the timer profile properly.
  7. Widget -
 		Please add more functionality to widget and not just play and pause. Add as much functionality as much as possible which I contorl from this widget.
 		Make it more inconspicious (may be more transparent). Transparency I can set.
+
+---
+
+Section 20:
+
+Please improve statistics overview section:
+ 1. It should show the data based on or since the time or date the data is avaialble available in the firestore db. I mean all the section inside overview.
+ 2. you can think of other UX modification and suggest me to do the changes.
+
  
 ---
 #Ignore
