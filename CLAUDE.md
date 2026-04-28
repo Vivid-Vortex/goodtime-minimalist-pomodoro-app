@@ -587,7 +587,13 @@ Please improve statistics overview section:
  1. It should show the data based on or since the time or date the data is avaialble available in the firestore db. I mean all the section inside overview.
  2. you can think of other UX modification and suggest me to do the changes.
 
- 
+---
+
+Section 21:
+
+I think this staticsitcs -> overview section  not working as expected. Coz there are data in the cloud which when I refereshed from cloud should show some data in the overview.
+
+App is crashing stil. This time instead of when I open the widget I had overview page opened.
 ---
 #Ignore
 Just a side: claude-auto-resume -p "continue"
