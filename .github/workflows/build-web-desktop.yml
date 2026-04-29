@@ -1,0 +1,58 @@
+name: Build Web Desktop Package
+
+on:
+  push:
+    tags:
+      - 'web-v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: react_desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: react_desktop
+        run: npm ci
+
+      - name: Build
+        working-directory: react_desktop
+        run: npm run build
+
+      - name: Package (zip dist + server.cjs)
+        working-directory: react_desktop
+        run: |
+          zip -r ../goodtime-pomodoro-desktop.zip dist server.cjs
+          echo "Created goodtime-pomodoro-desktop.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: goodtime-pomodoro-desktop
+          path: goodtime-pomodoro-desktop.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: goodtime-pomodoro-desktop.zip
+          body: |
+            ## GoodTime Pomodoro — Web Desktop Build
+
+            ### How to run locally
+
+            1. Download `goodtime-pomodoro-desktop.zip`
+            2. Unzip it
+            3. Run: `node server.cjs`
+            4. Open http://localhost:3000
+
+            No extra dependencies needed — just Node.js 18+.
