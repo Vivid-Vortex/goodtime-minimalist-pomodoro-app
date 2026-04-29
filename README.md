@@ -96,7 +96,64 @@ Covers:
 
 ---
 
-## Building Locally
+## Web Desktop App (React)
+
+A standalone web build lives in `react_desktop/`. It runs in any browser and can be served locally with plain Node.js — **no Android device or JDK required**.
+
+### Run locally (dev mode)
+
+```bash
+cd react_desktop
+npm install
+npm run dev          # opens http://localhost:5173
+```
+
+### Run locally (production build)
+
+```bash
+cd react_desktop
+npm run start        # builds + serves at http://localhost:3000
+# or, if already built:
+npm run serve        # serves existing dist/ at http://localhost:3000
+# custom port:
+node server.cjs 8080
+```
+
+### Download a pre-built release
+
+Pre-built zips are attached to GitHub Releases tagged `web-v*`.
+
+1. Go to the **Releases** tab → find a release tagged `web-v*`
+2. Download `goodtime-pomodoro-desktop.zip`
+3. Unzip, then:
+   ```bash
+   node server.cjs          # opens http://localhost:3000 in your browser
+   ```
+   Only Node.js 18+ required — no extra dependencies.
+
+### Publish a new web release
+
+```bash
+# Bump version if needed, then:
+git tag web-v1.0.0
+git push origin web-v1.0.0
+```
+
+GitHub Actions (`.github/workflows/build-web-desktop.yml`) will:
+- Build the React app
+- Zip `dist/ + server.cjs` into `goodtime-pomodoro-desktop.zip`
+- Attach it to a GitHub Release automatically
+
+### Create a local zip package
+
+```bash
+cd react_desktop
+npm run package      # outputs goodtime-pomodoro-desktop.zip one level up
+```
+
+---
+
+## Building Locally (Android)
 
 Requirements: JDK 17, Android SDK (compile SDK 36)
 
