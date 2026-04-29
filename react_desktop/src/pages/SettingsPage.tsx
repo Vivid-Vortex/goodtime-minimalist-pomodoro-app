@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Plus, Trash2, Check, X, Cloud, CloudDownload, ChevronDown, ChevronUp } from 'lucide-react'
 import { useTimerProfiles } from '../queries/useTimerProfiles'
 import { useSettings } from '../queries/useSettings'
@@ -10,7 +10,7 @@ import { useTimer } from '../context/TimerContext'
 import { formatDateId } from '../lib/dateUtils'
 import type { TimerProfile } from '../types/settings'
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="space-y-3">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">{title}</h2>
