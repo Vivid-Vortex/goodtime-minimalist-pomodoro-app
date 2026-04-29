@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "serve": "node server.cjs",
     "start": "npm run build && node server.cjs",
-    "package": "npm run build && node scripts/package.cjs"
+    "package": "npm run build && node scripts/package.cjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -18,6 +21,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.100.6",
     "@tanstack/react-query-devtools": "^5.100.6",
+    "@tauri-apps/api": "^2.10.1",
     "firebase": "^12.12.1",
     "lucide-react": "^1.12.0",
     "react": "^19.2.5",
@@ -29,6 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.2.4",
+    "@tauri-apps/cli": "^2.10.1",
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
