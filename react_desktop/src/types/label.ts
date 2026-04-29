@@ -1,0 +1,16 @@
+export interface Label {
+  id: string
+  name: string        // tag abbreviation shown in app, e.g. "W1M"
+  color: string       // hex color, e.g. "#d975f7"
+  order: number
+  createdAt: number   // epoch ms
+}
+
+export const LABEL_COLORS = [
+  '#f44336', '#e91e63', '#9c27b0', '#673ab7',
+  '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4',
+  '#009688', '#4caf50', '#8bc34a', '#cddc39',
+  '#ffeb3b', '#ffc107', '#ff9800', '#ff5722',
+  '#795548', '#9e9e9e', '#607d8b', '#d975f7',
+  '#c54af0', '#00e676', '#40c4ff', '#ff6d00',
+]

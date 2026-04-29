@@ -69,51 +69,55 @@ surface: { 700: '#2a2a2a', 800: '#1e1e1e', 900: '#121212' }
 
 ---
 
-## Phase 2 — Firebase & TanStack Query Data Layer
+## Phase 2 — Firebase & TanStack Query Data Layer ✔️
 **Goal:** All Firestore reads/writes wrapped in typed query/mutation hooks.
 
 ### Firebase setup (`src/firebase.ts`)
-- ⬜ `initializeApp(firebaseConfig)` using values from `google-services.json`
-- ⬜ Export `db = getFirestore(app)`
-- ⬜ Export `auth = getAuth(app)` (for future auth if needed)
+- ✅ `initializeApp(firebaseConfig)` using values from `google-services.json`
+- ✅ Export `db = getFirestore(app)`
 
 ### Query key factory (`src/queryKeys.ts`)
-- ⬜ `labels.all`, `labels.detail(id)`
-- ⬜ `settings.all`
-- ⬜ `timerProfiles.all`
-- ⬜ `sessions.list(filters)`, `sessions.detail(id)`
-- ⬜ `statistics.overview(period)`, `statistics.timeline(range)`
-- ⬜ `cloud.timesheetEntry(date)`, `cloud.appHistory(date)`
+- ✅ `labels.all`, `labels.detail(id)`
+- ✅ `settings.all`
+- ✅ `timerProfiles.all`
+- ✅ `sessions.all`, `sessions.byDate(date)`
+- ✅ `cloud.timesheetEntry(date)`, `cloud.appHistory(date)`
+- ✅ `statistics.overview()`
 
 ### Firestore helpers (`src/lib/firestore.ts`)
-- ⬜ `getTimesheetEntry(date)` → reads `timesheet_entries/{dd-mm-yyyy}`
-- ⬜ `upsertTimesheetEntry(date, data)` → creates or merges
-- ⬜ `getAppHistory(date)` → reads `pomodoro_app_history/{dd-mm-yyyy}`
-- ⬜ `pushAppHistory(date, session)` → appends session to cloud history
+- ✅ `getTimesheetEntry(date)` → reads `timesheet_entries/{dd-mm-yyyy}`
+- ✅ `upsertTimesheetEntry(date, fieldPatch)` → creates or merges (additive)
+- ✅ `setTimesheetFields(date, fieldValues)` → creates or overwrites specific fields
+- ✅ `getAppHistory(date)` → reads `pomodoro_app_history/{dd-mm-yyyy}`
+- ✅ `pushAppHistoryEntry(date, entry)` → appends entry to cloud history
 
 ### Local storage helpers (`src/lib/localStorage.ts`)
-- ⬜ `getLabels()` / `saveLabels(labels)`
-- ⬜ `getSettings()` / `saveSettings(settings)`
-- ⬜ `getTimerProfiles()` / `saveTimerProfiles(profiles)`
-- ⬜ `getSessions(date)` / `appendSession(session)`
+- ✅ `getLabels()` / `saveLabels(labels)`
+- ✅ `getSettings()` / `saveSettings(settings)`
+- ✅ `getTimerProfiles()` / `saveTimerProfiles(profiles)`
+- ✅ `getSessions()` / `appendSession(session)` / `updateSession()` / `deleteSession()`
+
+### Supporting libs
+- ✅ `src/lib/tagMapping.ts` — TAG_TO_FIELD map, DEFAULT_TAG_SNAPSHOT, buildFieldPatch()
+- ✅ `src/lib/dateUtils.ts` — formatDateId, todayId, parseDateId, formatMmSs
+- ✅ `src/types/` — label.ts, session.ts, settings.ts, firestore.ts
 
 ### Query hooks (`src/queries/`)
-- ⬜ `useLabels()` → reads from localStorage
-- ⬜ `useSettings()` → reads from localStorage
-- ⬜ `useTimerProfiles()` → reads from localStorage
-- ⬜ `useSessions(date)` → reads from localStorage
-- ⬜ `useTimesheetEntry(date)` → reads from Firestore
-- ⬜ `useAppHistory(date)` → reads from Firestore
+- ✅ `useLabels()` → reads from localStorage
+- ✅ `useSettings()` → reads from localStorage
+- ✅ `useTimerProfiles()` → reads from localStorage
+- ✅ `useSessions()`, `useSessionsByDate(date)` → reads from localStorage
+- ✅ `useTimesheetEntry(date)` → reads from Firestore
+- ✅ `useCloudAppHistory(date)` → reads from Firestore
 
 ### Mutation hooks (`src/mutations/`)
-- ⬜ `useCreateLabel()` → saves to localStorage + invalidates `labels.all`
-- ⬜ `useUpdateLabel()` → saves to localStorage + invalidates `labels.all`
-- ⬜ `useDeleteLabel()` → saves to localStorage + invalidates `labels.all`
-- ⬜ `useSaveSettings()` → saves to localStorage + invalidates `settings.all`
-- ⬜ `useSaveTimerProfile()` → saves to localStorage + invalidates `timerProfiles.all`
-- ⬜ `useDeleteTimerProfile()` → saves to localStorage + invalidates `timerProfiles.all`
-- ⬜ `usePushToCloud()` → writes to Firestore `timesheet_entries` using tag-mapping logic from CLAUDE.md
-- ⬜ `usePullFromCloud()` → fetches Firestore data → updates statistics query cache
+- ✅ `useCreateLabel()` → saves to localStorage + invalidates `labels.all`
+- ✅ `useUpdateLabel()` → saves to localStorage + invalidates `labels.all`
+- ✅ `useDeleteLabel()` → saves to localStorage + invalidates `labels.all`
+- ✅ `useSaveSettings()` → saves to localStorage + invalidates `settings.all`
+- ✅ `useSaveTimerProfile()` / `useDeleteTimerProfile()` → localStorage + invalidates
+- ✅ `usePushToCloud()` → groups sessions by date+label, resolves field via tagMapping, sets Firestore
+- ✅ `usePullFromCloud()` → fetches entries by date, seeds query cache
 
 **Commit:** `feat(react_desktop/p2): Firebase + TanStack Query data layer`
 
@@ -338,9 +342,9 @@ react_desktop/                   ← standalone Vite project
 
 | Phase | Status | Commit |
 |-------|--------|--------|
-| 0 — Bootstrap | ⬜ | — |
-| 1 — App Shell | ⬜ | — |
-| 2 — Data Layer | ⬜ | — |
+| 0 — Bootstrap | ✔️ | d880e680 |
+| 1 — App Shell | ✔️ | d880e680 |
+| 2 — Data Layer | ✔️ | — |
 | 3 — Timer Engine | ⬜ | — |
 | 4 — Timer Page | ⬜ | — |
 | 5 — Labels Page | ⬜ | — |
