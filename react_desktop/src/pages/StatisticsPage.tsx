@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react'
+import { RefreshCw } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts'
 import { useSessions } from '../queries/useSessions'
 import { useLabels } from '../queries/useLabels'
+import { useCloudStats } from '../queries/useCloudStats'
+import { useRefreshCloudStats } from '../mutations/useRefreshCloudStats'
 import { todayId, parseDateId } from '../lib/dateUtils'
+import type { Session } from '../types/session'
 
 const TABS = ['Overview', 'Timeline', 'History'] as const
 type Tab = (typeof TABS)[number]
@@ -20,10 +24,29 @@ function fmtMin(min: number) {
   return `${Math.floor(min / 60)}h ${min % 60}m`
 }
 
+/** Merge local + cloud sessions, cloud wins for same date+label (no double-counting). */
+function mergeSessions(local: Session[], cloud: Session[]): Session[] {
+  if (cloud.length === 0) return local
+
+  // Build a set of date+label keys already covered by cloud
+  const cloudKeys = new Set(cloud.map((s) => `${s.date}|${s.labelName}`))
+  // Keep local sessions not already represented in cloud
+  const onlyLocal = local.filter((s) => !cloudKeys.has(`${s.date}|${s.labelName}`))
+  return [...cloud, ...onlyLocal]
+}
+
 export default function StatisticsPage() {
   const [tab, setTab] = useState<Tab>('Overview')
-  const { data: sessions = [] } = useSessions()
+  const { data: localSessions = [] } = useSessions()
+  const { data: cloudSessions = [] } = useCloudStats()
   const { data: labels = [] } = useLabels()
+  const refresh = useRefreshCloudStats()
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
+
+  const sessions = useMemo(
+    () => mergeSessions(localSessions, cloudSessions),
+    [localSessions, cloudSessions],
+  )
 
   const labelColorMap = useMemo(() => {
     const m: Record<string, string> = {}
@@ -47,7 +70,6 @@ export default function StatisticsPage() {
     .filter((s) => nowMs - parseDateId(s.date) < monthMs)
     .reduce((a, s) => a + s.durationMinutes, 0)
 
-  // Timeline: group by date, by label
   const timelineData = useMemo(() => {
     const byDate = new Map<string, Record<string, number>>()
     for (const s of sessions) {
@@ -66,18 +88,44 @@ export default function StatisticsPage() {
     [sessions]
   )
 
-  // Pie: label breakdown (all time)
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {}
     sessions.forEach((s) => { acc[s.labelName] = (acc[s.labelName] ?? 0) + s.durationMinutes })
     return Object.entries(acc).map(([name, value]) => ({ name, value }))
   }, [sessions])
 
+  async function handleRefresh() {
+    setRefreshMsg(null)
+    try {
+      const result = await refresh.mutateAsync()
+      setRefreshMsg(`Fetched ${result.length} cloud entr${result.length === 1 ? 'y' : 'ies'}.`)
+    } catch {
+      setRefreshMsg('Failed to fetch cloud data.')
+    }
+  }
+
+  const hasCloudData = cloudSessions.length > 0
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="px-6 pt-5 pb-0 border-b border-[#2a2a2a] shrink-0">
-        <h1 className="text-base font-semibold text-white mb-3">Statistics</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-base font-semibold text-white">Statistics</h1>
+          <button
+            onClick={handleRefresh}
+            disabled={refresh.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#c54af0] hover:text-white disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={12} className={refresh.isPending ? 'animate-spin' : ''} />
+            {refresh.isPending ? 'Refreshing…' : 'Refresh from Cloud'}
+          </button>
+        </div>
+
+        {refreshMsg && (
+          <p className="text-xs text-gray-500 mb-2">{refreshMsg}</p>
+        )}
+
         <div className="flex gap-1">
           {TABS.map((t) => (
             <button
@@ -99,7 +147,19 @@ export default function StatisticsPage() {
         {/* ── Overview ──────────────────────────────────────────────────────── */}
         {tab === 'Overview' && (
           <div className="space-y-6">
-            {/* Stat cards */}
+            {!hasCloudData && (
+              <div className="bg-[#1a1a1a] border border-dashed border-[#2a2a2a] rounded-xl p-4 text-center space-y-2">
+                <p className="text-xs text-gray-500">No cloud data loaded yet.</p>
+                <button
+                  onClick={handleRefresh}
+                  disabled={refresh.isPending}
+                  className="px-4 py-1.5 text-xs rounded-lg bg-[#c54af0] text-white hover:bg-[#d975f7] disabled:opacity-50 transition-colors"
+                >
+                  {refresh.isPending ? 'Refreshing…' : 'Refresh from Cloud'}
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Today', value: fmtMin(todayMin), sub: `${sessions.filter(s => s.date === today).length} sessions` },
@@ -115,7 +175,6 @@ export default function StatisticsPage() {
               ))}
             </div>
 
-            {/* Pie chart */}
             {pieData.length > 0 && (
               <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
                 <h2 className="text-xs text-gray-500 mb-3 uppercase tracking-wider">By Label</h2>
@@ -136,7 +195,7 @@ export default function StatisticsPage() {
             {sessions.length === 0 && (
               <div className="flex flex-col items-center justify-center h-40 text-gray-600 space-y-1">
                 <p className="text-sm">No sessions yet</p>
-                <p className="text-xs">Complete a focus session to see stats</p>
+                <p className="text-xs">Complete a focus session or refresh from cloud</p>
               </div>
             )}
           </div>
@@ -197,6 +256,9 @@ export default function StatisticsPage() {
                     <span className="text-xs text-gray-700">
                       {new Date(s.endedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
+                    {s.id.startsWith('cloud-') && (
+                      <span className="text-xs text-[#c54af0]/60 bg-[#c54af0]/10 px-1.5 py-0.5 rounded">cloud</span>
+                    )}
                   </div>
                 ))
             )}

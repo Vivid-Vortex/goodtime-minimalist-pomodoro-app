@@ -7,6 +7,7 @@ const KEY_LABELS = 'gt_labels'
 const KEY_SETTINGS = 'gt_settings'
 const KEY_PROFILES = 'gt_timer_profiles'
 const KEY_SESSIONS = 'gt_sessions'
+const KEY_CLOUD_STATS = 'gt_cloud_stats'
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -73,4 +74,14 @@ export function updateSession(id: string, patch: Partial<Session>): void {
 
 export function deleteSession(id: string): void {
   write(KEY_SESSIONS, getSessions().filter((s) => s.id !== id))
+}
+
+// ── Cloud stats (persisted Firestore snapshot for Statistics) ─────────────────
+
+export function getCloudStats(): Session[] {
+  return read<Session[]>(KEY_CLOUD_STATS, [])
+}
+
+export function saveCloudStats(sessions: Session[]): void {
+  write(KEY_CLOUD_STATS, sessions)
 }

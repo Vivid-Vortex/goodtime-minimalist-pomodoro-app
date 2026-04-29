@@ -1,6 +1,7 @@
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   arrayUnion,
@@ -173,6 +174,13 @@ export async function setTimesheetFields(
     }
     await updateDoc(ref, updates)
   }
+}
+
+// ── Fetch all timesheet entries (for Statistics) ──────────────────────────────
+
+export async function getAllTimesheetEntries(): Promise<TimesheetEntry[]> {
+  const snap = await getDocs(collection(db, TIMESHEET_COL))
+  return snap.docs.map((d) => d.data() as TimesheetEntry)
 }
 
 // ── App history ───────────────────────────────────────────────────────────────

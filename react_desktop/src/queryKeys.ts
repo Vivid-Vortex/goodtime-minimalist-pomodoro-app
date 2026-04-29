@@ -20,4 +20,7 @@ export const queryKeys = {
   statistics: {
     overview: () => ['statistics', 'overview'] as const,
   },
+  cloudStats: {
+    all: ['cloudStats'] as const,
+  },
 }
