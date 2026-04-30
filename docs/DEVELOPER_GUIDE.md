@@ -19,6 +19,8 @@
 11. [CI/CD Pipelines](#11-cicd-pipelines)
 12. [Release Process](#12-release-process)
 13. [Adding Features — Checklists](#13-adding-features--checklists)
+14. [Authentication Setup](#14-authentication-setup)
+15. [Firestore Security Rules](#15-firestore-security-rules)
 
 ---
 
@@ -610,3 +612,148 @@ All three release types can coexist on the same commit — each uses a different
 - [ ] Create `src/queries/useNewThing.ts` (for reads)
   or `src/mutations/useNewAction.ts` (for writes)
 - [ ] In the mutation's `onSuccess`, call `queryClient.invalidateQueries({ queryKey: queryKeys.newThing.all })`
+
+---
+
+## 14. Authentication Setup
+
+The app uses **Firebase Authentication with Google Sign-In** across all platforms. Sessions are persisted automatically by the Firebase SDK — users stay signed in permanently across restarts.
+
+### How it works
+
+| Platform | Sign-in method | Session storage |
+|---|---|---|
+| Web (browser) | `signInWithPopup` | Firebase SDK → browser IndexedDB |
+| Tauri (native) | `signInWithPopup` | Firebase SDK → app data directory |
+| Android | `GoogleSignIn` activity → `signInWithCredential` | Firebase SDK → app secure storage |
+
+On every app launch the Firebase SDK checks for a stored credential silently. If found the user goes straight to the app; if not, the login screen is shown.
+
+### Web / Tauri — no setup required
+
+Firebase Auth is wired up in `react_desktop/src/firebase.ts` and `react_desktop/src/hooks/useAuth.ts`. No additional configuration is needed — it works out of the box once Google Sign-In is enabled in the Firebase Console (see below).
+
+### Android — one-time setup required
+
+Google Sign-In on Android requires your app's signing certificate SHA-1 to be registered in Firebase. Without this, the Google sign-in dialog will fail silently.
+
+**Step 1 — Enable Google Sign-In in Firebase Console**
+
+1. Open [Firebase Console](https://console.firebase.google.com) → select the `timesheetkotlin` project
+2. Authentication → Sign-in method → Google → toggle **Enable** → Save
+
+**Step 2 — Get your debug SHA-1 fingerprint**
+
+```bash
+./gradlew :androidApp:signingReport
+```
+
+Look for the `debug` variant in the output:
+
+```
+Variant: debug
+Config: debug
+Store: .../.android/debug.keystore
+Alias: AndroidDebugKey
+MD5:  XX:XX:...
+SHA1: AA:BB:CC:DD:...   ← copy this
+SHA-256: ...
+```
+
+**Step 3 — Register the SHA-1 in Firebase**
+
+1. Firebase Console → Project Settings (gear icon) → Your apps → Android app (`com.apps.adrcotfas.goodtime`)
+2. Click **Add fingerprint** → paste the SHA-1 → Save
+3. Click **Download google-services.json** and replace `androidApp/google-services.json` in the repo
+
+> The Gradle Google Services plugin reads `google-services.json` and auto-generates `R.string.default_web_client_id`, which `LoginScreen.kt` uses to initialise the `GoogleSignInOptions`. If the file is stale or missing the web client entry, sign-in will crash.
+
+**Step 4 — For release builds**
+
+Release APKs use a different signing key than the debug keystore. Get the release SHA-1 with:
+
+```bash
+keytool -list -v -keystore your-release.keystore -alias your-alias
+```
+
+Register that SHA-1 in Firebase the same way. Both debug and release fingerprints can be registered simultaneously.
+
+### Relevant source files
+
+| File | Purpose |
+|---|---|
+| `react_desktop/src/firebase.ts` | Exports `auth` + `googleProvider` |
+| `react_desktop/src/hooks/useAuth.ts` | `onAuthStateChanged` hook — `{ user, loading }` |
+| `react_desktop/src/pages/LoginPage.tsx` | Web/Tauri login screen |
+| `react_desktop/src/App.tsx` | Auth gate — spinner → login → app |
+| `androidApp/src/main/java/.../auth/LoginScreen.kt` | Android Compose login screen |
+| `androidApp/src/main/java/.../main/Destination.kt` | `LoginDest` route |
+| `androidApp/src/main/java/.../MainActivity.kt` | Start destination picks `LoginDest` when `currentUser == null` |
+
+---
+
+## 15. Firestore Security Rules
+
+### Current state (open — for testing)
+
+During development and initial testing the Firestore rules are intentionally left open so auth can be verified without the rules blocking requests:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+
+This means anyone who finds the Firebase config in the public repo can read or write the database. **Change the rules once auth is confirmed working** (see below).
+
+### Why the Firebase config being public is acceptable
+
+The `apiKey` in `firebase.ts` and `google-services.json` is a **project identifier**, not an authentication credential. Google explicitly designs it to be public. The real security boundary is the Firestore Security Rules, not the key.
+
+### Tighten rules after testing
+
+Once you have confirmed that sign-in works on all platforms (web, Tauri, Android), go to:
+
+**Firebase Console → Firestore Database → Rules**
+
+Replace the current rule with:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+Click **Publish**. From this point any request without a valid Firebase Auth token is rejected — the config being public no longer poses a risk.
+
+### Lock to a specific account (optional, stricter)
+
+If this is a single-user personal app, you can lock the database to only your Google account:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null
+                         && request.auth.token.email == "your-email@gmail.com";
+    }
+  }
+}
+```
+
+This rejects any other Google account even if they somehow obtain the config and sign in.
+
+### Rules do not require a code change or redeploy
+
+Firestore Security Rules are evaluated server-side. Updating them in the Firebase Console takes effect immediately for all clients — no app update needed.
