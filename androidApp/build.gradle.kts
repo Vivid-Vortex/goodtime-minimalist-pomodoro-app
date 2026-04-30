@@ -151,6 +151,8 @@ dependencies {
 
     implementation(libs.work.runtime.ktx)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.play.services.auth)
 
     "googleImplementation"(libs.billing.ktx)
     "googleImplementation"(libs.app.update.ktx)

@@ -20,6 +20,9 @@ package com.apps.adrcotfas.goodtime.main
 import kotlinx.serialization.Serializable
 
 @Serializable
+data object LoginDest
+
+@Serializable
 data object OnboardingDest
 
 @Serializable

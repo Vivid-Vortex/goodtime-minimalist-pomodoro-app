@@ -49,8 +49,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.apps.adrcotfas.goodtime.auth.LoginScreen
 import com.apps.adrcotfas.goodtime.billing.ProScreen
 import com.apps.adrcotfas.goodtime.bl.notifications.NotificationArchManager
+import com.google.firebase.auth.FirebaseAuth
 import com.apps.adrcotfas.goodtime.data.settings.isDarkTheme
 import com.apps.adrcotfas.goodtime.labels.addedit.AddEditLabelScreen
 import com.apps.adrcotfas.goodtime.labels.archived.ArchivedLabelsScreen
@@ -64,6 +66,7 @@ import com.apps.adrcotfas.goodtime.main.GoodtimeMainActivity
 import com.apps.adrcotfas.goodtime.main.LabelsDest
 import com.apps.adrcotfas.goodtime.main.LicensesDest
 import com.apps.adrcotfas.goodtime.main.LocalDataDest
+import com.apps.adrcotfas.goodtime.main.LoginDest
 import com.apps.adrcotfas.goodtime.main.MainDest
 import com.apps.adrcotfas.goodtime.main.MainScreen
 import com.apps.adrcotfas.goodtime.main.NotificationSettingsDest
@@ -215,10 +218,10 @@ class MainActivity : GoodtimeMainActivity() {
             toggleKeepScreenOn(isActive && keepScreenOn)
             val startDestination =
                 remember(mainUiState.showOnboarding) {
-                    if (mainUiState.showOnboarding) {
-                        OnboardingDest
-                    } else {
-                        MainDest
+                    when {
+                        FirebaseAuth.getInstance().currentUser == null -> LoginDest
+                        mainUiState.showOnboarding -> OnboardingDest
+                        else -> MainDest
                     }
                 }
 
@@ -275,6 +278,17 @@ class MainActivity : GoodtimeMainActivity() {
                         navController = navController,
                         startDestination = startDestination,
                     ) {
+                        composable<LoginDest> {
+                            LoginScreen(
+                                onSignedIn = {
+                                    navController.navigate(
+                                        if (mainUiState.showOnboarding) OnboardingDest else MainDest
+                                    ) {
+                                        popUpTo(LoginDest) { inclusive = true }
+                                    }
+                                },
+                            )
+                        }
                         composable<OnboardingDest> { OnboardingScreen() }
                         composable<MainDest> {
                             MainScreen(

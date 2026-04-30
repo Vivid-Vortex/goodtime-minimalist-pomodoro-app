@@ -52,6 +52,8 @@ work = "2.10.3"
 
 gms = "4.4.2"
 firebase-firestore = "25.0.0"
+firebase-auth = "23.1.0"
+play-services-auth = "21.3.0"
 
 [libraries]
 acra-mail = { module = "ch.acra:acra-mail", version.ref = "acra" }
@@ -111,6 +113,8 @@ touchlab-kermit-simple = { module = "co.touchlab:kermit-simple", version.ref = "
 mikepenz-aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "mikepenz-aboutlibraries" }
 mikepenz-aboutlibraries-compose = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "mikepenz-aboutlibraries" }
 firebase-firestore = { module = "com.google.firebase:firebase-firestore-ktx", version.ref = "firebase-firestore"}
+firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx", version.ref = "firebase-auth" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
 
 vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
 vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
