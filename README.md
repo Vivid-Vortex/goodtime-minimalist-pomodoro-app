@@ -153,6 +153,62 @@ npm run package      # outputs goodtime-pomodoro-desktop.zip one level up
 
 ---
 
+## Tauri Desktop App (Native .exe / .dmg)
+
+Tauri wraps the same React frontend in a **native desktop window** using the OS's built-in webview (WebView2 on Windows, WKWebView on macOS) instead of bundling a full browser like Electron. Result: ~20–50 MB RAM vs ~200–400 MB, and a ~5 MB installer instead of ~150 MB.
+
+| | Node + Chrome (web) | Tauri (native) |
+|---|---|---|
+| RAM | ~50 MB Node + ~100 MB Chrome | ~20–50 MB total |
+| Installer size | zip ~3 MB | ~5 MB |
+| Requires browser | Yes | No |
+| Requires Node to run | Yes | No |
+
+### Prerequisites (one-time)
+
+- **Rust** — install via [rustup.rs](https://rustup.rs) or `winget install Rustlang.Rustup`
+- **Windows**: WebView2 is pre-installed on Windows 10/11
+- **Linux**: `sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf`
+
+### Run in dev mode (hot-reload native window)
+
+```bash
+cd react_desktop
+npm install
+npm run tauri:dev    # opens a native window with Vite hot-reload
+```
+
+### Build release installer
+
+```bash
+cd react_desktop
+npm run tauri:build
+# Windows:  src-tauri/target/release/bundle/nsis/*.exe
+# macOS:    src-tauri/target/release/bundle/dmg/*.dmg
+# Linux:    src-tauri/target/release/bundle/appimage/*.AppImage
+```
+
+First build takes 5–10 min (Rust compiles dependencies). Subsequent builds are ~1 min.
+
+### Download a pre-built installer
+
+Native installers are attached to GitHub Releases tagged `desktop-v*`.
+
+1. Go to the **Releases** tab → find a release tagged `desktop-v*`
+2. Download the installer for your OS (`.exe` / `.dmg` / `.AppImage`)
+3. Install and run — no Node, no browser, no extra dependencies needed
+
+### Publish a new Tauri release
+
+```bash
+git tag desktop-v1.0.0
+git push origin desktop-v1.0.0
+```
+
+GitHub Actions (`.github/workflows/build-tauri.yml`) will build all three platforms and attach installers to the release automatically.
+
+---
+
 ## Building Locally (Android)
 
 Requirements: JDK 17, Android SDK (compile SDK 36)
