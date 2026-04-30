@@ -1,247 +1,98 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev) [![Crowdin](https://d322cqt584bo4o.cloudfront.net/goodtime/localized.svg)](https://crowdin.com/project/goodtime)
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev)
 
-# Pomodoro Auto (fork of Goodtime)
+# Pomodoro Auto
 
-A minimalist but powerful productivity timer designed to keep you focused and free of distractions —
-extended with Firestore cloud sync, detailed timesheet tracking, and personal productivity analytics.
+A minimalist productivity timer with Firestore cloud sync, label-based time tracking, and cross-device statistics. Fork of [Goodtime](https://github.com/adrcotfas/goodtime).
 
 ---
 
-## Releases & Downloads
+## Documentation
 
-APKs are built automatically via GitHub Actions and published as GitHub Releases.
+| | |
+|---|---|
+| **[User Guide](docs/USER_GUIDE.md)** | Install, timer basics, labels, profiles, cloud sync, statistics |
+| **[Developer Guide](docs/DEVELOPER_GUIDE.md)** | Architecture, tech stack, first-time setup, data model, CI/CD |
 
-**To download the latest APK:**
-1. Go to the **Releases** tab of this repository
-2. Download `PomodoroAuto-<version>-build<N>.apk`
-3. Enable **Install from unknown sources** on your device and install
+---
 
-**To publish a new release:**
+## Quick Start
+
+### Android
+Download `PomodoroAuto-*.apk` from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) and install.
+
+### Web App (any browser, needs Node.js 18+)
 ```bash
-# 1. Edit version.properties at the project root (optional — only needed for version name changes)
-#    VERSION_NAME=3.1.0   ← change for major/minor bumps
-#    VERSION_CODE=345     ← leave this, CI auto-increments it
-
-# 2. Push a version tag — this triggers the GitHub Actions build
-git tag v3.1.0
-git push origin dev
-git push origin v3.1.0
+# Download goodtime-pomodoro-desktop.zip from Releases (tagged web-v*)
+node server.cjs          # opens http://localhost:3000
 ```
 
-GitHub Actions will:
-- Auto-increment `VERSION_CODE`
-- Build the `googleRelease` APK
-- Create a GitHub Release with the APK attached for direct download
+### Native Desktop (Windows / macOS / Linux, ~20–50 MB RAM)
+Download the installer from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) (tagged `desktop-v*`). No Node, no browser required.
 
-> **Version file:** `version.properties` (project root) — edit `VERSION_NAME` here for major/minor bumps.
+### Dev mode (React)
+```bash
+cd react_desktop && npm install && npm run dev
+```
 
 ---
 
 ## Features
 
-### Timer
-- Minimalist countdown / count-up timer with configurable profiles (72/5, 90/5, 25/5, custom)
-- **Auto start break toggle** — small pill button on the timer screen to enable/disable automatic break start after a focus session
-- Dial control gestures: swipe left/right to skip, swipe up to add 1 min, swipe down to reset
-
-### Cloud Sync (Firestore)
-- **Save to cloud** — manually push session data to Firestore under `timesheet_entries` and `pomodoro_app_history` collections
-- **Auto push at midnight** — enable under Settings → Backup and restore; automatically completes any active timer session and pushes all data to cloud at 12:00 AM daily
-- Multi-device support: each device writes its history with a device name badge; Timeline aggregates data intelligently across devices
-
-### Statistics
-- **Overview** — productivity summary based on combined timeline data
-- **Combined App History** — full session log pulled from cloud (read-only, refresh on demand)
-- **Combined Timeline** — aggregated minutes per tag per date, used for graphs and analytics
-- Local device sections: App History and Timeline for current device
-
-### Backup & Restore
-- Export/import local SQLite backup
-- Export CSV / JSON
-- Auto local backup (configurable path)
-- Auto cloud backup to Firestore (daily at midnight)
-
-### Timer Profiles
-- Profiles stored locally and in Firestore (`global_notes/timer_profile`)
-- Default profiles: 72/5 (default), 90/5, 25/5
-- User can add/rename/delete profiles; changes saved to cloud
+- **Timer** — countdown with configurable profiles (72/5, 90/5, 25/5, custom); auto-start break/work; dial gestures on Android
+- **Labels** — tag focus sessions (W1M, ESS, LTG, …) to see where your time goes
+- **Cloud sync** — manual push/pull to Firestore; multi-device with per-device history badges
+- **Statistics** — overview cards, 14-day stacked bar chart, full session log; merges local + cloud data
+- **Timer profiles** — stored locally and in Firestore (`global_notes/timer_profile`); unlimited profiles
+- **Backup & restore** — SQLite export, CSV/JSON export, scheduled cloud push
 
 ---
 
-## Firestore Data Structure
+## Releases
 
-### `timesheet_entries/<dd-mm-yyyy>`
-Aggregated work minutes per tag per date. Updated on every cloud push.
-
-### `pomodoro_app_history/<dd-mm-yyyy>`
-Raw session entries per device. Each entry includes tag, duration (minutes), device name, and timestamp.
-
-### `global_notes/timer_profile`
-Timer profile definitions (focus duration, break duration, name).
-
----
-
-## Developer Guide
-
-For a full technical reference — including what files to touch when adding a field, form, screen, label, or setting, plus an AI agent prompt template — see:
-
-**[DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)**
-
-Covers:
-- Complete data flow (Room → ViewModel → Compose → Firestore)
-- tagSnapshot → formData mapping logic
-- Per-change checklists (settings, Room columns, Firestore fields, new screens)
-- File map of the entire codebase
-- Agent prompt template for AI-assisted development
-
----
-
-## Web Desktop App (React)
-
-A standalone web build lives in `react_desktop/`. It runs in any browser and can be served locally with plain Node.js — **no Android device or JDK required**.
-
-### Run locally (dev mode)
-
-```bash
-cd react_desktop
-npm install
-npm run dev          # opens http://localhost:5173
-```
-
-### Run locally (production build)
-
-```bash
-cd react_desktop
-npm run start        # builds + serves at http://localhost:3000
-# or, if already built:
-npm run serve        # serves existing dist/ at http://localhost:3000
-# custom port:
-node server.cjs 8080
-```
-
-### Download a pre-built release
-
-Pre-built zips are attached to GitHub Releases tagged `web-v*`.
-
-1. Go to the **Releases** tab → find a release tagged `web-v*`
-2. Download `goodtime-pomodoro-desktop.zip`
-3. Unzip, then:
-   ```bash
-   node server.cjs          # opens http://localhost:3000 in your browser
-   ```
-   Only Node.js 18+ required — no extra dependencies.
-
-### Publish a new web release
-
-```bash
-# Bump version if needed, then:
-git tag web-v1.0.0
-git push origin web-v1.0.0
-```
-
-GitHub Actions (`.github/workflows/build-web-desktop.yml`) will:
-- Build the React app
-- Zip `dist/ + server.cjs` into `goodtime-pomodoro-desktop.zip`
-- Attach it to a GitHub Release automatically
-
-### Create a local zip package
-
-```bash
-cd react_desktop
-npm run package      # outputs goodtime-pomodoro-desktop.zip one level up
-```
-
----
-
-## Tauri Desktop App (Native .exe / .dmg)
-
-Tauri wraps the same React frontend in a **native desktop window** using the OS's built-in webview (WebView2 on Windows, WKWebView on macOS) instead of bundling a full browser like Electron. Result: ~20–50 MB RAM vs ~200–400 MB, and a ~5 MB installer instead of ~150 MB.
-
-| | Node + Chrome (web) | Tauri (native) |
+| Platform | Tag prefix | Asset |
 |---|---|---|
-| RAM | ~50 MB Node + ~100 MB Chrome | ~20–50 MB total |
-| Installer size | zip ~3 MB | ~5 MB |
-| Requires browser | Yes | No |
-| Requires Node to run | Yes | No |
+| Android APK | `v*` | `PomodoroAuto-*.apk` |
+| Web App zip | `web-v*` | `goodtime-pomodoro-desktop.zip` |
+| Native desktop | `desktop-v*` | `.exe` / `.dmg` / `.AppImage` |
 
-### Prerequisites (one-time)
-
-- **Rust** — install via [rustup.rs](https://rustup.rs) or `winget install Rustlang.Rustup`
-- **Windows**: WebView2 is pre-installed on Windows 10/11
-- **Linux**: `sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf`
-
-### Run in dev mode (hot-reload native window)
+### Publish a release
 
 ```bash
-cd react_desktop
-npm install
-npm run tauri:dev    # opens a native window with Vite hot-reload
+# Android
+git tag v3.2.0 && git push origin v3.2.0
+
+# Web App
+git tag web-v1.3.0 && git push origin web-v1.3.0
+
+# Native desktop (builds Windows + macOS + Linux on CI)
+git tag desktop-v1.1.0 && git push origin desktop-v1.1.0
 ```
 
-### Build release installer
-
-```bash
-cd react_desktop
-npm run tauri:build
-# Windows:  src-tauri/target/release/bundle/nsis/*.exe
-# macOS:    src-tauri/target/release/bundle/dmg/*.dmg
-# Linux:    src-tauri/target/release/bundle/appimage/*.AppImage
-```
-
-First build takes 5–10 min (Rust compiles dependencies). Subsequent builds are ~1 min.
-
-### Download a pre-built installer
-
-Native installers are attached to GitHub Releases tagged `desktop-v*`.
-
-1. Go to the **Releases** tab → find a release tagged `desktop-v*`
-2. Download the installer for your OS (`.exe` / `.dmg` / `.AppImage`)
-3. Install and run — no Node, no browser, no extra dependencies needed
-
-### Publish a new Tauri release
-
-```bash
-git tag desktop-v1.0.0
-git push origin desktop-v1.0.0
-```
-
-GitHub Actions (`.github/workflows/build-tauri.yml`) will build all three platforms and attach installers to the release automatically.
+GitHub Actions builds and attaches all assets automatically.
 
 ---
 
-## Building Locally (Android)
+## Firestore Collections
 
-Requirements: JDK 17, Android SDK (compile SDK 36)
-
-```bash
-# Debug build
-./gradlew :androidApp:assembleGoogleDebug
-
-# Install on connected device/emulator
-./gradlew :androidApp:installGoogleDebug
-
-# Release build (uses debug signing key by default)
-./gradlew :androidApp:assembleGoogleRelease
-```
+| Collection | Document ID | Purpose |
+|---|---|---|
+| `timesheet_entries` | `dd-mm-yyyy` | Aggregated minutes per tag per date |
+| `pomodoro_app_history` | `dd-mm-yyyy` | Raw session log with device name |
+| `global_notes` | `timer_profile` | Timer profile definitions |
 
 ---
 
-## Trouble with the app getting killed by Android?
+## Android — Keep it running
 
-Different phone [OEMs](https://en.wikipedia.org/wiki/Original_equipment_manufacturer) have an aggressive approach to background apps to save battery.
-Disable battery optimization for this app to ensure accurate alarms and midnight cloud push.
-
-Read more: [www.dontkillmyapp.com](https://dontkillmyapp.com/)
+Android aggressively kills background apps. Set the app to **Unrestricted** battery usage, or follow your device's instructions at [dontkillmyapp.com](https://dontkillmyapp.com).
 
 ---
 
-## claude-auto-resume plugin docs
+## claude-auto-resume
 
-This repository includes documentation for integrating the claude-auto-resume utility (third-party) into your workflow. The docs are stored under /docs:
+This repo includes local docs for the claude-auto-resume utility under `/docs`:
 
-- docs/claude-auto-resume-readme.md — upstream README (adapted) with installation and quick setup steps
-- docs/fix_Auto_Resume.md — session "cheat-sheet" containing the exact commands and PowerShell function replacements applied locally to fix Windows-specific issues
+- `docs/claude-auto-resume-readme.md` — installation and setup
+- `docs/fix_Auto_Resume.md` — Windows-specific fixes applied locally
 
-Follow docs/claude-auto-resume-readme.md for a step-by-step install and testing guide. If you applied local fixes (Windows), see docs/fix_Auto_Resume.md for the exact edits and commands used.
-
-Note: These docs are informational only — the claude-auto-resume tool is a third-party project. See the original project at: https://github.com/terryso/claude-auto-resume
+Original project: [github.com/terryso/claude-auto-resume](https://github.com/terryso/claude-auto-resume)
