@@ -14,13 +14,10 @@ jobs:
         include:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: '*.exe'
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact: '*.dmg'
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            artifact: '*.AppImage'
 
     runs-on: ${{ matrix.os }}
 
@@ -39,30 +36,42 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install Linux deps
+      - name: Install Linux system deps
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev
 
       - name: Install npm deps
         working-directory: react_desktop
         run: npm ci
 
       - name: Build Tauri app
-        working-directory: react_desktop
-        run: npm run tauri:build
+        uses: tauri-apps/tauri-action@v0
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ''
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: goodtime-pomodoro-${{ matrix.os }}
-          path: react_desktop/src-tauri/target/release/bundle/${{ matrix.artifact }}
+          projectPath: react_desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: 'GoodTime Pomodoro ${{ github.ref_name }}'
+          releaseBody: |
+            ## GoodTime Pomodoro Desktop App
 
-      - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: react_desktop/src-tauri/target/release/bundle/**/${{ matrix.artifact }}
+            Native desktop app built with Tauri — uses OS WebView, ~20–50 MB RAM.
+
+            ### Install
+            - **Windows**: download and run the `.exe` installer
+            - **macOS**: download the `.dmg`, open and drag to Applications
+            - **Linux**: download the `.AppImage`, chmod +x and run
+
+            No Node.js or browser required.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: false
