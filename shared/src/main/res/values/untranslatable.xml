@@ -24,7 +24,7 @@
     <string name="feedback_title" translatable="false">"[Goodtime Productivity] Feedback"</string>
     <string name="crash_report_title" translatable="false">"[Goodtime Productivity] Crash report"</string>
 
-    <string name="default_launcher_name" translatable="false">Pomodoro Auto</string>
+    <string name="default_launcher_name" translatable="false">Zen Mode</string>
     <string name="productivity_launcher_name" translatable="false">Productivity</string>
 
     <string-array name="settings_launcher_name">
