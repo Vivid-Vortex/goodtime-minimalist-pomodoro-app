@@ -83,11 +83,9 @@ fun AppHistoryTab(
         Log.d("AppHistoryTab", "Cloud session device: '${it.deviceName}' - Match: ${it.deviceName == currentDeviceName}")
     }
 
-    // Filter out cloud sessions from the same device to avoid duplicates
-    // Only show cloud sessions from OTHER devices
+    // Combined App History shows ALL cloud sessions from all devices
     val cloudSessions =
         cloudAppHistorySessions
-            .filter { it.deviceName != currentDeviceName }
             .sortedByDescending { it.timestamp }
             .map { cloudSession ->
                 Session(

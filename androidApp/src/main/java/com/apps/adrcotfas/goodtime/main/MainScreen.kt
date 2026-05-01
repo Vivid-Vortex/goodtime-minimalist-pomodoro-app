@@ -337,8 +337,10 @@ fun MainScreen(
                             onLabelClick = { showSelectLabelDialog = true },
                             labelData = label.getLabelData(),
                             sessionCountToday = uiState.sessionCountToday,
+                            todaySessions = uiState.todaySessions,
                             badgeItemCount = actionBadgeItemCount,
                             onResetSessionCount = { viewModel.resetTodaySessionCount() },
+                            onDeleteSession = { viewModel.deleteSession(it) },
                         )
                     }
                 }

@@ -25,15 +25,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,12 +54,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.apps.adrcotfas.goodtime.bl.AndroidTimeUtils.formatToPrettyDateAndTime
 import com.apps.adrcotfas.goodtime.bl.LabelData
 import com.apps.adrcotfas.goodtime.data.model.Label
+import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.shared.R
 import com.apps.adrcotfas.goodtime.stats.LabelChip
 import com.apps.adrcotfas.goodtime.ui.common.BadgedBoxWithCount
@@ -70,32 +79,28 @@ fun BottomAppBar(
     hide: Boolean,
     labelData: LabelData,
     sessionCountToday: Int,
+    todaySessions: List<Session> = emptyList(),
     onShowSheet: () -> Unit,
     onLabelClick: () -> Unit,
     onResetSessionCount: () -> Unit = {},
+    onDeleteSession: (Long) -> Unit = {},
 ) {
-    var showResetDialog by remember { mutableStateOf(false) }
+    var showSessionListDialog by remember { mutableStateOf(false) }
 
-    if (showResetDialog) {
-        AlertDialog(
-            onDismissRequest = { showResetDialog = false },
-            title = { Text("Reset today's count?") },
-            text = {
-                Text(
-                    "This will delete all of today's local sessions. Synced cloud data may still be updated the next time you save to cloud.",
-                )
+    if (showSessionListDialog) {
+        SessionListDialog(
+            sessions = todaySessions,
+            onDeleteSession = { id ->
+                onDeleteSession(id)
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    onResetSessionCount()
-                    showResetDialog = false
-                }) { Text("Reset") }
+            onDeleteAll = {
+                onResetSessionCount()
+                showSessionListDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showResetDialog = false }) { Text("Cancel") }
-            },
+            onDismiss = { showSessionListDialog = false },
         )
     }
+
     val haptic = LocalHapticFeedback.current
     AnimatedVisibility(
         modifier = modifier,
@@ -160,11 +165,11 @@ fun BottomAppBar(
                         .combinedClickable(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                showResetDialog = true
+                                showSessionListDialog = true
                             },
                             onLongClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showResetDialog = true
+                                showSessionListDialog = true
                             },
                         ),
                 contentAlignment = Alignment.Center,
@@ -191,4 +196,75 @@ fun BottomAppBar(
             }
         }
     }
+}
+
+@Composable
+private fun SessionListDialog(
+    sessions: List<Session>,
+    onDeleteSession: (Long) -> Unit,
+    onDeleteAll: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Today's Sessions (${sessions.size})") },
+        text = {
+            Column {
+                if (sessions.isEmpty()) {
+                    Text(
+                        text = "No sessions recorded today.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                        items(sessions, key = { it.id }) { session ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    val (date, time) = session.timestamp.formatToPrettyDateAndTime(context)
+                                    Text(
+                                        text = time,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Text(
+                                        text = "${session.duration} min · ${session.label}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                    )
+                                }
+                                IconButton(onClick = { onDeleteSession(session.id) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete session",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (sessions.isNotEmpty()) {
+                TextButton(
+                    onClick = onDeleteAll,
+                ) {
+                    Text("Delete all", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+    )
 }

@@ -34,6 +34,7 @@ import com.apps.adrcotfas.goodtime.bl.isPaused
 import com.apps.adrcotfas.goodtime.common.Time
 import com.apps.adrcotfas.goodtime.data.local.LocalDataRepository
 import com.apps.adrcotfas.goodtime.data.model.Label
+import com.apps.adrcotfas.goodtime.data.model.Session
 import com.apps.adrcotfas.goodtime.data.settings.LongBreakData
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import com.apps.adrcotfas.goodtime.data.settings.ThemePreference
@@ -89,6 +90,7 @@ data class TimerMainUiState(
     val flashScreen: Boolean = false,
     val dndDuringWork: Boolean = false,
     val sessionCountToday: Int = 0,
+    val todaySessions: List<Session> = emptyList(),
     val startOfToday: Long = 0,
     val showTutorial: Boolean = false,
     val isPro: Boolean = false,
@@ -165,10 +167,13 @@ class TimerViewModel(
                 .map { it.startOfToday }
                 .distinctUntilChanged()
                 .flatMapLatest { startOfToday ->
-                    localDataRepo.selectNumberOfSessionsAfter(startOfToday)
-                }.collect { sessionCountToday ->
+                    localDataRepo.selectSessionsAfter(startOfToday)
+                }.collect { sessions ->
                     _uiState.update {
-                        it.copy(sessionCountToday = sessionCountToday)
+                        it.copy(
+                            sessionCountToday = sessions.size,
+                            todaySessions = sessions,
+                        )
                     }
                 }
         }
@@ -297,11 +302,16 @@ class TimerViewModel(
 
     fun resetTodaySessionCount() {
         viewModelScope.launch {
-            val startOfToday = _uiState.value.startOfToday
-            val todaySessions = localDataRepo.selectSessionsAfter(startOfToday).first()
-            if (todaySessions.isNotEmpty()) {
-                localDataRepo.deleteSessions(todaySessions.map { it.id })
+            val sessions = _uiState.value.todaySessions
+            if (sessions.isNotEmpty()) {
+                localDataRepo.deleteSessions(sessions.map { it.id })
             }
+        }
+    }
+
+    fun deleteSession(id: Long) {
+        viewModelScope.launch {
+            localDataRepo.deleteSessions(listOf(id))
         }
     }
 
