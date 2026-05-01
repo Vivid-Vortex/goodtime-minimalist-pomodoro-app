@@ -62,9 +62,9 @@ jobs:
         with:
           projectPath: react_desktop
           tagName: ${{ github.ref_name }}
-          releaseName: 'GoodTime Pomodoro ${{ github.ref_name }}'
+          releaseName: 'Zen Mode ${{ github.ref_name }}'
           releaseBody: |
-            ## GoodTime Pomodoro Desktop App
+            ## Zen Mode Desktop App
 
             Native desktop app built with Tauri — uses OS WebView, ~20–50 MB RAM.
 

@@ -1,10 +1,17 @@
 name: Build and Release APK
 
 # Triggers when you push a tag like: git tag v3.1.0 && git push origin v3.1.0
+# Or manually via GitHub Actions → Run workflow
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 3.1.0)'
+        required: false
+        default: 'dev'
 
 jobs:
   build:
@@ -31,9 +38,14 @@ jobs:
           cache-read-only: false
 
       # Extract version name from the git tag (e.g. v3.1.0 → 3.1.0)
-      - name: Extract version name from tag
+      - name: Extract version name from tag or input
         id: tag_version
-        run: echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION_NAME=${{ github.event.inputs.version_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
 
       # Read current versionCode, increment by 1, write both back to version.properties
       - name: Bump versionCode and update versionName
@@ -66,7 +78,7 @@ jobs:
         id: apk
         run: |
           APK_SRC=$(find androidApp/build/outputs/apk/google/release -name "*.apk" | head -1)
-          APK_DEST="androidApp/build/outputs/apk/PomodoroAuto-${{ steps.bump.outputs.VERSION_NAME }}-build${{ steps.bump.outputs.VERSION_CODE }}.apk"
+          APK_DEST="androidApp/build/outputs/apk/ZenMode-${{ steps.bump.outputs.VERSION_NAME }}-build${{ steps.bump.outputs.VERSION_CODE }}.apk"
           cp "$APK_SRC" "$APK_DEST"
           echo "APK_PATH=${APK_DEST}" >> "$GITHUB_OUTPUT"
 
@@ -77,12 +89,12 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: "v${{ steps.bump.outputs.VERSION_NAME }} (build ${{ steps.bump.outputs.VERSION_CODE }})"
           body: |
-            ## Pomodoro Auto – v${{ steps.bump.outputs.VERSION_NAME }}
+            ## Zen Mode – v${{ steps.bump.outputs.VERSION_NAME }}
 
             **Build:** ${{ steps.bump.outputs.VERSION_CODE }}
 
             ### Install
-            Download `PomodoroAuto-*.apk` below and install it on your device.
+            Download `ZenMode-*.apk` below and install it on your device.
             > Enable **Install from unknown sources** in Android settings if prompted.
 
             ---
