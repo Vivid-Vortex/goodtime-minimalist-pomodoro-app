@@ -8,7 +8,7 @@ import { useSessions } from '../queries/useSessions'
 import { useLabels } from '../queries/useLabels'
 import { useCloudStats } from '../queries/useCloudStats'
 import { useRefreshCloudStats } from '../mutations/useRefreshCloudStats'
-import { todayId, parseDateId } from '../lib/dateUtils'
+import { todayId, parseDateId, formatDateId } from '../lib/dateUtils'
 import type { Session } from '../types/session'
 
 const TABS = ['Overview', 'Timeline', 'History'] as const
@@ -19,20 +19,66 @@ const DEFAULT_COLORS = [
   '#f87171', '#a78bfa', '#34d399', '#fb923c',
 ]
 
+/** Always show raw minutes — never convert to h/m */
 function fmtMin(min: number) {
-  if (min < 60) return `${min}m`
-  return `${Math.floor(min / 60)}h ${min % 60}m`
+  return `${Math.round(min)}m`
+}
+
+/** "dd-mm-yyyy" → "yyyy-mm-dd" for <input type="date"> */
+function dateIdToInput(dateId: string): string {
+  const [dd, mm, yyyy] = dateId.split('-')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+/** "yyyy-mm-dd" → "dd-mm-yyyy" (app date ID format) */
+function inputToDateId(input: string): string {
+  if (!input) return ''
+  const [yyyy, mm, dd] = input.split('-')
+  return `${dd}-${mm}-${yyyy}`
 }
 
 /** Merge local + cloud sessions, cloud wins for same date+label (no double-counting). */
 function mergeSessions(local: Session[], cloud: Session[]): Session[] {
   if (cloud.length === 0) return local
-
-  // Build a set of date+label keys already covered by cloud
   const cloudKeys = new Set(cloud.map((s) => `${s.date}|${s.labelName}`))
-  // Keep local sessions not already represented in cloud
   const onlyLocal = local.filter((s) => !cloudKeys.has(`${s.date}|${s.labelName}`))
   return [...cloud, ...onlyLocal]
+}
+
+// Date range input component
+function DateRangePicker({
+  from, to, onFromChange, onToChange,
+}: {
+  from: string; to: string
+  onFromChange: (v: string) => void
+  onToChange: (v: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-2 text-xs text-gray-400">
+      <span className="text-gray-600">From</span>
+      <input
+        type="date"
+        value={from}
+        onChange={(e) => onFromChange(e.target.value)}
+        className="bg-[#111] border border-[#2a2a2a] rounded px-2 py-1 text-gray-300 text-xs focus:outline-none focus:border-[#c54af0]"
+      />
+      <span className="text-gray-600">To</span>
+      <input
+        type="date"
+        value={to}
+        onChange={(e) => onToChange(e.target.value)}
+        className="bg-[#111] border border-[#2a2a2a] rounded px-2 py-1 text-gray-300 text-xs focus:outline-none focus:border-[#c54af0]"
+      />
+    </div>
+  )
+}
+
+// Default range helpers
+function defaultFrom(days: number): string {
+  return dateIdToInput(formatDateId(Date.now() - days * 24 * 60 * 60 * 1000))
+}
+function defaultTo(): string {
+  return dateIdToInput(todayId())
 }
 
 export default function StatisticsPage() {
@@ -42,6 +88,14 @@ export default function StatisticsPage() {
   const { data: labels = [] } = useLabels()
   const refresh = useRefreshCloudStats()
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
+
+  // Date range state — Timeline (default: last 30 days)
+  const [tlFrom, setTlFrom] = useState(() => defaultFrom(30))
+  const [tlTo, setTlTo] = useState(() => defaultTo())
+
+  // Date range state — Overview (default: last 30 days)
+  const [ovFrom, setOvFrom] = useState(() => defaultFrom(30))
+  const [ovTo, setOvTo] = useState(() => defaultTo())
 
   const sessions = useMemo(
     () => mergeSessions(localSessions, cloudSessions),
@@ -54,45 +108,51 @@ export default function StatisticsPage() {
     return m
   }, [labels])
 
-  // ── Aggregation ────────────────────────────────────────────────────────────
-
-  const today = todayId()
-  const nowMs = Date.now()
-  const weekMs = 7 * 24 * 60 * 60 * 1000
-  const monthMs = 30 * 24 * 60 * 60 * 1000
-
-  const totalMin = sessions.reduce((s, x) => s + x.durationMinutes, 0)
-  const todayMin = sessions.filter((s) => s.date === today).reduce((a, s) => a + s.durationMinutes, 0)
-  const weekMin = sessions
-    .filter((s) => nowMs - parseDateId(s.date) < weekMs)
-    .reduce((a, s) => a + s.durationMinutes, 0)
-  const monthMin = sessions
-    .filter((s) => nowMs - parseDateId(s.date) < monthMs)
-    .reduce((a, s) => a + s.durationMinutes, 0)
+  // ── Timeline aggregation (date-range filtered) ──────────────────────────────
 
   const timelineData = useMemo(() => {
+    const fromMs = tlFrom ? parseDateId(inputToDateId(tlFrom)) : 0
+    const toMs = tlTo ? parseDateId(inputToDateId(tlTo)) + 24 * 60 * 60 * 1000 : Infinity
+
     const byDate = new Map<string, Record<string, number>>()
     for (const s of sessions) {
+      const dateMs = parseDateId(s.date)
+      if (dateMs < fromMs || dateMs >= toMs) continue
       const entry = byDate.get(s.date) ?? {}
       entry[s.labelName] = (entry[s.labelName] ?? 0) + s.durationMinutes
       byDate.set(s.date, entry)
     }
+
     return [...byDate.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-14)
+      .sort(([a], [b]) => parseDateId(a) - parseDateId(b))  // correct date sort
       .map(([date, labelMins]) => ({ date, ...labelMins }))
-  }, [sessions])
+  }, [sessions, tlFrom, tlTo])
 
   const uniqueLabels = useMemo(() =>
     [...new Set(sessions.map((s) => s.labelName))],
     [sessions]
   )
 
+  // ── Overview aggregation (date-range filtered) ──────────────────────────────
+
+  const filteredForOverview = useMemo(() => {
+    const fromMs = ovFrom ? parseDateId(inputToDateId(ovFrom)) : 0
+    const toMs = ovTo ? parseDateId(inputToDateId(ovTo)) + 24 * 60 * 60 * 1000 : Infinity
+    return sessions.filter((s) => {
+      const d = parseDateId(s.date)
+      return d >= fromMs && d < toMs
+    })
+  }, [sessions, ovFrom, ovTo])
+
+  const today = todayId()
+  const totalMin = filteredForOverview.reduce((s, x) => s + x.durationMinutes, 0)
+  const todayMin = filteredForOverview.filter((s) => s.date === today).reduce((a, s) => a + s.durationMinutes, 0)
+
   const pieData = useMemo(() => {
     const acc: Record<string, number> = {}
-    sessions.forEach((s) => { acc[s.labelName] = (acc[s.labelName] ?? 0) + s.durationMinutes })
+    filteredForOverview.forEach((s) => { acc[s.labelName] = (acc[s.labelName] ?? 0) + s.durationMinutes })
     return Object.entries(acc).map(([name, value]) => ({ name, value }))
-  }, [sessions])
+  }, [filteredForOverview])
 
   async function handleRefresh() {
     setRefreshMsg(null)
@@ -160,12 +220,19 @@ export default function StatisticsPage() {
               </div>
             )}
 
+            {/* Date range picker */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">Date Range</span>
+              <DateRangePicker
+                from={ovFrom} to={ovTo}
+                onFromChange={setOvFrom} onToChange={setOvTo}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Today', value: fmtMin(todayMin), sub: `${sessions.filter(s => s.date === today).length} sessions` },
-                { label: 'This Week', value: fmtMin(weekMin), sub: 'last 7 days' },
-                { label: 'This Month', value: fmtMin(monthMin), sub: 'last 30 days' },
-                { label: 'Total', value: fmtMin(totalMin), sub: `${sessions.length} sessions` },
+                { label: 'Today', value: fmtMin(todayMin), sub: `${filteredForOverview.filter(s => s.date === today).length} sessions` },
+                { label: 'In Range', value: fmtMin(totalMin), sub: `${filteredForOverview.length} sessions` },
               ].map(({ label, value, sub }) => (
                 <div key={label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
                   <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -177,7 +244,7 @@ export default function StatisticsPage() {
 
             {pieData.length > 0 && (
               <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-                <h2 className="text-xs text-gray-500 mb-3 uppercase tracking-wider">By Label</h2>
+                <h2 className="text-xs text-gray-500 mb-3 uppercase tracking-wider">By Label (minutes)</h2>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name} ${fmtMin(value)}`} labelLine={false}>
@@ -192,10 +259,10 @@ export default function StatisticsPage() {
               </div>
             )}
 
-            {sessions.length === 0 && (
+            {filteredForOverview.length === 0 && (
               <div className="flex flex-col items-center justify-center h-40 text-gray-600 space-y-1">
-                <p className="text-sm">No sessions yet</p>
-                <p className="text-xs">Complete a focus session or refresh from cloud</p>
+                <p className="text-sm">No sessions in range</p>
+                <p className="text-xs">Adjust the date range or refresh from cloud</p>
               </div>
             )}
           </div>
@@ -204,18 +271,29 @@ export default function StatisticsPage() {
         {/* ── Timeline ──────────────────────────────────────────────────────── */}
         {tab === 'Timeline' && (
           <div className="space-y-4">
+            {/* Date range picker */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 uppercase tracking-wider">Date Range</span>
+              <DateRangePicker
+                from={tlFrom} to={tlTo}
+                onFromChange={setTlFrom} onToChange={setTlTo}
+              />
+            </div>
+
             {timelineData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-gray-600 space-y-1">
-                <p className="text-sm">No data yet</p>
+                <p className="text-sm">No data in range</p>
               </div>
             ) : (
               <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-                <h2 className="text-xs text-gray-500 mb-4 uppercase tracking-wider">Focus minutes — last 14 days</h2>
+                <h2 className="text-xs text-gray-500 mb-4 uppercase tracking-wider">
+                  Focus minutes — {timelineData.length} day{timelineData.length !== 1 ? 's' : ''}
+                </h2>
                 <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={timelineData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <BarChart data={timelineData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={(d) => d.slice(0, 5)} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={(v) => `${v}m`} />
                     <Tooltip
                       contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8 }}
                       labelStyle={{ color: '#e5e7eb', fontSize: 12 }}
