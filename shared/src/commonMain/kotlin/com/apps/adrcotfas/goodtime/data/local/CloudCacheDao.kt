@@ -19,6 +19,7 @@ package com.apps.adrcotfas.goodtime.data.local
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 
 @Dao
@@ -40,4 +41,18 @@ interface CloudCacheDao {
 
     @Query("DELETE FROM localCloudHistoryEntry")
     suspend fun clearHistoryEntries()
+
+    /** Atomically replace the entire timeline cache. */
+    @Transaction
+    suspend fun replaceTimelineEntries(entries: List<LocalCloudTimelineEntry>) {
+        clearTimelineEntries()
+        if (entries.isNotEmpty()) upsertTimelineEntries(entries)
+    }
+
+    /** Atomically replace the entire history cache. */
+    @Transaction
+    suspend fun replaceHistoryEntries(entries: List<LocalCloudHistoryEntry>) {
+        clearHistoryEntries()
+        if (entries.isNotEmpty()) upsertHistoryEntries(entries)
+    }
 }

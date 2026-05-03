@@ -28,6 +28,7 @@ import com.apps.adrcotfas.goodtime.stats.StatisticsHistoryViewModel
 import com.apps.adrcotfas.goodtime.stats.StatisticsViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 actual val viewModelModule: Module =
@@ -38,7 +39,7 @@ actual val viewModelModule: Module =
         singleOf(::AddEditLabelViewModel)
         singleOf(::SettingsViewModel)
         singleOf(::TimerProfileViewModel)
-        singleOf(::StatisticsViewModel)
+        single { StatisticsViewModel(get(), get(), get(), get(), get(), get(), get(named(IO_SCOPE))) }
         singleOf(::StatisticsHistoryViewModel)
     }
 

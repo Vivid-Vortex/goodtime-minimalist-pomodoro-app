@@ -39,6 +39,7 @@ import com.apps.adrcotfas.goodtime.data.settings.OverviewDurationType
 import com.apps.adrcotfas.goodtime.data.settings.OverviewType
 import com.apps.adrcotfas.goodtime.data.settings.SettingsRepository
 import com.apps.adrcotfas.goodtime.data.settings.StatisticsSettings
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +50,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.DayOfWeek
@@ -109,6 +109,7 @@ class StatisticsViewModel(
     private val firestoreSyncHandler: FirestoreSyncHandler?,
     private val backupViewModel: com.apps.adrcotfas.goodtime.data.local.backup.BackupViewModel,
     private val cloudCacheDao: CloudCacheDao,
+    private val ioScope: CoroutineScope,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(StatisticsUiState())
     val uiState =
@@ -181,7 +182,7 @@ class StatisticsViewModel(
                         .d { "Overview flow: Mapping state, cloudAggregatedData size=${state.cloudAggregatedData.size}" }
                     Pair(state.selectedLabels, state.cloudAggregatedData)
                 }
-                // Section 13: Remove distinctUntilChanged to ensure flow always triggers
+                .distinctUntilChanged()
                 .collect { (selectedLabels, cloudAggregatedData) ->
                     co.touchlab.kermit.Logger
                         .d {
@@ -345,34 +346,30 @@ class StatisticsViewModel(
         aggregatedData: Map<String, Long>,
         appHistorySessions: List<com.apps.adrcotfas.goodtime.data.local.backup.CloudAppHistorySession>,
     ) {
-        viewModelScope.launch {
-            // NonCancellable ensures DB writes complete even if ViewModel is destroyed mid-save
-            withContext(NonCancellable) {
-                try {
-                    cloudCacheDao.clearTimelineEntries()
-                    cloudCacheDao.upsertTimelineEntries(
-                        aggregatedData.map { (key, duration) -> LocalCloudTimelineEntry(key, duration) },
-                    )
-                    cloudCacheDao.clearHistoryEntries()
-                    cloudCacheDao.upsertHistoryEntries(
-                        appHistorySessions.map { s ->
-                            LocalCloudHistoryEntry(
-                                id = s.id,
-                                timestamp = s.timestamp,
-                                duration = s.duration,
-                                label = s.label,
-                                notes = s.notes,
-                                deviceName = s.deviceName,
-                                syncedAt = s.syncedAt,
-                            )
-                        },
-                    )
-                    co.touchlab.kermit.Logger
-                        .d { "Persisted ${aggregatedData.size} timeline + ${appHistorySessions.size} history entries to local cache" }
-                } catch (e: Exception) {
-                    co.touchlab.kermit.Logger
-                        .e { "Failed to persist cloud cache: ${e.message}" }
-                }
+        // Use ioScope (application-level) so writes complete even when ViewModel is destroyed
+        ioScope.launch {
+            try {
+                cloudCacheDao.replaceTimelineEntries(
+                    aggregatedData.map { (key, duration) -> LocalCloudTimelineEntry(key, duration) },
+                )
+                cloudCacheDao.replaceHistoryEntries(
+                    appHistorySessions.map { s ->
+                        LocalCloudHistoryEntry(
+                            id = s.id,
+                            timestamp = s.timestamp,
+                            duration = s.duration,
+                            label = s.label,
+                            notes = s.notes,
+                            deviceName = s.deviceName,
+                            syncedAt = s.syncedAt,
+                        )
+                    },
+                )
+                co.touchlab.kermit.Logger
+                    .d { "Persisted ${aggregatedData.size} timeline + ${appHistorySessions.size} history entries to local cache" }
+            } catch (e: Exception) {
+                co.touchlab.kermit.Logger
+                    .e { "Failed to persist cloud cache: ${e.message}" }
             }
         }
     }

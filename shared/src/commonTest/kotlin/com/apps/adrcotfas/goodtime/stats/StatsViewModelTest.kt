@@ -98,8 +98,8 @@ class StatsViewModelTest : RoomDatabaseTest() {
                         timeProvider,
                         null,
                         backupViewModel,
-                        com.apps.adrcotfas.goodtime.fakes
-                            .FakeCloudCacheDao(),
+                        com.apps.adrcotfas.goodtime.fakes.FakeCloudCacheDao(),
+                        this,
                     )
                 populateRepo()
 
