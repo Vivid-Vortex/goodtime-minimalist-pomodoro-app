@@ -282,7 +282,8 @@ fun StatisticsScreen(
                     ) {
                         AddEditSessionContent(
                             session = uiState.newSession,
-                            labelData = uiState.labels.first { it.name == uiState.newSession.label },
+                            labelData = uiState.labels.firstOrNull { it.name == uiState.newSession.label }
+                            ?: uiState.labels.firstOrNull() ?: return@ModalBottomSheet,
                             onUpdate = {
                                 viewModel.updateSessionToEdit(it)
                             },

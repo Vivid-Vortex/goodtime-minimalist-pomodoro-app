@@ -120,9 +120,11 @@ fun HistorySection(viewModel: StatisticsHistoryViewModel) {
 
     LaunchedEffect(data, isLineChart) {
         if (isLineChart) {
+            // Guard: aggregated data may not be ready yet if mode just switched
+            val aggregateSeries = y[Label.DEFAULT_LABEL_NAME] ?: return@LaunchedEffect
             modelProducer.runTransaction {
                 lineSeries {
-                    series(y[Label.DEFAULT_LABEL_NAME]!!)
+                    series(aggregateSeries)
                     extras { it[timestampsKey] = x }
                     extras { it[labelsKey] = y.keys }
                     extras { it[extraBottomAxisStrings] = bottomAxisStrings }
