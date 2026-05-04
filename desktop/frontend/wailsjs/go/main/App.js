@@ -82,12 +82,20 @@ export function GetTimerState() {
   return window['go']['main']['App']['GetTimerState']();
 }
 
+export function GetUnsyncedSessions() {
+  return window['go']['main']['App']['GetUnsyncedSessions']();
+}
+
 export function ImportBackup() {
   return window['go']['main']['App']['ImportBackup']();
 }
 
 export function PauseTimer() {
   return window['go']['main']['App']['PauseTimer']();
+}
+
+export function PushSelectedSessions(arg1) {
+  return window['go']['main']['App']['PushSelectedSessions'](arg1);
 }
 
 export function RefreshCloudData() {

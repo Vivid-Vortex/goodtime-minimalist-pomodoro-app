@@ -47,9 +47,13 @@ export function GetTimerProfiles():Promise<Array<database.TimerProfile>>;
 
 export function GetTimerState():Promise<timer.State>;
 
+export function GetUnsyncedSessions():Promise<Array<database.Session>>;
+
 export function ImportBackup():Promise<void>;
 
 export function PauseTimer():Promise<void>;
+
+export function PushSelectedSessions(arg1:Array<number>):Promise<main.CloudSyncStatus>;
 
 export function RefreshCloudData():Promise<void>;
 
