@@ -64,7 +64,15 @@ export function getSessionsByDate(date: string): Session[] {
 
 export function appendSession(session: Session): void {
   const all = getSessions()
-  write(KEY_SESSIONS, [...all, session])
+  write(KEY_SESSIONS, [...all, { ...session, synced: false }])
+}
+
+export function markSessionsSynced(ids: string[]): void {
+  const idSet = new Set(ids)
+  const all = getSessions().map((s) =>
+    idSet.has(s.id) ? { ...s, synced: true } : s
+  )
+  write(KEY_SESSIONS, all)
 }
 
 export function updateSession(id: string, patch: Partial<Session>): void {

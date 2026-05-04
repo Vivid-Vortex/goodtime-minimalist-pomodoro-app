@@ -8,6 +8,7 @@ import { useSessions } from '../queries/useSessions'
 import { useLabels } from '../queries/useLabels'
 import { useCloudStats } from '../queries/useCloudStats'
 import { useRefreshCloudStats } from '../mutations/useRefreshCloudStats'
+import { useForceSync } from '../mutations/useForceSync'
 import { todayId, parseDateId, formatDateId } from '../lib/dateUtils'
 import type { Session } from '../types/session'
 
@@ -87,6 +88,7 @@ export default function StatisticsPage() {
   const { data: cloudSessions = [] } = useCloudStats()
   const { data: labels = [] } = useLabels()
   const refresh = useRefreshCloudStats()
+  const forceSync = useForceSync()
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null)
 
   // Date range state — Timeline (default: last 30 days)
@@ -164,6 +166,20 @@ export default function StatisticsPage() {
     }
   }
 
+  async function handleForceSync() {
+    setRefreshMsg(null)
+    try {
+      const result = await forceSync.mutateAsync()
+      const { pushed, errors } = result
+      setRefreshMsg(
+        `Pushed ${pushed.length} date${pushed.length === 1 ? '' : 's'} to cloud.` +
+        (errors.length > 0 ? ` ${errors.length} error(s).` : '')
+      )
+    } catch {
+      setRefreshMsg('Force sync failed.')
+    }
+  }
+
   const hasCloudData = cloudSessions.length > 0
 
   return (
@@ -172,14 +188,23 @@ export default function StatisticsPage() {
       <div className="px-6 pt-5 pb-0 border-b border-[#2a2a2a] shrink-0">
         <div className="flex items-center justify-between mb-3">
           <h1 className="text-base font-semibold text-white">Statistics</h1>
-          <button
-            onClick={handleRefresh}
-            disabled={refresh.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#c54af0] hover:text-white disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw size={12} className={refresh.isPending ? 'animate-spin' : ''} />
-            {refresh.isPending ? 'Refreshing…' : 'Refresh from Cloud'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleForceSync}
+              disabled={forceSync.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#c54af0] hover:text-white disabled:opacity-50 transition-colors"
+            >
+              {forceSync.isPending ? 'Syncing…' : 'Force Sync'}
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={refresh.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-gray-400 bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#c54af0] hover:text-white disabled:opacity-50 transition-colors"
+            >
+              <RefreshCw size={12} className={refresh.isPending ? 'animate-spin' : ''} />
+              {refresh.isPending ? 'Refreshing…' : 'Refresh from Cloud'}
+            </button>
+          </div>
         </div>
 
         {refreshMsg && (

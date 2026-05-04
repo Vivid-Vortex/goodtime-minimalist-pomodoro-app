@@ -5,6 +5,7 @@ export interface Session {
   durationMinutes: number
   startedAt: number     // epoch ms
   endedAt: number       // epoch ms
+  synced?: boolean      // true once pushed to cloud; undefined treated as already-synced (migration)
 }
 
 export interface AppHistoryEntry {
