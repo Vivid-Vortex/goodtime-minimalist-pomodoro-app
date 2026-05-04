@@ -82,13 +82,24 @@ class TimerProfileViewModel(
         }
     }
 
+    /**
+     * Immediately applies a named profile selection locally (no cloud save).
+     * This updates the DB so TimerManager picks up the new duration right away.
+     */
+    fun selectProfile(label: Label) {
+        viewModelScope.launch {
+            repo.updateDefaultLabel(label)
+            _uiState.update { it.copy(defaultLabel = label, tmpLabel = label) }
+        }
+    }
+
     fun saveChanges(label: Label) {
         viewModelScope.launch {
             repo.updateDefaultLabel(label)
             label.timerProfile.name?.let {
                 repo.updateTimerProfile(label.timerProfile)
             }
-            _uiState.update { it.copy(defaultLabel = label) }
+            _uiState.update { it.copy(defaultLabel = label, tmpLabel = label) }
             // Attempt cloud save after every local save; track failure for retry button
             attemptCloudSave()
         }

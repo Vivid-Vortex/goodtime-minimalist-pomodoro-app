@@ -107,10 +107,7 @@ fun TimerProfileScreen(
                         )
                     },
                     onTimerProfileSelect = { selected ->
-                        viewModel.updateTmpLabel(
-                            label.copy(timerProfile = selected),
-                            resetProfile = false,
-                        )
+                        viewModel.selectProfile(label.copy(timerProfile = selected))
                     },
                     onEditProfiles = { showTimerProfilesSheet = true },
                     onBreakBudgetInfo = { showBreakBudgetInfoDialog = true },
