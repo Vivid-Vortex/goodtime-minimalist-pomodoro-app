@@ -93,7 +93,9 @@ class TimerManager(
                     ) { label, defaultLabel ->
                         val defaultTimerProfile = defaultLabel.timerProfile
                         if (label == null) {
-                            settingsRepo.activateDefaultLabel()
+                            // Don't reset settings here; LabelsViewModel.deleteLabel() handles the
+                            // explicit-delete case. Resetting here caused the selected label to
+                            // disappear on every startup after a destructive DB migration.
                             DomainLabel(defaultLabel, defaultTimerProfile)
                         } else {
                             // TODO: move this logic to DomainLabel; have DomainLabel a typedef of Label since it contains a TimerProfile already
