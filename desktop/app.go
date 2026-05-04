@@ -273,6 +273,44 @@ func (a *App) SaveToCloud() CloudSyncStatus {
 	return result
 }
 
+// GetUnsyncedSessions returns all local sessions that haven't been pushed to Firestore yet.
+func (a *App) GetUnsyncedSessions() ([]database.Session, error) {
+	return a.sessionService.ListUnsynced(a.ctx)
+}
+
+// PushSelectedSessions pushes only the given session IDs to Firestore.
+// Sessions not in the list remain unsynced.
+func (a *App) PushSelectedSessions(ids []int64) CloudSyncStatus {
+	if !cloudsync.CredentialsExist() {
+		credPath, _ := cloudsync.CredentialsPath()
+		return CloudSyncStatus{
+			CredsMissing: true,
+			Error: "service-account.json not found.\n\nPlace it at:\n" + credPath +
+				"\n\nDownload from Firebase Console → Project Settings → Service Accounts.",
+		}
+	}
+	if a.syncHandler == nil {
+		credPath, _ := cloudsync.CredentialsPath()
+		credJSON, err := os.ReadFile(credPath)
+		if err != nil {
+			return CloudSyncStatus{Error: err.Error()}
+		}
+		h, err := cloudsync.NewHandler(a.ctx, credJSON, a.sessionService, a.db)
+		if err != nil {
+			return CloudSyncStatus{Error: "Failed to initialise sync: " + err.Error()}
+		}
+		a.syncHandler = h
+	}
+	status, err := a.syncHandler.PushByIDs(a.ctx, ids)
+	result := CloudSyncStatus{DocsCreated: status.DocsCreated, DocsUpdated: status.DocsUpdated}
+	if err != nil {
+		result.Error = err.Error()
+	} else {
+		_ = a.settingService.SetLastSyncTimestamp(a.ctx, time.Now().UnixMilli())
+	}
+	return result
+}
+
 // GetCredentialsPath returns where the user should put service-account.json.
 func (a *App) GetCredentialsPath() string {
 	p, _ := cloudsync.CredentialsPath()

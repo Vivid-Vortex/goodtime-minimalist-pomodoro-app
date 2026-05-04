@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import {
   GetSettings, UpdateSettings, GetTimerProfiles, SaveTimerProfile, SaveTimerProfilesToCloud,
   DeleteTimerProfile,
-  ExportBackup, ImportBackup, SaveToCloud, GetCredentialsPath,
+  ExportBackup, ImportBackup, GetCredentialsPath,
   GetCloudSyncSchedule, SetCloudSyncSchedule,
   ApplyTimerProfile, SyncProfilesFromCloud,
 } from "../wailsjs/go/main/App";
 import { useAppStore } from "../stores/appStore";
 import type { AppSettings, CloudSyncStatus, TimerProfile } from "../types";
+import { ReviewSyncModal } from "../components/ReviewSyncModal";
 
 export function SettingsPage() {
   const { settings, setSettings, timerProfiles, setTimerProfiles } = useAppStore();
   const [editingProfile, setEditingProfile] = useState<TimerProfile | null>(null);
   const [creating, setCreating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [syncResult, setSyncResult] = useState<CloudSyncStatus | null>(null);
   const [profileSyncMsg, setProfileSyncMsg] = useState("");
   const [credPath, setCredPath] = useState("");
@@ -34,13 +35,9 @@ export function SettingsPage() {
     GetCloudSyncSchedule().then(setSyncSchedule).catch(console.error);
   }, [reloadProfiles, reloadSettings]);
 
-  function handleSaveToCloud() {
-    setSyncing(true);
+  function handleOpenReview() {
     setSyncResult(null);
-    SaveToCloud()
-      .then((result) => { setSyncResult(result); reloadSettings(); })
-      .catch((err) => setSyncResult({ docsCreated: 0, docsUpdated: 0, error: String(err), credsMissing: false }))
-      .finally(() => setSyncing(false));
+    setShowReviewModal(true);
   }
 
   if (!settings) return null;
@@ -205,15 +202,10 @@ export function SettingsPage() {
           {/* Cloud Sync */}
           <div className="mt-4">
             <button
-              onClick={handleSaveToCloud}
-              disabled={syncing}
-              className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors
-                ${syncing
-                  ? "bg-surface-600 text-gray-500 cursor-not-allowed"
-                  : "bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white"
-                }`}
+              onClick={handleOpenReview}
+              className="w-full py-2.5 rounded-xl text-sm font-medium transition-colors bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white"
             >
-              {syncing ? "Syncing…" : "Save to Cloud"}
+              Review &amp; Save to Cloud
             </button>
 
             {syncResult && (
@@ -310,6 +302,16 @@ export function SettingsPage() {
             setCreating(false);
           }}
           onClose={() => { setEditingProfile(null); setCreating(false); }}
+        />
+      )}
+
+      {showReviewModal && (
+        <ReviewSyncModal
+          onClose={() => setShowReviewModal(false)}
+          onSyncComplete={(result) => {
+            setSyncResult(result);
+            reloadSettings();
+          }}
         />
       )}
     </div>

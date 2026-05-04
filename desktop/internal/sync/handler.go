@@ -217,6 +217,80 @@ func (h *Handler) pushHistorySession(ctx context.Context, s database.Session) er
 	return h.client.SetDocument(ctx, collectionHistory, dateStr, doc)
 }
 
+// PushByIDs syncs only the specified sessions (by ID) to Firestore.
+// All other unsynced sessions are left untouched.
+func (h *Handler) PushByIDs(ctx context.Context, ids []int64) (SyncStatus, error) {
+	var status SyncStatus
+	if len(ids) == 0 {
+		return status, nil
+	}
+
+	idSet := map[int64]bool{}
+	for _, id := range ids {
+		idSet[id] = true
+	}
+
+	allUnsynced, err := h.sessSvc.ListUnsynced(ctx)
+	if err != nil {
+		return status, fmt.Errorf("list unsynced sessions: %w", err)
+	}
+
+	var selected []database.Session
+	for _, s := range allUnsynced {
+		if idSet[s.ID] {
+			selected = append(selected, s)
+		}
+	}
+	if len(selected) == 0 {
+		return status, nil
+	}
+
+	type dateLabel struct{ date, label string }
+	minutesByDateLabel := map[dateLabel]int64{}
+	for _, s := range selected {
+		if !s.IsWork {
+			continue
+		}
+		dateStr := millisToDocID(s.Timestamp)
+		minutesByDateLabel[dateLabel{dateStr, s.LabelName}] += s.Duration
+	}
+
+	dateMap := map[string]map[string]int64{}
+	for dl, mins := range minutesByDateLabel {
+		if dateMap[dl.date] == nil {
+			dateMap[dl.date] = map[string]int64{}
+		}
+		dateMap[dl.date][dl.label] += mins
+	}
+
+	for _, s := range selected {
+		if err := h.pushHistorySession(ctx, s); err != nil {
+			_ = err // non-fatal
+		}
+	}
+
+	for dateStr, labelMins := range dateMap {
+		isNew, err := h.syncTimesheetDoc(ctx, dateStr, labelMins)
+		if err != nil {
+			return status, fmt.Errorf("sync %s: %w", dateStr, err)
+		}
+		if isNew {
+			status.DocsCreated++
+		} else {
+			status.DocsUpdated++
+		}
+	}
+
+	allIDs := make([]int64, len(selected))
+	for i, s := range selected {
+		allIDs[i] = s.ID
+	}
+	if err := h.sessSvc.MarkSynced(ctx, allIDs); err != nil {
+		return status, fmt.Errorf("mark synced: %w", err)
+	}
+	return status, nil
+}
+
 // ─── Pull API ─────────────────────────────────────────────────────────────────
 
 // TimesheetDoc holds the parsed content of one timesheet_entries document.
