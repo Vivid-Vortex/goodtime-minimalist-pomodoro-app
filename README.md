@@ -1,6 +1,7 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/LewpXfTpi3aS6boHLDYQoZ/4tBEiBM7ZB48VxfWj2qfHi/tree/dev)
+[![Build and Release APK](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/actions/workflows/build-release.yml/badge.svg)](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/actions/workflows/build-release.yml)
+[![Desktop Release](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/actions/workflows/desktop-release.yml/badge.svg)](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/actions/workflows/desktop-release.yml)
 
-# Pomodoro Auto
+# Zen Mode
 
 A minimalist productivity timer with Firestore cloud sync, label-based time tracking, and cross-device statistics. Fork of [Goodtime](https://github.com/adrcotfas/goodtime).
 
@@ -18,18 +19,12 @@ A minimalist productivity timer with Firestore cloud sync, label-based time trac
 ## Quick Start
 
 ### Android
-Download `PomodoroAuto-*.apk` from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) and install.
+Download `ZenMode-*.apk` from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) and install.
+
+### Native Desktop (Windows — Wails app, ~20–50 MB RAM)
+Download `ZenMode-*.exe` from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) (tagged `desktop-v*`). No Node, no browser required.
 
 ### Web App (any browser, needs Node.js 18+)
-```bash
-# Download goodtime-pomodoro-desktop.zip from Releases (tagged web-v*)
-node server.cjs          # opens http://localhost:3000
-```
-
-### Native Desktop (Windows / macOS / Linux, ~20–50 MB RAM)
-Download the installer from [Releases](https://github.com/Vivid-Vortex/goodtime-minimalist-pomodoro-app/releases) (tagged `desktop-v*`). No Node, no browser required.
-
-### Dev mode (React)
 ```bash
 cd react_desktop && npm install && npm run dev
 ```
@@ -40,32 +35,37 @@ cd react_desktop && npm install && npm run dev
 
 - **Timer** — countdown with configurable profiles (72/5, 90/5, 25/5, custom); auto-start break/work; dial gestures on Android
 - **Labels** — tag focus sessions (W1M, ESS, LTG, …) to see where your time goes
-- **Cloud sync** — manual push/pull to Firestore; multi-device with per-device history badges
-- **Statistics** — overview cards, 14-day stacked bar chart, full session log; merges local + cloud data
-- **Timer profiles** — stored locally and in Firestore (`global_notes/timer_profile`); unlimited profiles
-- **Backup & restore** — SQLite export, CSV/JSON export, scheduled cloud push
+- **Cloud sync** — delta push to Firestore (only unsynced sessions); review modal before push; multi-device safe
+- **Force sync** — overwrite cloud totals with local data when needed
+- **Statistics** — overview cards, stacked bar chart with date range pickers, full session log; merges local + cloud data
+- **Timer profiles** — stored locally and in Firestore (`global_notes/timer_profile`); unlimited profiles; immediate local apply on selection
+- **Backup & restore** — SQLite export, scheduled cloud push
+- **Desktop widget** — floating overlay for inconspicuous control
 
 ---
 
 ## Releases
 
-| Platform | Tag prefix | Asset |
-|---|---|---|
-| Android APK | `v*` | `PomodoroAuto-*.apk` |
-| Web App zip | `web-v*` | `goodtime-pomodoro-desktop.zip` |
-| Native desktop | `desktop-v*` | `.exe` / `.dmg` / `.AppImage` |
+| Platform | Tag prefix | Asset | Latest |
+|---|---|---|---|
+| Android APK | `v*` | `ZenMode-*.apk` | v3.1.7 |
+| Native desktop (Windows) | `desktop-v*` | `ZenMode-*.exe` | desktop-v3.1.5 |
 
-### Publish a release
+### Release a new version (auto-increment)
 
+**Recommended — GitHub Actions (no manual tagging):**
+1. GitHub → Actions → **Bump Version Tag** → Run workflow
+2. Choose: `android`, `desktop`, or `both`
+3. Choose: `patch`, `minor`, or `major`
+4. The workflow creates the next tag and triggers the build automatically
+
+**Manual tagging:**
 ```bash
 # Android
-git tag v3.2.0 && git push origin v3.2.0
+git tag v3.1.8 && git push origin v3.1.8
 
-# Web App
-git tag web-v1.3.0 && git push origin web-v1.3.0
-
-# Native desktop (builds Windows + macOS + Linux on CI)
-git tag desktop-v1.1.0 && git push origin desktop-v1.1.0
+# Desktop
+git tag desktop-v3.1.6 && git push origin desktop-v3.1.6
 ```
 
 GitHub Actions builds and attaches all assets automatically.
@@ -88,11 +88,16 @@ Android aggressively kills background apps. Set the app to **Unrestricted** batt
 
 ---
 
-## claude-auto-resume
+## Development
 
-This repo includes local docs for the claude-auto-resume utility under `/docs`:
+```bash
+# Android
+./gradlew :androidApp:assembleDebug
 
-- `docs/claude-auto-resume-readme.md` — installation and setup
-- `docs/fix_Auto_Resume.md` — Windows-specific fixes applied locally
+# Desktop (Wails — requires Go 1.22 + wails CLI)
+cd desktop && wails dev          # hot-reload
+cd desktop && wails build        # produces desktop/build/bin/ZenMode-*.exe
 
-Original project: [github.com/terryso/claude-auto-resume](https://github.com/terryso/claude-auto-resume)
+# React web (dev mode)
+cd react_desktop && npm install && npm run dev
+```

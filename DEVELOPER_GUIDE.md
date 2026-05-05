@@ -999,21 +999,37 @@ Say you add tag **"HEALTH"** with code **"HLT"** and outer field name **"healthM
 
 `VERSION_CODE` is **auto-incremented by GitHub Actions** — never edit it manually.
 
-### Release steps
+### Workflows
 
+| Workflow | File | Trigger | What it does |
+|---|---|---|---|
+| Android Build | `build-release.yml` | `v*` tag | Builds APK → GitHub Release |
+| Desktop Release | `desktop-release.yml` | `desktop-v*` tag | Builds Wails .exe → GitHub Release |
+| Bump Version | `bump-version.yml` | Manual dispatch | Auto-reads latest tag, increments, pushes new tag |
+
+### Releasing a new version
+
+**Option A — Auto-increment (recommended):**
+1. GitHub → Actions → **Bump Version Tag** → Run workflow
+2. Select type: `android`, `desktop`, or `both`
+3. Select bump: `patch`, `minor`, or `major`
+4. Click Run — the workflow creates the tag and the build fires automatically
+
+**Option B — Manual tagging:**
 ```bash
-# Push commits to dev
-git push origin dev
+# Android (triggers build-release.yml)
+git tag v3.1.8 && git push origin v3.1.8
 
-# Tag the release (triggers GitHub Actions)
-git tag v3.1.0
-git push origin v3.1.0
+# Desktop (triggers desktop-release.yml)
+git tag desktop-v3.1.6 && git push origin desktop-v3.1.6
 ```
 
-GitHub Actions (`.github/workflows/build-release.yml`) then:
-1. Increments `VERSION_CODE`, commits back
-2. Builds `googleRelease` APK
-3. Creates a GitHub Release with APK attached
+GitHub Actions then:
+- **Android:** Increments `VERSION_CODE`, commits back, builds `googleRelease` APK, creates GitHub Release with `ZenMode-*.apk`
+- **Desktop:** Builds Wails Windows .exe, creates GitHub Release with `ZenMode-*.exe` attached
+
+### React Desktop (web/dev mode only — no release tag)
+The `react_desktop/` directory is the Vite + React app used inside the Wails shell. It is not released independently. Changes to `react_desktop/` are included in the desktop build automatically.
 
 ---
 
